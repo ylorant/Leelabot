@@ -108,6 +108,8 @@ class Intl
 class Intl_Parser
 {
 	private $_data; ///< Data already parsed by the parser.
+	private $_currentID; ///< Current ID, for defined-ID translation couples
+	private $_globalID; ///< Current automatic global ID, for automatic translation couples
 	
 	/** Constructor.
 	 * This is the constructor for the class. It initalizes properties at their default values.
@@ -117,7 +119,9 @@ class Intl_Parser
 	public function __construct()
 	{
 		//Initializing properties
-		$this->_data = array();
+		$this->_data = array('body' => array());
+		$this->_currentID = NULL;
+		$this->_globalID = 0;
 	}
 	
 	/** Parses a locale file.
@@ -143,9 +147,7 @@ class Intl_Parser
 		foreach($commands as $command)
 		{
 			$result = $this->_parseCommand($command, $file);
-			if($result !== FALSE)
-				$this->_data = array_merge($this->_data, $result);
-			else
+			if($result === FALSE)
 				return FALSE;
 		}
 		
@@ -158,12 +160,12 @@ class Intl_Parser
 	 * 
 	 * \param $command The command to parse.
 	 * \param $file The file from where the command comes from. It is useful for knowing the base path for the #include statement.
-	 * \returns The data parsed (to be added to the global data array), or FALSE if anything has gone wrong.
+	 * \returns TRUE if the command parsed successfully, or FALSE if anything has gone wrong.
 	 */
 	private function _parseCommand($command, $file)
 	{
 		if(!$command)
-			return array();
+			return TRUE;
 		
 		//Tabs will be interpreted as space, for splitting.
 		$command = str_replace("\t", ' ', trim($command));
@@ -180,7 +182,7 @@ class Intl_Parser
 			case '#license':
 			case '#dateformat':
 			case '#timeformat':
-				return array(substr($keyword, 1) => $params);
+				$this->_data = array_merge($this->_data, array(substr($keyword, 1) => $params));
 				break;
 			//Locale alias names
 			case '#alias':
@@ -198,7 +200,7 @@ class Intl_Parser
 					else
 						$aliases = array_map('trim',explode(';',$params));
 				}
-				return array('aliases' => $aliases);
+				$this->_data = array_merge($this->_data, array('aliases' => $aliases));
 				break;
 			//Include another files (relative paths from current read file path)
 			case '#include':
@@ -208,8 +210,53 @@ class Intl_Parser
 				if($result === FALSE)
 					return FALSE;
 				break;
+			//Clears all the data in memory from previous parsing
+			case '#clear':
+				$this->__construct();
+				break;
+			//Sets current ID for ordering
+			case '#id':
+				$this->_currentID = $params;
+				break;
+			//Disable ID ordering
+			case '#noid':
+				$this->_currentID = NULL;
+				break;
+			//Source search for translation
+			case '#from':
+				if($this->_currentID !== NULL)
+				{
+					if(!isset($this->_data['body'][$this->_currentID]))
+						$this->_data['body'][$this->_currentID] = array();
+					
+					$element = &$this->_data['body'][$this->_currentID];
+				}
+				else
+				{
+					$this->_data['body'][$this->_globalID] = array();
+					$element = &$this->_data['body'][$this->_globalID];
+				}
+				$element['from'] = str_replace('\n', "\n",$params);
+				break;
+			//In what the source text will be translated
+			case '#to':
+				if($this->_currentID !== NULL)
+				{
+					if(!isset($this->_data['body'][$this->_currentID]))
+						$this->_data['body'][$this->_currentID] = array();
+					
+					$element = &$this->_data['body'][$this->_currentID];
+				}
+				else
+				{
+					$element = &$this->_data['body'][$this->_globalID];
+					$this->_globalID++;
+				}
+				$element['to'] = str_replace('\n', "\n",$params);
+				break;
+			
 		}
 		
-		return array();
+		return TRUE;
 	}
 }
