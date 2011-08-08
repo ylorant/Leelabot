@@ -126,11 +126,13 @@ class Intl_Parser
 	
 	/** Parses a locale file.
 	 * This function parses an unique locale file, for gathering all available data inside. Of course, if there is #include statements in
-	 * the given file, included files will be also parsed. If there is an inclusion loop, this function will loop indefinitely, filling all
+	 * the given file, included files will be also parsed.
+	 * 
+	 * \warning If there is an inclusion loop, this function will loop indefinitely, filling all
 	 * the available memory, so beware of what you are parsing, and what you are including.
 	 * 
 	 * \param $file The file to parse.
-	 * \return TRUE if the file has been correctly parsed, FALSE otherwise.
+	 * \return The parsed data if the file has been correctly parsed, FALSE otherwise.
 	 */
 	public function parseFile($file)
 	{
@@ -149,6 +151,36 @@ class Intl_Parser
 			$result = $this->_parseCommand($command, $file);
 			if($result === FALSE)
 				return FALSE;
+		}
+		
+		return $this->_data;
+	}
+	
+	/** Parses a locale directory.
+	 * This function parses an complete directory, with locale files in it. It will only parse .lc files and lc.conf file. This function
+	 * calls parseFile for parsing every file.
+	 * 
+	 * \warning If there is an inclusion loop, this function will loop indefinitely, filling all
+	 * the available memory, so beware of what you are parsing, and what you are including.
+	 * 
+	 * \param $dir The directory to parse.
+	 * \return The parsed data if the directory has been correctly parsed, FALSE otherwise.
+	 */
+	public function parseDir($dir)
+	{
+		if(!is_dir($dir))
+			return FALSE;
+		
+		$content = scandir($dir);
+		foreach($content as $el)
+		{
+			
+			if(pathinfo($el, PATHINFO_EXTENSION) == 'lc' || $el == 'lc.conf')
+			{
+				$ret = $this->parseFile($dir.'/'.$el);
+				if($ret === FALSE)
+					return FALSE;
+			}
 		}
 		
 		return $this->_data;
