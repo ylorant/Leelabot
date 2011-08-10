@@ -27,4 +27,4 @@
 include('../../core/intl.class.php');
 
 $parser = new Intl_Parser();
-print_r($parser->parseDir('data/'));
+print_r($parser->parseDir('data'));

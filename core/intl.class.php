@@ -33,7 +33,8 @@
 class Intl
 {
 	private $_locale; ///< Current set locale.
-	private $_root; ///< Locales root directory
+	private $_root; ///< Locales root directory.
+	private $_data; ///< Locale data.
 	
 	/** Constructor.
 	 * This is the constructor for the class. It initalizes properties at their default values, and set the default locale if a parameter is
@@ -71,18 +72,26 @@ class Intl
 	 */
 	public function setLocale($locale)
 	{
+		if(!($dir = $this->localeExists($locale)))
+			return FALSE;
 		
+		$parser = new Intl_Parser();
+		if(!($data = $parser->parseDir($this->_root.'/'.$dir)))
+			return FALSE;
+		
+		$this->_data = $data;
+		return TRUE;
 	}
 	
 	/** Checks if a locale exists.
-	 * This function checks if the locale exists, by its folder name, or by an alias 
+	 * This function checks if the locale exists, by its folder name, or by an alias.
 	 * 
 	 * \param $locale The locale to set.
-	 * \return TRUE if the locale has been changed correctly, FALSE otherwise (specified locale does not exists, specified locale is corrupted...).
+	 * \return TRUE if the locale exists, FALSE if not.
 	 */
 	public function localeExists($locale)
 	{
-		$dir = scandir(self::LOCALES_ROOT);
+		$dir = scandir($this->_root);
 		foreach($dir as $el)
 		{
 			if(is_dir($el))
@@ -90,12 +99,18 @@ class Intl
 				if($el == $locale) //Folder name check
 					return $el;
 				
-				if(is_file(self::LOCALES_ROOT.'/'.$el.'/lc.conf')) //Alias check
+				if(is_file($this->_root.'/'.$el.'/lc.conf')) //Alias check
 				{
 					$parser = new Intl_Parser();
+					$data = $parser->parseFile('lc.conf');
+					unset($parser);
+					if(isset($data['aliases']) && in_array($locale, $data['aliases']))
+						return $el;
 				}
 			}
 		}
+		
+		return FALSE;
 	}
 }
 
@@ -170,6 +185,10 @@ class Intl_Parser
 	{
 		if(!is_dir($dir))
 			return FALSE;
+		
+		//Trim ending slashes
+		if(substr($dir, -1) == '/')
+			$dir = ltrim($dir, '/');
 		
 		$content = scandir($dir);
 		foreach($content as $el)
@@ -286,7 +305,6 @@ class Intl_Parser
 				}
 				$element['to'] = str_replace('\n', "\n",$params);
 				break;
-			
 		}
 		
 		return TRUE;
