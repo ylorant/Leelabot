@@ -64,7 +64,33 @@ class Intl
 		return $this->_locale;
 	}
 	
-	/** Sets the class locale.
+	/** Returns the current locale directory root.
+	 * This function returns the current locale directory root set with the function setRoot, or, if not set, the default directory.
+	 * 
+	 * \return The current set locale directory root.
+	 */
+	public function getRoot()
+	{
+		return $this->_root;
+	}
+	
+	/** Sets the class' locale directory root.
+	 * This function sets the current locale directory root to the specified one given as parameter. It checks if the directory exists before.
+	 * 
+	 * \param $root The directory to set.
+	 * \return TRUE if the directory has been changed correctly, FALSE if the directory does not exists.
+	 */
+	public function setRoot($root)
+	{
+		if(is_dir($root))
+			$this->_root = $root;
+		else
+			return FALSE;
+		
+		return TRUE;
+	}
+	
+	/** Sets the class' locale.
 	 * This function sets the current locale to the specified one given as parameter. It also loads the locale from the configuration files.
 	 * 
 	 * \param $locale The locale to set.
@@ -111,6 +137,27 @@ class Intl
 		}
 		
 		return FALSE;
+	}
+	
+	/** Translate a text in the set locale.
+	 * This function translate the given text or give the message associated with an identifier in the current set locale.
+	 * 
+	 * \param $from The text to translate, or the identifier of the message to get.
+	 * \return The translated message if it exists, the original message if not.
+	 */
+	public function translate($from)
+	{
+		
+	}
+	
+	/** Alias for Intl::translate().
+	 * This function is an alias for Intl::translate().
+	 * 
+	 * \see Intl::translate()
+	 */
+	public function _($from)
+	{
+		return $this->translate($from);
 	}
 }
 
