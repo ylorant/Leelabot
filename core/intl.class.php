@@ -58,6 +58,8 @@ class Intl
 	 * This function returns the current locale set with the function setLocale, or, if not set, the default locale.
 	 * 
 	 * \return The current set locale.
+	 * 
+	 * \see Intl::setLocale()
 	 */
 	public function getLocale()
 	{
@@ -68,6 +70,8 @@ class Intl
 	 * This function returns the current locale directory root set with the function setRoot, or, if not set, the default directory.
 	 * 
 	 * \return The current set locale directory root.
+	 * 
+	 * \see Intl::setRoot()
 	 */
 	public function getRoot()
 	{
@@ -79,9 +83,15 @@ class Intl
 	 * 
 	 * \param $root The directory to set.
 	 * \return TRUE if the directory has been changed correctly, FALSE if the directory does not exists.
+	 * 
+	 * \see Intl::getRoot()
 	 */
 	public function setRoot($root)
 	{
+		//Trim ending slashes
+		if(substr($root, -1) == '/')
+			$root = ltrim($root, '/');
+			
 		if(is_dir($root))
 			$this->_root = $root;
 		else
@@ -95,6 +105,8 @@ class Intl
 	 * 
 	 * \param $locale The locale to set.
 	 * \return TRUE if the locale has been changed correctly, FALSE otherwise (specified locale does not exists, specified locale is corrupted...).
+	 *
+	 * \see Intl::getLocale()
 	 */
 	public function setLocale($locale)
 	{
@@ -120,7 +132,7 @@ class Intl
 		$dir = scandir($this->_root);
 		foreach($dir as $el)
 		{
-			if(is_dir($el))
+			if(is_dir($this->_root.'/'.$el))
 			{
 				if($el == $locale) //Folder name check
 					return $el;
@@ -147,7 +159,18 @@ class Intl
 	 */
 	public function translate($from)
 	{
+		//ID-based translation
+		if(isset($this->_data['content'][$from]) && isset($this->_data['content'][$from]['to']))
+			return $this->_data['content'][$from]['to'];
 		
+		//Text search
+		foreach($this->_data['content'] as $pair)
+		{
+			if($pair['from'] == $from)
+				return $pair['to'];
+		}
+		
+		return $from;
 	}
 	
 	/** Alias for Intl::translate().
@@ -170,8 +193,9 @@ class Intl
 class Intl_Parser
 {
 	private $_data; ///< Data already parsed by the parser.
-	private $_currentID; ///< Current ID, for defined-ID translation couples
-	private $_globalID; ///< Current automatic global ID, for automatic translation couples
+	private $_tempData; ///< Temporary parsed data, mostly from the current file being parsed
+	private $_currentID; ///< Current ID, for defined-ID translation pairs
+	private $_globalID; ///< Current automatic global ID, for automatic translation pairs
 	
 	/** Constructor.
 	 * This is the constructor for the class. It initalizes properties at their default values.
@@ -181,9 +205,9 @@ class Intl_Parser
 	public function __construct()
 	{
 		//Initializing properties
-		$this->_data = array('body' => array());
-		$this->_currentID = NULL;
+		$this->_data = array('content' => array());
 		$this->_globalID = 0;
+		$this->_tempData = array();
 	}
 	
 	/** Parses a locale file.
@@ -195,11 +219,16 @@ class Intl_Parser
 	 * 
 	 * \param $file The file to parse.
 	 * \return The parsed data if the file has been correctly parsed, FALSE otherwise.
+	 * 
+	 * \see Intl_Parser::parseDir()
 	 */
 	public function parseFile($file)
 	{
 		if(!is_file($file))
 			return FALSE;
+		
+		//Set-ID initialization
+		$this->_currentID = NULL;
 		
 		$content = file_get_contents($file);
 		
@@ -215,6 +244,27 @@ class Intl_Parser
 				return FALSE;
 		}
 		
+		//Content data verification (checks message pairs cohesion)
+		foreach($this->_data['content'] as $pair)
+		{
+			if(!isset($pair['from']) || !isset($pair['to']))
+			{
+				$this->__construct();
+				return FALSE;
+			}
+		}
+		
+		//Merge temporary data with final data, and empty temporary data
+		$this->_data = array_merge_recursive($this->_data, $this->_tempData);
+		foreach($this->_data['content'] as &$pair) //Erase precedent data if present in pairs
+		{
+			if(is_array($pair['from']))
+				$pair['from'] = $pair['from'][1];
+			if(is_array($pair['to']))
+				$pair['to'] = $pair['to'][1];
+		}
+		$this->_tempData = array();
+		
 		return $this->_data;
 	}
 	
@@ -227,6 +277,8 @@ class Intl_Parser
 	 * 
 	 * \param $dir The directory to parse.
 	 * \return The parsed data if the directory has been correctly parsed, FALSE otherwise.
+	 * 
+	 * \see Intl_Parser::parseFile()
 	 */
 	public function parseDir($dir)
 	{
@@ -259,6 +311,8 @@ class Intl_Parser
 	 * \param $command The command to parse.
 	 * \param $file The file from where the command comes from. It is useful for knowing the base path for the #include statement.
 	 * \returns TRUE if the command parsed successfully, or FALSE if anything has gone wrong.
+	 * 
+	 * \see Intl_Parser::parseFile()
 	 */
 	private function _parseCommand($command, $file)
 	{
@@ -267,38 +321,47 @@ class Intl_Parser
 		
 		//Tabs will be interpreted as space, for splitting.
 		$command = str_replace("\t", ' ', trim($command));
-		list($keyword, $params) = explode(' ', $command, 2);
+		$cmdArray = explode(' ', $command, 2);
+		$keyword = $cmdArray[0];
+		
+		if(isset($cmdArray[1]))
+			$params = $cmdArray[1];
 		
 		//Keyword (i.e. command name) parsing
 		switch($keyword)
 		{
-			//Same behavior for these commands, globally locale info
+			
 			case '#author':
+				if(!isset($this->_tempData['authors']))
+					$this->_tempData['authors'] = array();
+				$this->_tempData['authors'][] = $params;
+				break;
+			//Same behavior for these commands, globally locale info
 			case '#contact':
 			case '#version':
 			case '#display':
 			case '#license':
 			case '#dateformat':
 			case '#timeformat':
-				$this->_data = array_merge($this->_data, array(substr($keyword, 1) => $params));
+				$this->_tempData = array_merge($this->_tempData, array(substr($keyword, 1) => $params));
 				break;
 			//Locale alias names
 			case '#alias':
 				if(strpos($params, ';') === FALSE) //Unique alias
 				{
-					if(isset($this->_data['aliases']))
-						$aliases = array_merge($this->_data['aliases'], array($params));
+					if(isset($this->_tempData['aliases']))
+						$aliases = array_merge($this->_tempData['aliases'], array($params));
 					else
 						$aliases = array($params);
 				}
 				else //Multiple aliases
 				{
-					if(isset($this->_data['aliases']))
-						$aliases = array_merge($this->_data['aliases'], array_map('trim',explode(';',$params)));
+					if(isset($this->_tempData['aliases']))
+						$aliases = array_merge($this->_tempData['aliases'], array_map('trim',explode(';',$params)));
 					else
 						$aliases = array_map('trim',explode(';',$params));
 				}
-				$this->_data = array_merge($this->_data, array('aliases' => $aliases));
+				$this->_tempData = array_merge($this->_tempData, array('aliases' => $aliases));
 				break;
 			//Include another files (relative paths from current read file path)
 			case '#include':
@@ -324,15 +387,15 @@ class Intl_Parser
 			case '#from':
 				if($this->_currentID !== NULL)
 				{
-					if(!isset($this->_data['body'][$this->_currentID]))
-						$this->_data['body'][$this->_currentID] = array();
+					if(!isset($this->_tempData['content'][$this->_currentID]))
+						$this->_tempData['content'][$this->_currentID] = array();
 					
-					$element = &$this->_data['body'][$this->_currentID];
+					$element = &$this->_tempData['content'][$this->_currentID];
 				}
 				else
 				{
-					$this->_data['body'][$this->_globalID] = array();
-					$element = &$this->_data['body'][$this->_globalID];
+					$this->_tempData['content'][$this->_globalID] = array();
+					$element = &$this->_tempData['content'][$this->_globalID];
 				}
 				$element['from'] = str_replace('\n', "\n",$params);
 				break;
@@ -340,14 +403,14 @@ class Intl_Parser
 			case '#to':
 				if($this->_currentID !== NULL)
 				{
-					if(!isset($this->_data['body'][$this->_currentID]))
-						$this->_data['body'][$this->_currentID] = array();
+					if(!isset($this->_tempData['content'][$this->_currentID]))
+						$this->_tempData['content'][$this->_currentID] = array();
 					
-					$element = &$this->_data['body'][$this->_currentID];
+					$element = &$this->_tempData['content'][$this->_currentID];
 				}
 				else
 				{
-					$element = &$this->_data['body'][$this->_globalID];
+					$element = &$this->_tempData['content'][$this->_globalID];
 					$this->_globalID++;
 				}
 				$element['to'] = str_replace('\n', "\n",$params);

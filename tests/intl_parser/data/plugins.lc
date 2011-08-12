@@ -1,0 +1,9 @@
+#noid
+
+#from Loading plugins...
+#to Chargement des plugins...
+
+/* Erasing data from another file */
+#id startup
+#from Yo wazzup ! U see, i'm starting the damn bot right now !
+#to Yo tavu ! Tu vois keumé, je démarre ce putain de bot là !
