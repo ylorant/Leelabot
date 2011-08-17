@@ -9,7 +9,10 @@ require('core/RCon.class.php');
 require('core/intl.class.php');
 require('core/leelabot.class.php');
 
-$main = new Main();
+//Strip script name from argument list
+array_shift($argv);
+
+$main = new Leelabot();
 $main->init($argv);
 
 $main->run();

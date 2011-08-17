@@ -1,6 +1,6 @@
 #id startup
-#from Starting Leelabot version \version
-#to Démarrage de Leelabot version \version
+#from Starting Leelabot version $version
+#to Démarrage de Leelabot version $version
 
 #id shutdown
 #from Leelabot is shutting down...

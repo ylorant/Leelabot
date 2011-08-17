@@ -24,16 +24,19 @@
  */
 
 /**
- * \brief Main class for leelabot.
+ * \brief Leelabot class for leelabot.
  * 
- * This class is the main class for the bot, though it does not parses the server's messages (this is done by the instance class).
+ * This class is the Leelabot class for the bot, though it does not parses the server's messages (this is done by the instance class).
  * This class allow multiple server instances to run together, by dispatching calls to the instances, and giving separate configurations to
  * all the instances.
  */
 class Leelabot
 {
 	private $_configDirectory; ///< Config directory. Defaults to ./conf directory.
+	private static $_logFile; ///< Log file, accessed by Leelabot::message() method.
 	public static $verbose; ///< Verbose mode (boolean, defaults to FALSE).
+	public static $instance; ///< Current instance of Leelabot (for accessing dynamic properties from static functions)
+	public $intl; ///< Locale management object
 	
 	/** Initializes the bot.
 	* Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
@@ -44,10 +47,16 @@ class Leelabot
 	public function init($arguments)
 	{
 		//Setting default values for class attributes
-		$this->_configDirectory = 'conf/';
-		Main::$verbose = FALSE;
+		Leelabot::$instance = &$this;
+		$this->_configDirectory = 'conf';
+		Leelabot::$verbose = FALSE;
+		
+		//Loading child classes
+		$this->intl = new Intl("en");
 		
 		//Parsing CLI arguments
+		$arguments = Leelabot::parseArgs($arguments);
+		krsort($arguments); //To get verbose parameter (-v) first
 		foreach($arguments as $name => $value)
 		{
 			switch($name)
@@ -60,7 +69,17 @@ class Leelabot
 				//Enable verbose mode.
 				case 'v':
 				case 'verbose':
-					Main::$verbose = TRUE;
+					Leelabot::$verbose = TRUE;
+					Leelabot::message('Starting in Verbose mode.');
+					Leelabot::message('Command arguments : $0', array($this->dumpArray($arguments)));
+					break;
+				//Change display language
+				case 'lang':
+					Leelabot::message('Forced locale : $0', array($value));
+					if(!$this->intl->setLocale($value))
+						Leelabot::message('Cannot change locale to "$0"', array($value), E_WARNING);
+					else
+						Leelabot::message('Locale successfully changed to "$0".', array($value));
 					break;
 			}
 		}
@@ -68,8 +87,8 @@ class Leelabot
 		$this->loadConfig();
 	}
 	
-	/** Main loop.
-	* Main loop for the bot, blocking.
+	/** Leelabot loop.
+	* Leelabot loop for the bot, blocking.
 	* 
 	* \return TRUE in case of success when user asked the loop to end, FALSE if an error occured.
 	*/
@@ -87,17 +106,31 @@ class Leelabot
 	 */
 	public function loadConfig()
 	{
+		if(!is_dir($this->_configDirectory))
+		{
+			Leelabot::message('Could not access to user-set confdir : $0', array($this->_configDirectory), E_WARNING);
+			
+			//Throw a fatal error if the default config directory does not exists
+			if(!is_dir('conf'))
+			{
+				Leelabot::message('Could not access to default confdir : ./conf', array(), E_ERROR);
+				exit();
+			}
+			else
+				$this->_configDirectory = 'conf';
+		}
+		
 		if(!($dirContent = scandir($this->_configDirectory)))
 			return FALSE;
 		
 	}
 	
 	/** Changes the configuration directory.
-	 * Changes the configuration directory to $path. If $path is a file (like main config file for example),
+	 * Changes the configuration directory to $path. If $path is a file (like Leelabot config file for example),
 	 * configuration directory will be guessed from this file.
 	 * 
 	 * \param $path The path where the bot will read the config.
-	 * \return 	TRUE if config location successfully changed, FALSE otherwise (mainly because $dir is 
+	 * \return 	TRUE if config location successfully changed, FALSE otherwise (Leelabotly because $dir is 
 	 * 			neither an existing directory path nor an existing file path).
 	 */
 	public function setConfigLocation($path)
@@ -130,47 +163,36 @@ class Leelabot
 	* \param $argv command-line formatted list of arguments
 	* \return argument list, in an ordered clean array.
 	*/
-	public static function parseArgs($argv)
+	function parseArgs($args)
 	{
-		array_shift($argv);
-		$out = array();
-		foreach ($argv as $arg)
+		$result = array();
+		$noopt = array();
+		$params = $args;
+		// could use getopt() here (since PHP 5.3.0), but it doesn't work relyingly
+		reset($params);
+		while (list($tmp, $p) = each($params))
 		{
-			if (substr($arg,0,2) == '--')
+			if ($p{0} == '-')
 			{
-				$eqPos = strpos($arg,'=');
-				if ($eqPos === false)
+				$pname = substr($p, 1);
+				$value = true;
+				if ($pname{0} == '-')
 				{
-					$key = substr($arg,2);
-					$out[$key] = isset($out[$key]) ? $out[$key] : true;
+					// long-opt (--<param>)
+					$pname = substr($pname, 1);
+					if (strpos($p, '=') !== false)// value specified inline (--<param>=<value>)
+						list($pname, $value) = explode('=', substr($p, 2), 2);
 				}
-				else
-				{
-					$key = substr($arg,2,$eqPos-2);
-					$out[$key] = substr($arg,$eqPos+1);
-				}
+				// check if next parameter is a descriptor or a value
+				$nextparm = current($params);
+				if (!in_array($pname, $noopt) && $value === true && $nextparm !== false && $nextparm{0} != '-')
+					list($tmp, $value) = each($params);
+				$result[$pname] = $value;
 			}
-			else if (substr($arg,0,1) == '-')
-			{
-				if (substr($arg,2,1) == '=')
-				{
-					$key = substr($arg,1,1);
-					$out[$key] = substr($arg,3);
-				}
-				else
-				{
-					$chars = str_split(substr($arg,1));
-					foreach ($chars as $char)
-					{
-						$key = $char;
-						$out[$key] = isset($out[$key]) ? $out[$key] : true;
-					}
-				}
-			}
-			else
-				$out[] = $arg;
+			else// param doesn't belong to any option
+				$result[] = $p;
 		}
-		return $out;
+		return $result;
 	}
 	
 	/** Prints text to the standard output.
@@ -183,16 +205,46 @@ class Leelabot
 	 */
 	public static function printText($text, $linefeed = TRUE)
 	{
-		if(Main::$verbose)
+		if(Leelabot::$verbose)
 			echo $text.($linefeed ? PHP_EOL : '');
 		
 		return TRUE;
 	}
 	
+	/** Dumps an array into a short and clear representable string.
+	 * This function joins parts of an array into a chain of one line, representing the most accurate data that can be put in, while
+	 * staying clear and (quite) comprehensible by humans. The produced string wille use a syntax similar with GET syntax, but a little
+	 * clearer and spaced. It is useful for logging bunch of information, but not too much (scientific studies proved that too much information
+	 * in little space confuse people).
+	 * 
+	 * \param $array The data to dump
+	 * \return The dumped data, into a string.
+	 */
+	public function dumpArray($array)
+	{
+		$return = array();
+		
+		foreach($array as $id => $el)
+		{
+			if(is_array($el))
+				$return[] = $id.'=Array';
+			elseif(is_object($el))
+				$return[] = $id.'='.get_class($el).' object';
+			elseif(is_string($el))
+				$return[] = $id.'="'.$el.'"';
+			elseif(is_bool($el))
+				$return[] = $id.'='.($el ? 'TRUE' : 'FALSE');
+			else
+				$return[] = $id.'='.(is_null($el) ? 'NULL' : $el);
+		}
+		
+		return join(', ', $return);
+	}
+	
 	/** Shows a message to the standard output.
 	 * This function shows a predefined message to the standard output. Unlike the printText function (which is a low-level function),
 	 * this one translates the message in the current locale, date it and adds a tag to it. It also writes it on the program log.
-	 * For proper translations, the message needs to be separated from his variable parts. For this, you can use \\X for a varaiable,
+	 * For proper translations, the message needs to be separated from his variable parts. For this, you can use \$X for a varaiable,
 	 * where X corresponds to the key for the value in the $args array
 	 * 
 	 * \param $message The message to show. It will be translated according to the translation tables available.
@@ -203,8 +255,9 @@ class Leelabot
 	 * 				\li E_ERROR : A fatal error. The program is expected to end after an error of this type.
 	 * \return TRUE if the message has been correctly displayed, FALSE if an error occured.
 	 */
-	public static function message($message, $args = array(), $type = E_NOTICE)
+	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE)
 	{
+		//Getting type string
 		switch($type)
 		{
 			case E_NOTICE:
@@ -215,9 +268,26 @@ class Leelabot
 				break;
 			case E_ERROR:
 				$prefix = 'Error';
+				$force = TRUE;
 				break;
 			default:
 				return FALSE;
 		}
+		
+		$prefix = Leelabot::$instance->intl->translate($prefix);
+		
+		//Translating message
+		$message = Leelabot::$instance->intl->translate($message);
+		
+		//Parsing message vars
+		foreach($args as $id => $value)
+			$message = str_replace('$'.$id, $value, $message);
+		
+		//Put it in log, if is opened
+		if(Leelabot::$_logFile)
+			fputs(Leelabot::$_logFile, date(Leelabot::$instance->intl->getDateTimeFormat()).' -- '.$prefix.' -- '.$message.PHP_EOL);
+		
+		if(Leelabot::$verbose || $force)
+			echo date(Leelabot::$instance->intl->getDateTimeFormat()).' -- '.$prefix.' -- '.$message.PHP_EOL;
 	}
 }

@@ -1,0 +1,35 @@
+#from Starting Leelabot version $version...
+#to Démarrage de Leelabot version $version...
+
+#from Leelabot is shutting down...
+#to Leelabot s'éteint...
+
+#from Notice
+#to Notification
+
+#from Warning
+#to Attention
+
+#from Error
+#to Erreur
+
+#from Could not access to default confdir : ./conf
+#to Impossible d'accéder au répertoire de configuration par défaut : ./conf
+
+#from Could not access to user-set confdir : $0
+#to Impossible d'accéder au répertoire de configuration utilisateur : $0
+
+#from Command arguments : $0
+#to Arguments de la commande : $0
+
+#from Starting in Verbose mode.
+#to Démarrage en mode Bavard.
+
+#from Forced locale : $0
+#to Langue forcée : $0
+
+#from Locale successfully changed to "$0"
+#to Langue changée pour "$0" avec succès
+
+#from Cannot change locale to "$0"
+#to Impossible de changer la langue pour "$0"

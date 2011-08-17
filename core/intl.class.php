@@ -182,6 +182,51 @@ class Intl
 	{
 		return $this->translate($from);
 	}
+	
+	/** Returns the current date format.
+	 * This function returns the date format set for the current locale. If no locale has been loaded yet, it returns English date format.
+	 * 
+	 * \return The current date format, or a generic one.
+	 */
+	public function getDateFormat()
+	{
+		if(isset($this->_data['dateformat']))
+			return $this->_data['dateformat'];
+		else
+			return "m/d/Y";
+	}
+	
+	/** Returns the current time format.
+	 * This function returns the time format set for the current locale. If no locale has been loaded yet, it returns English time format.
+	 * 
+	 * \return The current time format, or a generic one.
+	 */
+	public function getTimeFormat()
+	{
+		if(isset($this->_data['timeformat']))
+			return $this->_data['timeformat'];
+		else
+			return "h:i:s";
+	}
+	
+	/** Returns the current date and time format.
+	 * This function returns the date and time format set for the current locale. If no locale has been loaded yet, it returns English format.
+	 * 
+	 * \return The current date and time format, or a generic one.
+	 */
+	public function getDateTimeFormat()
+	{
+		$datetime = '';
+		if(isset($this->_data['dateformat']))
+			$datetime .= $this->_data['dateformat'].' ';
+		else
+			$datetime .= "m/d/Y ";
+		
+		if(isset($this->_data['timeformat']))
+			return $datetime.$this->_data['timeformat'];
+		else
+			return $datetime."h:i:s A";
+	}
 }
 
 /**
