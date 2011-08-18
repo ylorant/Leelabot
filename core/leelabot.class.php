@@ -160,7 +160,7 @@ class Leelabot
 	/** Parses CLI arguments.
 	* Parses command line arguments, in UNIX format. Taken from php.net.
 	* 
-	* \param $argv command-line formatted list of arguments
+	* \param $args Command-line formatted list of arguments
 	* \return argument list, in an ordered clean array.
 	*/
 	function parseArgs($args)
@@ -253,6 +253,7 @@ class Leelabot
 	 * 				\li E_NOTICE : A notice message (useful for debug and info messages). The default.
 	 * 				\li E_WARNING : A non-fatal error.
 	 * 				\li E_ERROR : A fatal error. The program is expected to end after an error of this type.
+	 * \param $force Forces the message to be displayed, even if verbose mode is not enabled
 	 * \return TRUE if the message has been correctly displayed, FALSE if an error occured.
 	 */
 	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE)
