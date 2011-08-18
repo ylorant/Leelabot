@@ -140,7 +140,7 @@ class Intl
 				if(is_file($this->_root.'/'.$el.'/lc.conf')) //Alias check
 				{
 					$parser = new Intl_Parser();
-					$data = $parser->parseFile('lc.conf');
+					$data = $parser->parseFile($this->_root.'/'.$el.'/lc.conf');
 					unset($parser);
 					if(isset($data['aliases']) && in_array($locale, $data['aliases']))
 						return $el;
