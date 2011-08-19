@@ -2,4 +2,7 @@
  *  
  * Welcome to Leelabot's tech documentation.
  * 
+ * Current available sections : 
+ * \li \ref locales Locales handling (handling locales, defining them)
+ * \li \ref config Config files manual (available options, format)
  */

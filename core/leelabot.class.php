@@ -97,7 +97,7 @@ class Leelabot
 		
 	}
 	
-	/** Loads configuration from .ini files.
+	/** Loads configuration from config files.
 	 * This function loads configuration from all .ini files in the configuration folder.
 	 * Configurations for all servers can be in one file or multiple files, content will be glued together
 	 * and read as an unique file (it allows a more flexible ordering for big configurations).
@@ -120,9 +120,38 @@ class Leelabot
 				$this->_configDirectory = 'conf';
 		}
 		
-		if(!($dirContent = scandir($this->_configDirectory)))
+		//Scanning config directory recursively (with also recursive section names)
+		$config = $this->parseCFGDirRecursive($this->_configDirectory);
+		
+		if(!$config)
+			return FALSE;
+		else
+			$this->config = $config;
+		
+		return TRUE;
+	}
+	
+	/** Loads data from .cfg files into a directory, recursively.
+	 * This function loads configuration from all .ini files in the given folder. It also loads the configurations found in all sub-directories.
+	 * The files are proceeded as .ini files, but adds a useful feature to them : multi-level sections. Using the '.', users will be able to
+	 * define more than one level of configuration (useful for data ordering).
+	 * 
+	 * \param $dir The directory to analyze.
+	 * \return TRUE if the configuration loaded successfully, FALSE otherwise.
+	 */
+	public function parseCFGDirRecursive($dir)
+	{
+		if(!($dirContent = scandir($dir)))
 			return FALSE;
 		
+		$data = '';
+		foreach($dirContent as $file)
+		{
+			if(is_file($file) && pathinfo($file, PATHINFO_EXTENSION) == 'cfg')
+			{
+				$data .= "\n".file_get_contents($dir.'/'.$file);
+			}
+		}
 	}
 	
 	/** Changes the configuration directory.
@@ -135,6 +164,8 @@ class Leelabot
 	 */
 	public function setConfigLocation($path)
 	{
+		if(substr($path, -1) == '/')
+			$path = substr($path, 0, -1);
 		if(is_dir($path))
 			$this->_configDirectory = $path;
 		elseif(is_file($path))

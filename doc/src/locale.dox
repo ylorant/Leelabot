@@ -7,13 +7,13 @@
  * The drawbacks of this system are that it will be slower than an implementation of Gettext, but this side-effect will not be noticeable
  * at run-time. Maybe it will be a bit slow at startup (while parsing the locale definition files).
  * 
- * \section use Using Locales
+ * \section locales_use Using Locales
  * 
  * The different locales are defined in the data/locales folder, with one folder per language, named with its main name. Inside of that
  * folder, there is several files, one by plugin, and a control file named "lc.conf". Make sure that these files are present, or the bot
  * might have some problems for translating messages. 
  * 
- * \section define Defining Locales
+ * \section locales_define Defining Locales
  * 
  * Inside locale files, there is a syntax to follow if you want to be understood by the bot.
  *  
