@@ -151,7 +151,15 @@ class Leelabot
 			if(is_file($dir.'/'.$file) && pathinfo($file, PATHINFO_EXTENSION) == 'cfg')
 				$cfgdata .= "\n".file_get_contents($dir.'/'.$file);
 			elseif(is_dir($dir.'/'.$file) && !in_array($file, array('.', '..')))
-				$finalConfig = array_merge($finalConfig, $this->parseCFGDirRecursive($dir.'/'.$file));
+			{
+				if($fileConf = $this->parseCFGDirRecursive($dir.'/'.$file))
+					$finalConfig = array_merge($finalConfig, $fileConf);
+				else
+				{
+					Leelabot::message('Parse error in $0 directory.', array($dir), E_WARNING);
+					return FALSE;
+				}
+			}
 		}
 		
 		//Parsing string and determining recursive array
