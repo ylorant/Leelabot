@@ -127,7 +127,6 @@ class Leelabot
 			return FALSE;
 		else
 			$this->config = $config;
-		
 		return TRUE;
 	}
 	
@@ -137,21 +136,45 @@ class Leelabot
 	 * define more than one level of configuration (useful for data ordering).
 	 * 
 	 * \param $dir The directory to analyze.
-	 * \return TRUE if the configuration loaded successfully, FALSE otherwise.
+	 * \return The configuration if it loaded successfully, FALSE otherwise.
 	 */
 	public function parseCFGDirRecursive($dir)
 	{
 		if(!($dirContent = scandir($dir)))
 			return FALSE;
 		
-		$data = '';
+		$finalConfig = array();
+		
+		$cfgdata = '';
 		foreach($dirContent as $file)
 		{
-			if(is_file($file) && pathinfo($file, PATHINFO_EXTENSION) == 'cfg')
-			{
-				$data .= "\n".file_get_contents($dir.'/'.$file);
-			}
+			if(is_file($dir.'/'.$file) && pathinfo($file, PATHINFO_EXTENSION) == 'cfg')
+				$cfgdata .= "\n".file_get_contents($dir.'/'.$file);
+			elseif(is_dir($dir.'/'.$file) && !in_array($file, array('.', '..')))
+				$finalConfig = array_merge($finalConfig, $this->parseCFGDirRecursive($dir.'/'.$file));
 		}
+		
+		//Parsing string and determining recursive array
+		$inidata = parse_ini_string($cfgdata, TRUE);
+		if(!$inidata)
+			return FALSE;
+		foreach($inidata as $section => $content)
+		{
+			if(is_array($content))
+			{
+				$section = explode('.', $section);
+				//Getting reference on the config category pointed
+				$edit = &$finalConfig;
+				foreach($section as $el) 
+					$edit = &$edit[$el];
+				
+				$edit = $content;
+			}
+			else
+				Leelabot::message("Orphan config parameter : $0", array($section), E_WARNING);
+		}
+		
+		return $finalConfig;
 	}
 	
 	/** Changes the configuration directory.
