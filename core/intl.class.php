@@ -35,6 +35,7 @@ class Intl
 	private $_locale; ///< Current set locale.
 	private $_root; ///< Locales root directory.
 	private $_data; ///< Locale data.
+	public $init; ///< Allow to know if first locale loading is successful (at instanciation)
 	
 	/** Constructor.
 	 * This is the constructor for the class. It initalizes properties at their default values, and set the default locale if a parameter is
@@ -47,10 +48,11 @@ class Intl
 		//Setting default values for properties
 		$this->_root = 'data/locales';
 		
+		$this->init = TRUE;
 		if($locale)
 		{
 			if(!$this->setLocale($locale))
-				return FALSE;
+				$this->init = FALSE;
 		}
 	}
 	
@@ -206,7 +208,7 @@ class Intl
 		if(isset($this->_data['timeformat']))
 			return $this->_data['timeformat'];
 		else
-			return "h:i:s";
+			return "h:i:s A";
 	}
 	
 	/** Returns the current date and time format.

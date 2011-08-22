@@ -25,11 +25,26 @@
 #from Starting in Verbose mode.
 #to Démarrage en mode Bavard.
 
-#from Forced locale : $0
-#to Langue forcée : $0
+#from Changed locale by configuration : $0
+#to Langue changée par la configuration : $0
+
+#from Changed locale by CLI : $0
+#to Langue changée par la ligne de commande : $0
 
 #from Locale successfully changed to "$0"
 #to Langue changée pour "$0" avec succès
 
 #from Cannot change locale to "$0"
 #to Impossible de changer la langue pour "$0"
+
+#from Orphan config parameter : $0
+#to Paramètre de configuration orphelin : $0
+
+#from Parse error in $0 directory.
+#to Erreur d'analyse dans le dossier $0.
+
+#from Error in $0 at line $1 : $2
+#to Erreur dans $0 à la ligne $1 : $2
+
+#from Changing log file to $0
+#to Changement du fichier de log vers $0

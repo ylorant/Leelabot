@@ -37,7 +37,10 @@ class Leelabot
 	public static $verbose; ///< Verbose mode (boolean, defaults to FALSE).
 	public static $instance; ///< Current instance of Leelabot (for accessing dynamic properties from static functions)
 	public $intl; ///< Locale management object
+	public $config; ///< Configuration data (for all objects : servers, plugins...)
 	
+	const VERSION = '0.5-svn "Sandy"';
+	const DEFAULT_LOCALE = "en";
 	/** Initializes the bot.
 	* Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
 	* 
@@ -51,17 +54,35 @@ class Leelabot
 		$this->_configDirectory = 'conf';
 		Leelabot::$verbose = FALSE;
 		
-		//Loading child classes
-		$this->intl = new Intl("en");
-		
 		//Parsing CLI arguments
+		$logContent = NULL;
 		$arguments = Leelabot::parseArgs($arguments);
-		krsort($arguments); //To get verbose parameter (-v) first
+		
+		//Checking CLI argument for root modification, and modification in case
+		if($rootParam = array_intersect(array('r', 'root'), array_keys($arguments)))
+			chdir($arguments[$rootParam[0]]);
+			
+					
+		//Opening default log file (can be modified after, if requested)
+		Leelabot::$_logFile = fopen('leelabot.log', 'w+');
+		
+		//Loading Intl class (if it is not loadable, load a dummy substitute)
+		$this->intl = new Intl(Leelabot::DEFAULT_LOCALE);
+		if(!$this->intl->init)
+		{
+			$this->intl = new Intl(); //Load class without a locale defined
+			Leelabot::message('Can\'t load Intl class with default locale ($0).', array(Leelabot::DEFAULT_LOCALE), E_ERROR);
+			exit();
+		}
+		
+		Leelabot::message("Leelabot version $0 starting...", array(Leelabot::VERSION), E_NOTICE, TRUE);
+		
+		//Pre-parsing CLI arguments (these arguments are relative to config loading and files location)
 		foreach($arguments as $name => $value)
 		{
 			switch($name)
 			{
-				//Change config file or directory (root config directory will be guessed from config file if given)
+				//Changing config file or directory (root config directory will be guessed from config file if given)
 				case 'c':
 				case 'config':
 					$this->setConfigLocation($value);
@@ -73,9 +94,57 @@ class Leelabot
 					Leelabot::message('Starting in Verbose mode.');
 					Leelabot::message('Command arguments : $0', array($this->dumpArray($arguments)));
 					break;
+				case 'no-log': //Don't use a log file                               | They share the same
+				case 'log': //Define the log file in another place than the default | beginning code.
+					Leelabot::message('Changing log file to $0', array($value)); 
+					//Save log content for later parameters (like --nolog -log file.log)
+					if(Leelabot::$_logFile)
+					{
+						$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+						$logContent = file_get_contents($logFileInfo['uri']);
+						fclose(Leelabot::$_logFile);
+					}
+					if($name == 'no-log')
+						break;
+					
+					//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
+					if(!(Leelabot::$_logFile = fopen($value, 'w+')))
+					{
+						Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+						Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
+					}
+					fputs(Leelabot::$_logFile, $logContent);
+					break;
+			}
+		}
+		unset($logContent);
+		
+		//Loading config
+		if(!$this->loadConfig())
+		{
+			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
+			exit();
+		}
+		
+		//Setting the locale in accordance with the configuration (if set)
+		if(isset($this->config['Main']) && in_array('Locale', array_keys($this->config['Main'])))
+		{
+			Leelabot::message('Changed locale by configuration : $0', array($this->config['Main']['Locale']));
+			if(!$this->intl->setLocale($this->config['Main']['Locale']))
+				Leelabot::message('Cannot change locale to "$0"', array($this->config['Main']['Locale']), E_WARNING);
+			else
+				Leelabot::message('Locale successfully changed to "$0".', array($this->config['Main']['Locale']));
+		}			
+		
+		//Post-parsing CLI arguments (after loading the config because they override file configuration)
+		foreach($arguments as $name => $value)
+		{
+			switch($name)
+			{
 				//Change display language
+				case 'l':
 				case 'lang':
-					Leelabot::message('Forced locale : $0', array($value));
+					Leelabot::message('Changed locale by CLI : $0', array($value));
 					if(!$this->intl->setLocale($value))
 						Leelabot::message('Cannot change locale to "$0"', array($value), E_WARNING);
 					else
@@ -84,7 +153,11 @@ class Leelabot
 			}
 		}
 		
-		$this->loadConfig();
+		//Processing loaded config (for main parameters)
+		if(isset($this->config['Main']))
+		{
+			
+		}
 	}
 	
 	/** Leelabot loop.
@@ -127,13 +200,14 @@ class Leelabot
 			return FALSE;
 		else
 			$this->config = $config;
-		return TRUE;
+		
+		return TRUE;	
 	}
 	
 	/** Loads data from .cfg files into a directory, recursively.
 	 * This function loads configuration from all .ini files in the given folder. It also loads the configurations found in all sub-directories.
 	 * The files are proceeded as .ini files, but adds a useful feature to them : multi-level sections. Using the '.', users will be able to
-	 * define more than one level of configuration (useful for data ordering).
+	 * define more than one level of configuration (useful for data ordering). It does not parses the UNIX hidden directories.
 	 * 
 	 * \param $dir The directory to analyze.
 	 * \return The configuration if it loaded successfully, FALSE otherwise.
@@ -150,7 +224,7 @@ class Leelabot
 		{
 			if(is_file($dir.'/'.$file) && pathinfo($file, PATHINFO_EXTENSION) == 'cfg')
 				$cfgdata .= "\n".file_get_contents($dir.'/'.$file);
-			elseif(is_dir($dir.'/'.$file) && !in_array($file, array('.', '..')))
+			elseif(is_dir($dir.'/'.$file) && !in_array($file, array('.', '..')) && $file[0] != '.')
 			{
 				if($fileConf = $this->parseCFGDirRecursive($dir.'/'.$file))
 					$finalConfig = array_merge($finalConfig, $fileConf);
@@ -179,7 +253,7 @@ class Leelabot
 				$edit = $content;
 			}
 			else
-				Leelabot::message("Orphan config parameter : $0", array($section), E_WARNING);
+				Leelabot::message('Orphan config parameter : $0', array($section), E_WARNING);
 		}
 		
 		return $finalConfig;
@@ -311,36 +385,43 @@ class Leelabot
 	 * 
 	 * \param $message The message to show. It will be translated according to the translation tables available.
 	 * \param $args The variables to bind with the identifiers in $message.
-	 * \param $type The type of the message. Available types are based on PHP error types constants :
+	 * \param $type The type of the message. Available types are based on PHP error types constants (user errors constants, i.e. starting with "E_USER"
+	 * 				are also available) :
 	 * 				\li E_NOTICE : A notice message (useful for debug and info messages). The default.
 	 * 				\li E_WARNING : A non-fatal error.
 	 * 				\li E_ERROR : A fatal error. The program is expected to end after an error of this type.
 	 * \param $force Forces the message to be displayed, even if verbose mode is not enabled
 	 * \return TRUE if the message has been correctly displayed, FALSE if an error occured.
 	 */
-	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE)
+	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE, $translate = TRUE)
 	{
 		//Getting type string
 		switch($type)
 		{
 			case E_NOTICE:
+			case E_USER_NOTICE:
 				$prefix = 'Notice';
 				break;
 			case E_WARNING:
+			case E_USER_WARNING:
 				$prefix = 'Warning';
 				break;
 			case E_ERROR:
+			case E_USER_ERROR:
 				$prefix = 'Error';
 				$force = TRUE;
 				break;
 			default:
-				return FALSE;
+				$prefix = 'Unknown';
 		}
 		
-		$prefix = Leelabot::$instance->intl->translate($prefix);
+		//Translating prefix
+		if($translate)
+			$prefix = Leelabot::$instance->intl->translate($prefix);
 		
 		//Translating message
-		$message = Leelabot::$instance->intl->translate($message);
+		if($translate)
+			$message = Leelabot::$instance->intl->translate($message);
 		
 		//Parsing message vars
 		foreach($args as $id => $value)
@@ -348,9 +429,16 @@ class Leelabot
 		
 		//Put it in log, if is opened
 		if(Leelabot::$_logFile)
-			fputs(Leelabot::$_logFile, date(Leelabot::$instance->intl->getDateTimeFormat()).' -- '.$prefix.' -- '.$message.PHP_EOL);
+			fputs(Leelabot::$_logFile, date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL);
 		
 		if(Leelabot::$verbose || $force)
-			echo date(Leelabot::$instance->intl->getDateTimeFormat()).' -- '.$prefix.' -- '.$message.PHP_EOL;
+			echo date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL;
+	}
+	
+	public static function errorHandler($errno, $errstr, $errfile, $errline)
+	{
+		Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
 	}
 }
+
+set_error_handler('Leelabot::errorHandler');
