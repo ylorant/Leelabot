@@ -39,8 +39,9 @@ class Leelabot
 	public $intl; ///< Locale management object
 	public $config; ///< Configuration data (for all objects : servers, plugins...)
 	
-	const VERSION = '0.5-svn "Sandy"';
-	const DEFAULT_LOCALE = "en";
+	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
+	const DEFAULT_LOCALE = "en"; ///< Default locale
+	
 	/** Initializes the bot.
 	* Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
 	* 
