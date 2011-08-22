@@ -76,7 +76,7 @@ class Leelabot
 			exit();
 		}
 		
-		Leelabot::message("Leelabot version $0 starting...", array(Leelabot::VERSION), E_NOTICE, TRUE);
+		Leelabot::message('Leelabot version $0 starting...', array(Leelabot::VERSION), E_NOTICE, TRUE);
 		
 		//Pre-parsing CLI arguments (these arguments are relative to config loading and files location)
 		foreach($arguments as $name => $value)
