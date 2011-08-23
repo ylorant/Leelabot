@@ -45,10 +45,10 @@ class Leelabot
 	/** Initializes the bot.
 	* Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
 	* 
-	* \param $arguments list of arguments provided to the launcher, or generated ones (for further integration into other systems).
+	* \param $CLIArguments list of arguments provided to the launcher, or generated ones (for further integration into other systems).
 	* \return TRUE in case of success, FALSE otherwise.
 	*/
-	public function init($arguments)
+	public function init($CLIArguments)
 	{
 		//Setting default values for class attributes
 		Leelabot::$instance = &$this;
@@ -57,11 +57,11 @@ class Leelabot
 		
 		//Parsing CLI arguments
 		$logContent = NULL;
-		$arguments = Leelabot::parseArgs($arguments);
+		$CLIArguments = Leelabot::parseArgs($CLIArguments);
 		
 		//Checking CLI argument for root modification, and modification in case
-		if($rootParam = array_intersect(array('r', 'root'), array_keys($arguments)))
-			chdir($arguments[$rootParam[0]]);
+		if($rootParam = array_intersect(array('r', 'root'), array_keys($CLIArguments)))
+			chdir($CLIArguments[$rootParam[0]]);
 			
 					
 		//Opening default log file (can be modified after, if requested)
@@ -79,7 +79,81 @@ class Leelabot
 		Leelabot::message('Leelabot version $0 starting...', array(Leelabot::VERSION), E_NOTICE, TRUE);
 		
 		//Pre-parsing CLI arguments (these arguments are relative to config loading and files location)
-		foreach($arguments as $name => $value)
+		$this->processCLIPreparsingArguments($CLIArguments);
+		
+		//Loading config
+		if(!$this->loadConfig())
+		{
+			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
+			exit();
+		}
+		
+		//Processing loaded config (for main parameters)
+		if(isset($this->config['Main']))
+		{
+			$logContent = '';
+			//Setting the locale in accordance with the configuration (if set)
+			foreach($this->config['Main'] as $name => $value)
+			{
+				switch($name)
+				{
+					case 'Locale':
+						Leelabot::message('Changed locale by configuration : $0', array($this->config['Main']['Locale']));
+						if(!$this->intl->setLocale($this->config['Main']['Locale']))
+							Leelabot::message('Cannot change locale to "$0"', array($this->config['Main']['Locale']), E_WARNING);
+						else
+							Leelabot::message('Locale successfully changed to "$0".', array($this->config['Main']['Locale']));
+						break;
+					case 'LogFile':
+						Leelabot::message('Changing log file to $0 (by Config)', array($value));
+						//Save log content for later parameters (like --nolog -log file.log)
+						if(Leelabot::$_logFile)
+						{
+							$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+							$logContent = file_get_contents($logFileInfo['uri']);
+							fclose(Leelabot::$_logFile);
+							Leelabot::$_logFile = FALSE;
+						}
+						
+						//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
+						if(!(Leelabot::$_logFile = fopen($value, 'w+')))
+						{
+							Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+							Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
+						}
+						fputs(Leelabot::$_logFile, $logContent);
+						break;
+				}
+			}
+			unset($logContent);
+		}	
+		
+		//Post-parsing CLI arguments (after loading the config because they override file configuration)
+		$this->processCLIPostparsingArguments($CLIArguments);
+		
+		//Loading server instances
+		$this->loadServerInstances();
+	}
+	
+	/** Leelabot loop.
+	* Leelabot loop for the bot, blocking.
+	* 
+	* \return TRUE in case of success when user asked the loop to end, FALSE if an error occured.
+	*/
+	public function run()
+	{
+		
+	}
+	
+	/** Processes pre-parsing CLI arguments.
+	 * Processes the arguments who have to be processed before config loading (like path to that config). Root change parameter (-r) is an exception and not
+	 * parsed here because it needs to be parsed earlier.
+	 * 
+	 * \returns TRUE if everything gone fine, FALSE if an error occured.
+	 */
+	public function processCLIPreparsingArguments($CLIArguments)
+	{
+		foreach($CLIArguments as $name => $value)
 		{
 			switch($name)
 			{
@@ -93,52 +167,21 @@ class Leelabot
 				case 'verbose':
 					Leelabot::$verbose = TRUE;
 					Leelabot::message('Starting in Verbose mode.');
-					Leelabot::message('Command arguments : $0', array($this->dumpArray($arguments)));
-					break;
-				case 'no-log': //Don't use a log file                               | They share the same
-				case 'log': //Define the log file in another place than the default | beginning code.
-					Leelabot::message('Changing log file to $0', array($value)); 
-					//Save log content for later parameters (like --nolog -log file.log)
-					if(Leelabot::$_logFile)
-					{
-						$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
-						$logContent = file_get_contents($logFileInfo['uri']);
-						fclose(Leelabot::$_logFile);
-					}
-					if($name == 'no-log')
-						break;
-					
-					//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
-					if(!(Leelabot::$_logFile = fopen($value, 'w+')))
-					{
-						Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
-						Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
-					}
-					fputs(Leelabot::$_logFile, $logContent);
+					Leelabot::message('Command arguments : $0', array($this->dumpArray($CLIArguments)));
 					break;
 			}
 		}
-		unset($logContent);
-		
-		//Loading config
-		if(!$this->loadConfig())
-		{
-			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
-			exit();
-		}
-		
-		//Setting the locale in accordance with the configuration (if set)
-		if(isset($this->config['Main']) && in_array('Locale', array_keys($this->config['Main'])))
-		{
-			Leelabot::message('Changed locale by configuration : $0', array($this->config['Main']['Locale']));
-			if(!$this->intl->setLocale($this->config['Main']['Locale']))
-				Leelabot::message('Cannot change locale to "$0"', array($this->config['Main']['Locale']), E_WARNING);
-			else
-				Leelabot::message('Locale successfully changed to "$0".', array($this->config['Main']['Locale']));
-		}			
-		
-		//Post-parsing CLI arguments (after loading the config because they override file configuration)
-		foreach($arguments as $name => $value)
+	}
+	
+	/** Processes pre-parsing CLI arguments.
+	 * Processes the arguments who have to be processed after config loading (so they are prioritary on config, they overwrite it).
+	 * 
+	 * \returns TRUE if everything gone fine, FALSE if an error occured.
+	 */
+	public function processCLIPostparsingArguments($CLIArguments)
+	{
+		$logContent = '';
+		foreach($CLIArguments as $name => $value)
 		{
 			switch($name)
 			{
@@ -151,24 +194,30 @@ class Leelabot
 					else
 						Leelabot::message('Locale successfully changed to "$0".', array($value));
 					break;
+				case 'no-log': //Don't use a log file                              
+					Leelabot::message('Disabling log.');
+				case 'log': //Define the log file in another place than the default
+					//Save log content for later parameters (like --nolog -log file.log)
+					if(Leelabot::$_logFile)
+					{
+						$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+						$logContent = file_get_contents($logFileInfo['uri']);
+						fclose(Leelabot::$_logFile);
+						Leelabot::$_logFile = FALSE;
+					}
+					if($name == 'no-log')
+						break;
+					Leelabot::message('Changing log file to $0 (By CLI)', array($value));
+					//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
+					if(!(Leelabot::$_logFile = fopen($value, 'w+')))
+					{
+						Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+						Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
+					}
+					fputs(Leelabot::$_logFile, $logContent);
+					break;
 			}
 		}
-		
-		//Processing loaded config (for main parameters)
-		if(isset($this->config['Main']))
-		{
-			
-		}
-	}
-	
-	/** Leelabot loop.
-	* Leelabot loop for the bot, blocking.
-	* 
-	* \return TRUE in case of success when user asked the loop to end, FALSE if an error occured.
-	*/
-	public function run()
-	{
-		
 	}
 	
 	/** Loads configuration from config files.
