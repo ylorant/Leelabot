@@ -38,32 +38,37 @@ class Leelabot
 	public static $instance; ///< Current instance of Leelabot (for accessing dynamic properties from static functions)
 	public $intl; ///< Locale management object
 	public $config; ///< Configuration data (for all objects : servers, plugins...)
+	public $servers; ///< Server instances objects
+	public $plugins; ///< Plugin manager
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
 	
 	/** Initializes the bot.
-	* Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
-	* 
-	* \param $CLIArguments list of arguments provided to the launcher, or generated ones (for further integration into other systems).
-	* \return TRUE in case of success, FALSE otherwise.
-	*/
+	 * Initializes the bot, by reading arguments, parsing configs sections, initializes server instances, and many other things.
+	 * 
+	 * \param $CLIArguments list of arguments provided to the launcher, or generated ones (for further integration into other systems).
+	 * \return TRUE in case of success, FALSE otherwise.
+	 */
 	public function init($CLIArguments)
 	{
 		//Setting default values for class attributes
 		Leelabot::$instance = &$this;
 		$this->_configDirectory = 'conf';
 		Leelabot::$verbose = FALSE;
+		$this->servers = array();
 		
 		//Parsing CLI arguments
 		$logContent = NULL;
 		$CLIArguments = Leelabot::parseArgs($CLIArguments);
 		
+		//Loading plugins class
+		$this->plugins = new PluginManager();
+		
 		//Checking CLI argument for root modification, and modification in case
 		if($rootParam = array_intersect(array('r', 'root'), array_keys($CLIArguments)))
 			chdir($CLIArguments[$rootParam[0]]);
 			
-					
 		//Opening default log file (can be modified after, if requested)
 		Leelabot::$_logFile = fopen('leelabot.log', 'w+');
 		
@@ -131,6 +136,19 @@ class Leelabot
 		//Post-parsing CLI arguments (after loading the config because they override file configuration)
 		$this->processCLIPostparsingArguments($CLIArguments);
 		
+		//Loading plugins (throws an error if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
+		if(isset($this->config['Plugins']))
+		{
+			if(isset($this->config['Plugins']['AutoLoad']))
+			{
+				$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
+				$this->config['Plugins']['AutoLoad'] = array_map('trim', $this->config['Plugins']['AutoLoad']);
+				$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad']);
+			}
+		}
+		else
+			Leelabot::message('There is no plugin configuration', array(), E_WARNING);
+		
 		//Loading server instances
 		$this->loadServerInstances();
 	}
@@ -143,6 +161,26 @@ class Leelabot
 	public function run()
 	{
 		
+	}
+	
+	//Ajouter un paramètre dans [Servers] qui permet de définir une config comme celle par défaut
+	/** Loads all the server instances and defining their parameters
+	 * This function loads alle the server instances found in Leelabot::$config, and initializes them with their config.
+	 * 
+	 * \returns TRUE if instances loaded successfully, FALSE otherwise.
+	 */
+	public function loadServerInstances()
+	{
+		if(!isset($this->config['Server']))
+		{
+			Leelabot::message('No server defined in configuration.', array(), E_ERROR);
+			exit();
+		}
+		
+		foreach($this->config['Server'] as $instance)
+		{
+			
+		}
 	}
 	
 	/** Processes pre-parsing CLI arguments.
@@ -160,7 +198,9 @@ class Leelabot
 				//Changing config file or directory (root config directory will be guessed from config file if given)
 				case 'c':
 				case 'config':
-					$this->setConfigLocation($value);
+					Leelabot::message('Setting user config directory : $0', array($value));
+					if(!$this->setConfigLocation($value))
+						Leelabot::message('Cannot ser user config directory to "$0"', array($value));
 					break;
 				//Enable verbose mode.
 				case 'v':
@@ -321,6 +361,7 @@ class Leelabot
 	{
 		if(substr($path, -1) == '/')
 			$path = substr($path, 0, -1);
+		
 		if(is_dir($path))
 			$this->_configDirectory = $path;
 		elseif(is_file($path))
@@ -344,11 +385,11 @@ class Leelabot
 	}
 	
 	/** Parses CLI arguments.
-	* Parses command line arguments, in UNIX format. Taken from php.net.
-	* 
-	* \param $args Command-line formatted list of arguments
-	* \return argument list, in an ordered clean array.
-	*/
+	 * Parses command line arguments, in UNIX format. Taken from php.net.
+	 * 
+	 * \param $args Command-line formatted list of arguments
+	 * \return argument list, in an ordered clean array.
+	 */
 	function parseArgs($args)
 	{
 		$result = array();
@@ -408,6 +449,9 @@ class Leelabot
 	 */
 	public function dumpArray($array)
 	{
+		if(!is_array($array))
+			$array = array(gettype($array) => $array);
+		
 		$return = array();
 		
 		foreach($array as $id => $el)
@@ -485,6 +529,9 @@ class Leelabot
 			echo date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL;
 	}
 	
+	/** Error handler for Leelabot
+	 * Handles errors thrown by PHP, writing them into the log along internal messages (useful for debugging from user experience).
+	 */
 	public static function errorHandler($errno, $errstr, $errfile, $errline)
 	{
 		Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);

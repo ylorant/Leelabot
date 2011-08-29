@@ -339,8 +339,9 @@ class Intl_Parser
 		$content = scandir($dir);
 		foreach($content as $el)
 		{
-			
-			if(pathinfo($el, PATHINFO_EXTENSION) == 'lc' || $el == 'lc.conf')
+			if(is_dir($dir.'/'.$el) && $el[0] != '.')
+				$this->parseDir($dir.'/'.$el);
+			elseif(pathinfo($el, PATHINFO_EXTENSION) == 'lc' || $el == 'lc.conf')
 			{
 				$ret = $this->parseFile($dir.'/'.$el);
 				if($ret === FALSE)

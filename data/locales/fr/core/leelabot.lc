@@ -1,3 +1,5 @@
+/* Leelabot class translation */
+
 #from Leelabot version $0 starting...
 #to Démarrage de Leelabot version $0...
 
@@ -31,8 +33,8 @@
 #from Changed locale by CLI : $0
 #to Langue changée par la ligne de commande : $0
 
-#from Locale successfully changed to "$0"
-#to Langue changée pour "$0" avec succès
+#from Locale successfully changed to "$0".
+#to Langue changée pour "$0" avec succès.
 
 #from Cannot change locale to "$0"
 #to Impossible de changer la langue pour "$0"
@@ -48,3 +50,6 @@
 
 #from Changing log file to $0
 #to Changement du fichier de log vers $0
+
+#from Cannot open new log file ($0), reverting to old.
+#to Impossible d'ouvrir le nouveau fichier de log ($0), retour à l'ancien.
