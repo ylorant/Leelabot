@@ -1,7 +1,7 @@
 /* Plugins class translation */
 
-#from Adding routine $0
-#to Ajout de la routine $0
+#from Adding routine $0, executed every $1s
+#to Ajout de la routine $0, exécutée toutes les $1s
 
 #from Adding method $0, on server event $1
 #to Ajout de la méthode $0, sur l'évènement serveur $1

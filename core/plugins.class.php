@@ -21,7 +21,8 @@
  *
  * \section DESCRIPTION
  *
- * This file hosts the PluginManager class, handling all events and plugins.
+ * This file hosts the PluginManager class, handling all events and plugins. It hosts also the Plugin parent class, which is the model for plugins, and contains
+ * also some shortcut methods.
  */
 
 /**
@@ -37,6 +38,9 @@ class PluginManager
 {
 	private $_main; ///<  Reference to main class
 	private $_plugins; ///< Plugins list
+	private $_routines = array(); ///< Routines list
+	private $_serverEvents = array(); ///< Server events
+	private $_commands = array(); ///< Commands
 	
 	/** Constructor for PluginManager
 	 * Initializes the class.
@@ -154,9 +158,9 @@ class PluginManager
 				//Checks for server events
 				if(preg_match('#^SrvEvent#', $method))
 					$this->addServerEvent(preg_replace('#SrvEvent(.+)#', '$1', $method), $this->_plugins[$params['name']]['obj'], $method);
-				//Checks from client events (found events are used in lower case)
+				//Checks from command (found commands are used in lower case)
 				if(preg_match('#^Command#', $method))
-					$this->addClientEvent(strtolower(preg_replace('#Command(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
+					$this->addCommand(strtolower(preg_replace('#Command(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
 			}
 		}
 		
@@ -168,12 +172,13 @@ class PluginManager
 	 * 
 	 * \param $class A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
+	 * \param $time The time interval between 2 executions of the routine. Defaults to 1.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
 	 */
-	public function addRoutine(&$plugin, $method)
+	public function addRoutine(&$plugin, $method, $time = 1)
 	{
-		Leelabot::message('Adding routine $0', array(get_class($plugin).'::'.$method));
+		Leelabot::message('Adding routine $0, executed every $1s', array(get_class($plugin).'::'.$method, $time));
 	}
 	
 	/** Adds a server event to the event manager.
@@ -199,8 +204,35 @@ class PluginManager
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
 	 */
-	public function addClientEvent($event, &$plugin, $method)
+	public function addCommand($event, &$plugin, $method)
 	{
 		Leelabot::message('Adding method $0, on client command $1', array(get_class($plugin).'::'.$method, '!'.$event));
+	}
+}
+
+class Plugin
+{
+	private $_main;
+	private $_plugins;
+	
+	public function __construct(&$plugins, &$main)
+	{
+		$this->_plugins = $plugins;
+		$this->_main = $main;
+	}
+	
+	public function addServerEvent($event, $method)
+	{
+		return $this->_plugins->addServerEvent($event, &$this, $method);
+	}
+	
+	public function addCommand($event, $method)
+	{
+		return $this->_plugins->addCommand($event, &$this, $method);
+	}
+		
+	public function addRoutine($method, $time = 1)
+	{
+		return $this->_plugins->addRoutine(&$this, $method, $time);
 	}
 }

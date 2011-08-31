@@ -22,17 +22,8 @@
  *
  * This file contains the dummy plugin made for testing Leelabot core. As all test files, this will NOT be further documented.
  */
-class PluginDummy
+class PluginDummy extends Plugin
 {
-	private $_main;
-	private $_plugins;
-	
-	public function __construct(&$plugins, &$main)
-	{
-		$this->_plugins = $plugins;
-		$this->_main = $main;
-	}
-	
 	public function RoutineCheckPlayers()
 	{
 		
