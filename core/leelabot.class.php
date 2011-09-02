@@ -485,6 +485,7 @@ class Leelabot
 	 * 				\li E_WARNING : A non-fatal error.
 	 * 				\li E_ERROR : A fatal error. The program is expected to end after an error of this type.
 	 * \param $force Forces the message to be displayed, even if verbose mode is not enabled
+	 * \param $translate Indicates if the message has to be translated.
 	 * \return TRUE if the message has been correctly displayed, FALSE if an error occured.
 	 */
 	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE, $translate = TRUE)

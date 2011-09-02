@@ -254,7 +254,6 @@ class PluginManager
 	/** Deletes a routine.
 	 * This function deletes a routine from the event manager.
 	 * 
-	 * \param $event The name of the event to be added (corresponds to a command from user).
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
@@ -284,7 +283,6 @@ class PluginManager
 	/** Deletes a server event.
 	 * This function deletes a server event from the event manager.
 	 * 
-	 * \param $event The name of the event which to be deleted.
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
@@ -314,7 +312,6 @@ class PluginManager
 	/** Deletes a command.
 	 * This function deletes a command from the event manager.
 	 * 
-	 * \param $event The name of the event which to be deleted.
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
