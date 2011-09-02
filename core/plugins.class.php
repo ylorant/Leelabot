@@ -31,8 +31,11 @@
  * This class manages all the plugins for leelabot, loading them, unloading them and reloading them. It handles also event managing on three levels :
  * 		\li Routines : executed independently from what the gamerserver sends, on a timed base, configurable.
  * 		\li Server events : They are executed when the gameserver sends the appropriate command.
- * 		\li Client events : They are executed when a client sends a command (beginning with a !)
+ * 		\li Commands (also called client events) : They are executed when a client sends a command (beginning with a !)
  * It handles plugins dependency (semi-automatic) and automatic event loading.
+ * 
+ * \warning For server events and commands, the manager will only handle 1 callback by event at a time. It is done for simplicity purposes, both at plugin's side
+ * and at manager's side (I've noticed that it is not necessary to have multiple callbacks for an unique event, unless you can think about getting your code clear)
  */
 class PluginManager
 {
@@ -164,13 +167,16 @@ class PluginManager
 			}
 		}
 		
+		$this->_plugins[$params['name']]['obj']->init();
 		Leelabot::message('Loaded plugin $0', array($params['name']));
+		
+		return TRUE;
 	}
 	
 	/** Adds a routine to the event manager.
 	 * This function adds a routine to the event manager, i.e. a function that will be executed every once in a while.
 	 * 
-	 * \param $class A reference to the plugin's class where the method is.
+	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
 	 * \param $time The time interval between 2 executions of the routine. Defaults to 1.
 	 * 
@@ -179,13 +185,23 @@ class PluginManager
 	public function addRoutine(&$plugin, $method, $time = 1)
 	{
 		Leelabot::message('Adding routine $0, executed every $1s', array(get_class($plugin).'::'.$method, $time));
+		
+		if(!method_exists($plugin, $method)) //Check if method exists
+		{
+			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		$this->_routines[get_class($plugin)][$method] = $plugin;
+		
+		return TRUE;
 	}
 	
 	/** Adds a server event to the event manager.
 	 * This function adds a server event to the event manager.
 	 * 
 	 * \param $event The name of the event to be added (corresponds to server's event names).
-	 * \param $class A reference to the plugin's class where the method is.
+	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
@@ -193,13 +209,26 @@ class PluginManager
 	public function addServerEvent($event, &$plugin, $method)
 	{
 		Leelabot::message('Adding method $0, on server event $1', array(get_class($plugin).'::'.$method, $event));
+		
+		if(!method_exists($plugin, $method)) //Check if method exists
+		{
+			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_serverEvents[$event]))
+			$this->_serverEvents[$event] = array();
+		
+		$this->_serverEvents[$event][get_class($plugin)] = array($plugin, $method);
+		
+		return TRUE;
 	}
 	
 	/** Adds a client event to the event manager.
 	 * This function adds a client event to the event manager.
 	 * 
 	 * \param $event The name of the event to be added (corresponds to a command from user).
-	 * \param $class A reference to the plugin's class where the method is.
+	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
@@ -207,13 +236,123 @@ class PluginManager
 	public function addCommand($event, &$plugin, $method)
 	{
 		Leelabot::message('Adding method $0, on client command $1', array(get_class($plugin).'::'.$method, '!'.$event));
+		
+		if(!method_exists($plugin, $method)) //Check if method exists
+		{
+			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_commands[$event]))
+			$this->_commands[$event] = array();
+		
+		$this->_commands[$event][get_class($plugin)] = array($plugin, $method);
+		
+		return TRUE;
+	}
+	
+	/** Deletes a routine.
+	 * This function deletes a routine from the event manager.
+	 * 
+	 * \param $event The name of the event to be added (corresponds to a command from user).
+	 * \param $plugin A reference to the plugin's class where the method is.
+	 * \param $method The name of the method to be deleted.
+	 * 
+	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 */
+	public function deleteRoutine(&$plugin, $method)
+	{
+		Leelabot::message('Deleting routine $0', array(get_class($plugin).'::'.$method));
+		
+		if(!isset($this->_routines[get_class($plugin)]))
+		{
+			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_routines[get_class($plugin)][$method]))
+		{
+			Leelabot::message('Routine does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		unset($this->_routines[get_class($plugin)][$method]);
+		
+		return TRUE;
+	}
+	
+	/** Deletes a server event.
+	 * This function deletes a server event from the event manager.
+	 * 
+	 * \param $event The name of the event which to be deleted.
+	 * \param $plugin A reference to the plugin's class where the method is.
+	 * \param $method The name of the method to be deleted.
+	 * 
+	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 */
+	public function deleteServerEvent($event, &$plugin)
+	{
+		Leelabot::message('Deleting routine $0', array(get_class($plugin).'/'.$event));
+		
+		if(!isset($this->_serverEvents[$event]))
+		{
+			Leelabot::message('Event $0 does not exists.', array($event), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_serverEvents[$event][get_class($plugin)]))
+		{
+			Leelabot::message('Method does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		unset($this->_serverEvents[$event][get_class($plugin)]);
+		
+		return TRUE;
+	}
+	
+	/** Deletes a command.
+	 * This function deletes a command from the event manager.
+	 * 
+	 * \param $event The name of the event which to be deleted.
+	 * \param $plugin A reference to the plugin's class where the method is.
+	 * \param $method The name of the method to be deleted.
+	 * 
+	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 */
+	public function deleteCommand($event, &$plugin)
+	{
+		Leelabot::message('Deleting routine $0', array(get_class($plugin).'/'.$event));
+		
+		if(!isset($this->_commands[$event]))
+		{
+			Leelabot::message('Event $0 does not exists.', array($event), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_commands[$event][get_class($plugin)]))
+		{
+			Leelabot::message('Method does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		unset($this->_commands[$event][get_class($plugin)]);
+		
+		return TRUE;
 	}
 }
 
+/**
+ * \brief Plugin parent class for leelabot.
+ * 
+ * This class is the default template used when plugins are defined. It contains the default constructor (binding main class and plugins class to private properties)
+ * and some shortcuts methods for plugin handling (it is better to user $this->addRoutine('someRoutineMethod') than$this->_plugins->addRoutine($this, 
+ * 'someRoutineMethod'))
+ */
 class Plugin
 {
-	private $_main;
-	private $_plugins;
+	protected $_main;
+	protected $_plugins;
 	
 	public function __construct(&$plugins, &$main)
 	{
@@ -221,18 +360,61 @@ class Plugin
 		$this->_main = $main;
 	}
 	
+	/** Default plugin init function.
+	 * This function is empty. Its unique purpose is to avoid using method_exists() on PluginManager::initPlugin(). Returns TRUE.
+	 * 
+	 * \return TRUE.
+	 */
+	public function init()
+	{
+		return TRUE;
+	}
+	
+	/** Shortcut to PluginManager::addServerEvent.
+	 * \see PluginManager::addServerEvent
+	 */
 	public function addServerEvent($event, $method)
 	{
 		return $this->_plugins->addServerEvent($event, &$this, $method);
 	}
 	
+	/** Shortcut to PluginManager::addCommand.
+	 * \see PluginManager::addCommand
+	 */
 	public function addCommand($event, $method)
 	{
 		return $this->_plugins->addCommand($event, &$this, $method);
 	}
-		
+	
+	/** Shortcut to PluginManager::addRoutine.
+	 * \see PluginManager::addRoutine
+	 */
 	public function addRoutine($method, $time = 1)
 	{
 		return $this->_plugins->addRoutine(&$this, $method, $time);
+	}
+	
+	/** Shortcut to PluginManager::deleteServerEvent.
+	 * \see PluginManager::deleteServerEvent
+	 */
+	public function deleteServerEvent($event)
+	{
+		return $this->_plugins->deleteServerEvent($event, &$this);
+	}
+	
+	/** Shortcut to PluginManager::deleteCommand.
+	 * \see PluginManager::deleteCommand
+	 */
+	public function deleteCommand($event)
+	{
+		return $this->_plugins->deleteCommand($event, &$this);
+	}
+	
+	/** Shortcut to PluginManager::deleteRoutine.
+	 * \see PluginManager::deleteRoutine
+	 */
+	public function deleteRoutine($method)
+	{
+		return $this->_plugins->deleteRoutine(&$this, $method);
 	}
 }

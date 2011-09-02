@@ -32,3 +32,21 @@
 
 #from Loading plugins : $0
 #to Chargement des plugins : $0
+
+#from Target method does not exists.
+#to La méthode cible n'existe pas.
+
+#from Routine does not exists.
+#to La routine n'existe pas.
+
+#from Deleting routine $0
+#to Suppression de la routine $0
+
+#from Method does not exists.
+#to La méthode n'existe pas.
+
+#from Event $0 does not exists.
+#to L'évènement $0 n'existe pas.
+
+#from Plugin $0 does not exists in routine list.
+#to Le plugin $0 n'existe pas dans la liste des routines.

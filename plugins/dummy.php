@@ -24,6 +24,13 @@
  */
 class PluginDummy extends Plugin
 {
+	public function init()
+	{
+		$this->deleteRoutine('RoutineCheckPlayers');
+		$this->deleteServerEvent('ClientConnect');
+		$this->deleteCommand('kick');
+	}
+	
 	public function RoutineCheckPlayers()
 	{
 		

@@ -53,3 +53,9 @@
 
 #from Cannot open new log file ($0), reverting to old.
 #to Impossible d'ouvrir le nouveau fichier de log ($0), retour à l'ancien.
+
+#from No server defined in configuration.
+#to Aucun serveur défini dans la configuration.
+
+#from There is no plugin configuration
+#to Il n'y a pas de configuration des plugins
