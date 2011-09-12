@@ -7,6 +7,7 @@ require('core/outerapi.class.php');
 require('core/plugins.class.php');
 require('core/RCon.class.php');
 require('core/intl.class.php');
+require('core/instance.class.php');
 require('core/leelabot.class.php');
 
 //Strip script name from argument list

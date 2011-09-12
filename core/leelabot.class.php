@@ -40,6 +40,7 @@ class Leelabot
 	public $config; ///< Configuration data (for all objects : servers, plugins...)
 	public $servers; ///< Server instances objects
 	public $plugins; ///< Plugin manager
+	public $RCon; ///< RCon query class
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -149,6 +150,10 @@ class Leelabot
 		else
 			Leelabot::message('There is no plugin configuration', array(), E_WARNING);
 		
+		//Creating RCon class and binding it to the API
+		$this->_RCon = new Quake3RCon();
+		RCon::setQueryClass($this->_RCon);
+		
 		//Loading server instances
 		$this->loadServerInstances();
 	}
@@ -160,12 +165,23 @@ class Leelabot
 	*/
 	public function run()
 	{
-		
+		while(true)
+		{
+			foreach($this->servers as $name => $server)
+			{
+				//Setting servers for static inner API
+				RCon::setServer($this->servers[$name]);
+				Server::setServer($this->servers[$name]);
+				
+				$this->servers[$name]->step();
+				usleep(2000);
+			}
+		}
 	}
 	
-	//Ajouter un paramètre dans [Servers] qui permet de définir une config comme celle par défaut
+	//Todo : Allow using of an entry in [Server] to make a default configuration for all servers (to reduce config size by filling only different parameters) 
 	/** Loads all the server instances and defining their parameters
-	 * This function loads alle the server instances found in Leelabot::$config, and initializes them with their config.
+	 * This function loads all the server instances found in Leelabot::$config, and initializes them with their config.
 	 * 
 	 * \returns TRUE if instances loaded successfully, FALSE otherwise.
 	 */
@@ -177,9 +193,43 @@ class Leelabot
 			exit();
 		}
 		
-		foreach($this->config['Server'] as $instance)
+		$this->servers = array();
+		Leelabot::message('Loading server instances.');
+		
+		//Checking default configuration
+		if(isset($this->config['Server']['default']))
 		{
+			$defaultConfig = $this->config['Server']['default'];
+			unset($this->config['Server']['default']);
+		}
+		foreach($this->config['Server'] as $name => $instance)
+		{
+			if(isset($instance['name']))
+				$name = $instance['name'];
 			
+			Leelabot::message('Loading server "$0".', array($name));
+			
+			$this->servers[$name] = new ServerInstance($this); //Using config name if not specified
+			$this->servers[$name]->setName($name);
+			
+			//Loading config
+			if(!$this->servers[$name]->loadConfig($instance))
+			{
+				Leelabot::message('Can\'t load config for server "$0".', array($name), E_WARNING);
+				unset($this->servers[$name]);
+				continue;
+			}
+			
+			//Setting servers for static inner API
+			RCon::setServer($this->servers[$name]);
+			Server::setServer($this->servers[$name]);
+			
+			//Connecting to server
+			if(!$this->servers[$name]->connect())
+			{
+				Leelabot::message('Can\'t connect to server "$0".', array($name), E_WARNING);
+				unset($this->servers[$name]);
+			}
 		}
 	}
 	
@@ -536,6 +586,43 @@ class Leelabot
 	public static function errorHandler($errno, $errstr, $errfile, $errline)
 	{
 		Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
+	}
+}
+
+/**
+ * \brief Storage class.
+ * 
+ * This class stores the data contained in an array into (public) properties of itself.
+ */
+class Storage
+{
+	/** Constructor.
+	 * This constructor takes the array in parameter and transforms it into properties of the object.
+	 * 
+	 * \param $array The array to be translated.
+	 */
+	public function __construct($array)
+	{
+		foreach($array as $name => $value)
+			$this->$name = $value;
+	}
+	
+	/** Transforms an instance of Storage into the array of all its properties.
+	 * Basically, this method does the exact opposite of the class constructor. It takes all properties of the Storage object given in argument and returns an array
+	 * of all its properties.
+	 * 
+	 * \param $object The Storage object to transform into array.
+	 * 
+	 * \return An associative array containing all properties using the shape : propname => value
+	 */
+	public static function toArray($object)
+	{
+		if(!is_object($object) || get_class($object) != 'Storage')
+			return FALSE;
+		
+		$return = array();
+		foreach($object as $var => $val)
+			$return[$var] = $val;
 	}
 }
 

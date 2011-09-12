@@ -5,4 +5,9 @@
  * Current available sections : 
  * \li \ref locales : Locales handling, locales definitions.
  * \li \ref config Manual listing available configuration options and config file format.
+ *
+ * \section download-dev Downloading current development version
+ * 
+ * To get the last revision of the development version of Leelabot, which is not assured to be totally stable, you have to use Subversion.\n
+ * You can get the code by doing a checkout of the repository with your favorite client, at the address : svn://svn.leelabot.com/leelabot
  */

@@ -140,6 +140,7 @@ class PluginManager
 		elseif(isset($params['dependencies']))
 			Leelabot::message('Dependencies list is not an array.', array(), E_WARNING);
 		
+		//Init of plugin data array, and plugin instanciation
 		$this->_plugins[$params['name']] = array(
 		'obj' => NULL,
 		'name' => $params['name'],
@@ -147,6 +148,7 @@ class PluginManager
 		'className' => $params['className']);
 		$this->_plugins[$params['name']]['obj'] = new $params['className']($this, $this->_main);
 		
+		//Autoloading !!1!
 		if(isset($params['autoload']) && $params['autoload'])
 		{
 			Leelabot::message('Using automatic events recognition...');
@@ -167,10 +169,20 @@ class PluginManager
 			}
 		}
 		
-		$this->_plugins[$params['name']]['obj']->init();
+		$this->_plugins[$params['name']]['obj']->init(); //Call to init() method of loaded plugin, for internal initializations and such.
 		Leelabot::message('Loaded plugin $0', array($params['name']));
 		
 		return TRUE;
+	}
+	
+	/** Gets the currently loaded plugins.
+	 * This function returns an array containing the list of all currently loaded plugins' names.
+	 * 
+	 * \return The currently loaded plugins' names, in an array.
+	 */
+	public function getLoadedPlugins()
+	{
+		return array_keys($this->_plugins);
 	}
 	
 	/** Adds a routine to the event manager.
@@ -178,7 +190,7 @@ class PluginManager
 	 * 
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
-	 * \param $time The time interval between 2 executions of the routine. Defaults to 1.
+	 * \param $time The time interval between 2 executions of the routine. Defaults to 1 second.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
 	 */
@@ -192,7 +204,7 @@ class PluginManager
 			return FALSE;
 		}
 		
-		$this->_routines[get_class($plugin)][$method] = $plugin;
+		$this->_routines[get_class($plugin)][$method] = array($plugin, $time, 0);
 		
 		return TRUE;
 	}
@@ -257,7 +269,7 @@ class PluginManager
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
-	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 * \return TRUE if method deleted correctly, FALSE otherwise.
 	 */
 	public function deleteRoutine(&$plugin, $method)
 	{
@@ -286,7 +298,7 @@ class PluginManager
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
-	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 * \return TRUE if method deleted correctly, FALSE otherwise.
 	 */
 	public function deleteServerEvent($event, &$plugin)
 	{
@@ -305,6 +317,8 @@ class PluginManager
 		}
 		
 		unset($this->_serverEvents[$event][get_class($plugin)]);
+		if(empty($this->_serverEvents[$event]))
+			unset($this->_serverEvents[$event]);
 		
 		return TRUE;
 	}
@@ -315,7 +329,7 @@ class PluginManager
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be deleted.
 	 * 
-	 * \return TRUE if method registered correctly, FALSE otherwise.
+	 * \return TRUE if method deleted correctly, FALSE otherwise.
 	 */
 	public function deleteCommand($event, &$plugin)
 	{
@@ -334,8 +348,82 @@ class PluginManager
 		}
 		
 		unset($this->_commands[$event][get_class($plugin)]);
+		if(empty($this->_commands[$event]))
+			unset($this->_commands[$event]);
 		
 		return TRUE;
+	}
+	
+	/** Changes the time interval of a routine
+	 * This function allow the plugin to changes the time interval of one of his routines. It is useful when using automatic revent detection, because it does not
+	 * handles custom timers for routines (they are set to 1 second).
+	 * 
+	 * \param $plugin A reference to the plugin's class where the method is.
+	 * \param $method The name of the method to be updated.
+	 * \param $time The new time interval.
+	 * 
+	 * \return TRUE if method modified correctly, FALSE otherwise.
+	 */
+	public function changeRoutineTimeInterval(&$plugin, $method, $time)
+	{
+		Leelabot::message('Changing routine $0 time interval to $1s', array(get_class($plugin).'::'.$method, $time));
+		
+		if(!isset($this->_routines[get_class($plugin)]))
+		{
+			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_WARNING);
+			return FALSE;
+		}
+		
+		if(!isset($this->_routines[get_class($plugin)][$method]))
+		{
+			Leelabot::message('Routine does not exists.', array(), E_WARNING);
+			return FALSE;
+		}
+		
+		$this->_routines[get_class($plugin)][$method][1] = $time;
+		
+		return TRUE;
+	}
+	
+	/** Executes all the routines for all plugins.
+	 * This function executes all the routines for all plugins, whether checking if their interval timed out, or not (so all routines are executed), depending
+	 * on the value of the \b $force param.
+	 * 
+	 * \param $force Forces the routines to be executed or not. By default it does not 
+	 * 
+	 * \return TRUE if routines executed correctly, FALSE otherwise.
+	 */
+	public function callAllRoutines($force = FALSE)
+	{
+		foreach($this->_routines as &$class)
+		{
+			foreach($class as $name => &$routine)
+			{
+				if($force || (time() >= $routine[2] + $routine[1] && time() != $routine[2]))
+				{
+					$routine[0]->$name();
+					$routine[2] = time();
+				}
+			}
+		}
+	}
+	
+	public function callServerEvent($event, $params)
+	{
+		if(isset($this->_serverEvents[$event]))
+		{
+			foreach($this->_serverEvents[$event] as &$event)
+				$event[0]->$event[1]($params);
+		}
+	}
+	
+	public function callCommand($event, $player, $params)
+	{
+		if(isset($this->_commands[$event]))
+		{
+			foreach($this->_commands[$event] as &$event)
+				$event[0]->$event[1]($player, $params);
+		}
 	}
 }
 
@@ -348,8 +436,8 @@ class PluginManager
  */
 class Plugin
 {
-	protected $_main;
-	protected $_plugins;
+	protected $_main; ///< Reference to main class (Leelabot)
+	protected $_plugins; ///< Reference to plugin manager (PluginManager)
 	
 	public function __construct(&$plugins, &$main)
 	{
@@ -372,7 +460,7 @@ class Plugin
 	 */
 	public function addServerEvent($event, $method)
 	{
-		return $this->_plugins->addServerEvent($event, &$this, $method);
+		return $this->_plugins->addServerEvent($event, $this, $method);
 	}
 	
 	/** Shortcut to PluginManager::addCommand.
@@ -380,7 +468,7 @@ class Plugin
 	 */
 	public function addCommand($event, $method)
 	{
-		return $this->_plugins->addCommand($event, &$this, $method);
+		return $this->_plugins->addCommand($event, $this, $method);
 	}
 	
 	/** Shortcut to PluginManager::addRoutine.
@@ -388,7 +476,7 @@ class Plugin
 	 */
 	public function addRoutine($method, $time = 1)
 	{
-		return $this->_plugins->addRoutine(&$this, $method, $time);
+		return $this->_plugins->addRoutine($this, $method, $time);
 	}
 	
 	/** Shortcut to PluginManager::deleteServerEvent.
@@ -396,7 +484,7 @@ class Plugin
 	 */
 	public function deleteServerEvent($event)
 	{
-		return $this->_plugins->deleteServerEvent($event, &$this);
+		return $this->_plugins->deleteServerEvent($event, $this);
 	}
 	
 	/** Shortcut to PluginManager::deleteCommand.
@@ -404,7 +492,7 @@ class Plugin
 	 */
 	public function deleteCommand($event)
 	{
-		return $this->_plugins->deleteCommand($event, &$this);
+		return $this->_plugins->deleteCommand($event, $this);
 	}
 	
 	/** Shortcut to PluginManager::deleteRoutine.
@@ -412,6 +500,14 @@ class Plugin
 	 */
 	public function deleteRoutine($method)
 	{
-		return $this->_plugins->deleteRoutine(&$this, $method);
+		return $this->_plugins->deleteRoutine($this, $method);
+	}
+	
+	/** Shortcut to PluginManager::changeRoutineTimeInterval.
+	 * \see PluginManager::deleteRoutine
+	 */
+	public function changeRoutineTimeInterval($method, $time)
+	{
+		return $this->_plugins->changeRoutineTimeInterval($this, $method, $time);
 	}
 }

@@ -26,24 +26,22 @@ class PluginDummy extends Plugin
 {
 	public function init()
 	{
-		$this->deleteRoutine('RoutineCheckPlayers');
-		$this->deleteServerEvent('ClientConnect');
-		$this->deleteCommand('kick');
+		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 50);
 	}
 	
 	public function RoutineCheckPlayers()
 	{
-		
+		echo date('h:i:s').' Check.'.PHP_EOL;
 	}
 	
-	public function SrvEventClientConnect($command)
+	public function SrvEventClientUserinfo($data)
 	{
-		
+		RCon::say('Hello '.$data['name']);
 	}
 	
-	public function CommandKick($player, $command)
+	public function CommandShortRoutine($player, $command)
 	{
-		
+		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 1);
 	}
 }
 
