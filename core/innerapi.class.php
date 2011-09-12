@@ -26,22 +26,8 @@
  * and the current server you are querying with these classes is changed automatically at each event for the correct one (but there is also some methods to dialog to
  * other servers).
  */
-
-/**
- * \brief InnerAPI parent class.
- * 
- * This class is the Inner API parent class, holding all common methods used by inner API components (like static singleton technique).
- */
-class InnerAPI
-{
-	public static function setServer($server)
-	{
-		
-	}
-}
 	
-
-class RCon extends InnerAPI
+class RCon
 {
 	private $_rcon;
 	private $_server;
@@ -233,7 +219,7 @@ class RCon extends InnerAPI
 	}
 }
 
-class Server extends InnerAPI
+class Server
 {
 	private $_server;
 	private static $_instance;
