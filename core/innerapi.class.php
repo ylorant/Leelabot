@@ -138,6 +138,10 @@ class RCon
 		$list = str_replace('^7', '', $ret[1]);
 		$list = str_split($list);
 		
+		//Str split does not returns an empty array for an empty string, so we have to verify this ourselves.
+		if(count($list) == 1 && !$list[0])
+			return array();
+		
 		//Transforming upper letters (ABCD...) in numbers
 		foreach($list as &$el)
 			$el = ord($el) - 65;
@@ -276,5 +280,19 @@ class Server
 			default:
 				return 'Unknown';
 		}
+	}
+	
+	public static function parseInfo($info)
+	{
+		$out = array();
+		
+		//Splitting the different parts of data
+		$info = explode('\\', $info);
+		array_shift($info); //The data starting with a backslash, we must shift the array of the first (always empty) element.
+		
+		for($i = 0; isset($info[$i]); ++$i)
+			$out[$info[$i]] = $info[++$i];
+		
+		return $out;
 	}
 }

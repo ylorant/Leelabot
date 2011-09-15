@@ -39,6 +39,11 @@ class PluginDummy extends Plugin
 		RCon::say('Hello '.$data['name']);
 	}
 	
+	public function SrvEventClientConnect($id)
+	{
+		Leelabot::message('Client connected : $0', array($id));
+	}
+	
 	public function CommandShortRoutine($player, $command)
 	{
 		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 1);

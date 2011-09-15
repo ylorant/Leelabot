@@ -73,7 +73,7 @@ class Quake3RCon
 			$this->_addr = $addr;
 		if($port)
 			$this->_port = $port;
-		if($addr || $port)
+		if(($addr || $port) && !isset($this->_valid[$addr.':'.$port]))
 			$this->_valid[$addr.':'.$port] = FALSE;
 			
 		return TRUE;
@@ -113,7 +113,10 @@ class Quake3RCon
 	{
 		$this->_valid[$this->_addr.':'.$this->_port] = FALSE;
 		
-		usleep(($this->_lastRConTime + 0.5 - microtime(true) + 0.01) * 1000000);
+		$sleep = floor(($this->_lastRConTime + 0.5 - microtime(true) + 0.01) * 1000000);
+		if($sleep > 0)	
+			usleep($sleep);
+		
 		$rcon = str_repeat(chr(255), 4).'rcon '.$this->_password." status\n";
 		if(!socket_sendto($this->_socket, $rcon, strlen($rcon), 0, $this->_addr, $this->_port))
 		{

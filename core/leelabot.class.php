@@ -156,6 +156,15 @@ class Leelabot
 		
 		//Loading server instances
 		$this->loadServerInstances();
+		
+		//Notice that we have loaded successfully if more than one server loaded
+		if(count($this->servers))
+			Leelabot::message('Leelabot loaded successfully for $0 servers', array(count($this->servers)));
+		else
+		{
+			Leelabot::message('Can\'t load Leelabot for any configured server.', array(), E_ERROR);
+			exit();
+		}
 	}
 	
 	/** Leelabot loop.

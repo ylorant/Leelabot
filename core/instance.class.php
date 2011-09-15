@@ -41,7 +41,7 @@ class ServerInstance
 	private $_leelabot; ///< Reference to main Leelabot class.
 	
 	public $serverInfo; ///< Holds server info.
-	public $_players; ///< Holds players data.
+	public $players; ///< Holds players data.
 	
 	/** Constructor for the class.
 	 * This is the constructor, it sets the vars to their default values (for most of them, empty values).
@@ -138,8 +138,8 @@ class ServerInstance
 		switch($logfile[0])
 		{
 			case 'ftp':
-			case 'ssh':
-				/*if(!preg_match('#^(.+):(.+)@(.+)/(.+)$#isU', $logfile[1], $matches))
+			case 'sftp':
+				if(!preg_match('#^(.+):(.+)@(.+)/(.+)$#isU', $logfile[1], $matches))
 				{
 					Leelabot::message('Misformed $0 log file location for server "$1".', array(strtoupper($logfile[0]), $this->name), E_WARNING);
 					return FALSE;
@@ -151,7 +151,7 @@ class ServerInstance
 				'server' => $matches[3],
 				'login' => $matches[1],
 				'password' => $matches[2]);
-				break;*/
+				break;
 			//If no format specified, we guess that it is a local file
 			case 'file':
 				$type = $logfile[0];
@@ -238,7 +238,7 @@ class ServerInstance
 		Leelabot::message('Gathering server players...');
 		$status = RCon::status();
 		
-		$this->_players = array();
+		$this->players = array();
 		foreach($status['players'] as $id => $player)
 		{
 			Leelabot::message('Gathering info for player $0 (Slot $1)...', array($player['name'], $id));
@@ -260,7 +260,8 @@ class ServerInstance
 			$playerData['name'] = preg_replace('#^[0-9]#', '', $dump['name']);
 			
 			$playerData['id'] = $id;
-			$this->_players[$id] = new Storage($playerData);
+			$this->players[$id] = new Storage($playerData);
+			$this->players[$id]->other = $dump;
 			
 			$data = array_merge($dump, $player);
 			
@@ -269,14 +270,14 @@ class ServerInstance
 		}
 		
 		//Getting team repartition for players
-		if(count($this->_players) > 0)
+		if(count($this->players) > 0)
 		{
 			Leelabot::message('Gathering teams...');
 			//Red team
 			$redteam = RCon::redTeamList();
 			foreach($redteam as $id)
 			{
-				$this->_players[$id]->team = Server::TEAM_RED;
+				$this->players[$id]->team = Server::TEAM_RED;
 				Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_RED));
 			}
 			
@@ -284,28 +285,28 @@ class ServerInstance
 			$blueteam = RCon::blueTeamList();
 			foreach($blueteam as $id)
 			{
-				$this->_players[$id]->team = Server::TEAM_BLUE;
+				$this->players[$id]->team = Server::TEAM_BLUE;
 				Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_BLUE));
 			}
 			
 			//Spectators (all players without a team)
-			foreach($this->_players as $id => $player)
+			foreach($this->players as $id => $player)
 			{
 				if(empty($player->team))
-					$this->_players[$id]->team = Server::TEAM_SPEC;
+					$this->players[$id]->team = Server::TEAM_SPEC;
 			}
 		}
 		
 		//Finally, we open the game log file
-		Leelabot::message('Opening game log file...');
-		$this->openLogFile();
+		if(!$this->openLogFile())
+			return FALSE;
 		
 		//Showing current server status
 		Leelabot::message('Current server status :');
 		Leelabot::message('	Server name : $0', array($this->serverInfo['sv_hostname']));
 		Leelabot::message('	Gametype : $0', array(Server::getGametype()));
 		Leelabot::message('	Map : $0', array($this->serverInfo['mapname']));
-		Leelabot::message('	Number of players : $0', array(count($this->_players)));
+		Leelabot::message('	Number of players : $0', array(count($this->players)));
 		Leelabot::message('	Server version : $0', array($this->serverInfo['version']));
 		Leelabot::message('	Matchmode : $0', array(Leelabot::$instance->intl->translate($this->serverInfo['g_matchmode'] ? 'On' : 'Off')));
 		
@@ -319,28 +320,173 @@ class ServerInstance
 	 */
 	public function step()
 	{
-		$data = fread($this->_logfile['fp'], 1024);
+		$data = $this->readLog();
 		if($data)
 		{
 			$data = explode("\n", trim($data, "\n"));
 			foreach($data as $line)
 			{
+				//Parsing line for event and arguments
+				$line =substr($line, 7);
 				echo '['.$this->_name.'] '.$line."\n";
+				$line = explode(':',$line, 2);
+				
+				if(isset($line[1]))
+					$line[1] = trim($line[1]);
+				
+				switch($line[0])
+				{
+					case 'ClientConnect':
+						$id = intval($line[1]);
+						$this->players[$id] = new Storage(array('id' => $id));
+						Leelabot::$instance->plugins->callServerEvent('ClientConnect', $id);
+						break;
+					case 'ClientDisconnect':
+						$id = intval($line[1]);
+						Leelabot::$instance->plugins->callServerEvent('ClientDisconnect', $id);
+						unset($this->players[$id]);
+						break;
+					case 'ClientUserinfo':
+						list($id, $infostr) = explode(' ', $line[1], 2);
+						$userinfo = Server::parseInfo($infostr);
+						Leelabot::$instance->plugins->callServerEvent('ClientUserinfo', $userinfo);
+						$this->player->other = array_merge($this->player->other, $userinfo);
+						break;
+					case 'ClientUserinfoChanged':
+						list($id, $infostr) = explode(' ', $line[1], 2);
+						$userinfo = Server::parseInfo($infostr);
+						Leelabot::$instance->plugins->callServerEvent('ClientUserinfoChanged', $userinfo);
+						break;
+					case 'InitRound':
+					case 'InitGame':
+						
+						break;
+				}
+				
 			}
 		}
 	}
 	
+	/** Reads the log.
+	 * This function reads all the remaining log since last read (paying no attention to line returns). It also downloads it from an FTP server if specified.
+	 * 
+	 * \return The read data if averything passed correctly, FALSE otherwise. If no data has been read, it returns an empty string.
+	 */
+	public function readLog()
+	{
+		switch($this->_logfile['type'])
+		{
+			case 'ftp':
+				//If we have finished to download the log, we read it and restart downloading
+				if($this->_logfile['state'] == FTP_FINISHED)
+				{
+					$data = '';
+					//We read only if the pointer has changed, i.e. something has been downloaded.
+					if($this->_logfile['pointer'] != ftell($this->_logfile['fp']))
+					{
+						fseek($this->_logfile['fp'], $this->_logfile['pointer']); //Reset file pointer to last read position (ftp_nb_fget moves the pointer)
+						$data = '';
+						$read = NULL;
+						while($read === NULL || $read)
+						{
+							$read = fread($this->_logfile['fp'], 1024);
+							$data .= $read;
+						}
+						$this->_logfile['pointer'] = ftell($this->_logfile['fp']); //Save new pointer position
+					}
+					
+					//Calculation of new global pointer and sending command
+					$totalpointer = $this->_logfile['pointer'] + $this->_logfile['origpointer'];
+					$this->_logfile['state'] = ftp_nb_fget($this->_logfile['ftp'], $this->_logfile['fp'], $this->_logfile['location'], FTP_BINARY, $totalpointer);
+					
+					return $data;
+				}
+				elseif($this->_logfile['state'] == FTP_FAILED) //Precedent reading has failed
+				{
+					Leelabot::message('Can\'t read the remote FTP log anymore.', array(), E_WARNING);
+					return FALSE;
+				}
+				else
+					$this->_logfile['state'] = ftp_nb_continue($this->_logfile['ftp']);
+				break;
+			case 'file':
+				$data = '';
+				$read = NULL;
+				while($read === NULL || $read)
+				{
+					$read = fread($this->_logfile['fp'], 1024);
+					$data .= $read;
+				}
+				
+				return $data;
+				break;
+		}
+	}
+	
 	/** Opens the log file.
-	 * This function opens the log file.
+	 * This function opens the log file. If the log is on an FTP server, it will login, try to get its size, and open the local buffer file. If the size
 	 * 
 	 * \return TRUE if log loaded correctly, FALSE otherwise.
 	 */
 	public function openLogFile()
 	{
-		if(!($this->_logfile['fp'] = fopen($this->_logfile['location'], 'r')))
-			return FALSE;
+		switch($this->_logfile['type'])
+		{
+			case 'file':
+				Leelabot::message('Opening local game log file...');
+				if(!($this->_logfile['fp'] = fopen($this->_logfile['location'], 'r')))
+				{
+					Leelabot::message('Can\'t open local log file : $0.', array($this->_logfile['location']), E_WARNING);
+					return FALSE;
+				}
 		
-		fseek($this->_logfile['fp'], 0, SEEK_END);
+				fseek($this->_logfile['fp'], 0, SEEK_END);
+				break;
+			case 'ftp':
+				Leelabot::message('Connecting to FTP server...');
+				//Connecting to FTP server
+				if(strpos($this->_logfile['server'], ':'))
+					list($address, $port) = explode(':', $this->_logfile['server']);
+				else
+					list($address, $port) = array($this->_logfile['server'], 21);
+				if(!($this->_logfile['ftp'] = ftp_connect($address, $port)))
+				{
+					Leelabot::message('Can\'t connect to the log server.', array(), E_WARNING);
+					return FALSE;
+				}
+				
+				ftp_set_option($this->_logfile['ftp'], FTP_AUTOSEEK, false);
+				
+				//Login
+				if(!ftp_login($this->_logfile['ftp'], $this->_logfile['login'], $this->_logfile['password']))
+				{
+					Leelabot::message('Can\'t log in to the server.', array(), E_WARNING);
+					return FALSE;
+				}
+				
+				//Creating the buffer and getting end of remote log (to avoid entire log download)
+				Leelabot::message('Initializing online log read...');
+				$this->_logfile['fp'] = fopen('php://memory', 'r+');
+				$this->_logfile['state'] = FTP_FINISHED;
+				if(!($this->_logfile['origpointer'] = ftp_size($this->_logfile['ftp'], $this->_logfile['location'])))
+				{
+					//If we can't get the size, we try to download the whole file into another temp file, and check its size
+					Leelabot::message('Can\'t get actual log size. Trying to download whole file (might be slow)...');
+					
+					$tmpfile = fopen('php://memory', 'r+');
+					if(!ftp_get($this->_logfile['ftp'], $tmpfile, $this->_logfile['location'], FTP_BINARY))
+					{
+						Leelabot::message('Can\'t download log file.', array(), E_WARNING);
+						return FALSE;
+					}
+					
+					$stat = stat($tmpfile);
+					$this->_logfile['origpointer'] = $stat['size'];
+					fclose($tmpfile);
+				}
+				$this->_logfile['pointer'] = 0;
+				break;
+		}
 		
 		return TRUE;
 	}
