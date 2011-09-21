@@ -34,9 +34,11 @@ class PluginDummy extends Plugin
 		echo date('h:i:s').' Check.'.PHP_EOL;
 	}
 	
-	public function SrvEventClientUserinfo($data)
+	public function SrvEventClientBegin($id)
 	{
-		RCon::say('Hello '.$data['name']);
+		$player = Server::getPlayer($id);
+		if(!$player->begin)
+		RCon::say('Hello '.$player->name);
 	}
 	
 	public function SrvEventClientConnect($id)

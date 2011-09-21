@@ -1,5 +1,8 @@
 <?php
 
+//Defining debug level constant
+define('E_DEBUG', 32768);
+
 //Including all components needed by the program.
 require('core/db.class.php');
 require('core/innerapi.class.php');

@@ -104,7 +104,8 @@ class RCon
 		if(!self::send('g_blueteamlist'))
 			return FALSE;
 		
-		$ret = self::getReply();
+		if(!($ret = self::getReply()))
+			return FALSE;
 		
 		$ret = explode(':', $ret);
 		if($ret[0] == 'broadcast')
@@ -114,6 +115,10 @@ class RCon
 		$ret = explode('"', $ret[1]);
 		$list = str_replace('^7', '', $ret[1]);
 		$list = str_split($list);
+		
+		//Str split does not returns an empty array for an empty string, so we have to verify this ourselves.
+		if(count($list) == 1 && !$list[0])
+			return array();
 		
 		//Transforming upper letters (ABCD...) in numbers
 		foreach($list as &$el)
@@ -127,7 +132,8 @@ class RCon
 		if(!self::send('g_redteamlist'))
 			return FALSE;
 		
-		$ret = self::getReply();
+		if(!($ret = self::getReply()))
+			return FALSE;
 		
 		$ret = explode(':', $ret);
 		if($ret[0] == 'broadcast')
@@ -155,7 +161,8 @@ class RCon
 			return FALSE;
 		
 		$status = array('map' => '', 'players' => array());
-		$ret = self::getReply();
+		if(!($ret = self::getReply()))
+			return FALSE;
 		
 		$ret = explode("\n", $ret);
 		$status['map'] = trim(str_replace('map:', '', $ret[0]));
@@ -185,7 +192,8 @@ class RCon
 		if(!self::send('dumpuser '.$id))
 			return FALSE;
 		
-		$ret = self::getReply();
+		if(!($ret = self::getReply()))
+			return FALSE;
 		$ret = explode("\n", $ret);
 		
 		//Delete the header, useless for the treatment
@@ -206,7 +214,8 @@ class RCon
 		if(!self::send('serverinfo'))
 			return FALSE;
 		
-		$ret = self::getReply();
+		if(!($ret = self::getReply()))
+			return FALSE;
 		$ret = explode("\n", $ret);
 		
 		//Delete the header, useless for the treatment
@@ -232,6 +241,18 @@ class Server
 	const TEAM_BLUE = 2;
 	const TEAM_SPEC = 3;
 	
+	const GAME_FFA = 1;
+	const GAME_TDM = 3;
+	const GAME_TS = 4;
+	const GAME_FTL = 5;
+	const GAME_CNH = 6;
+	const GAME_CTF = 7;
+	const GAME_BOMB = 8;
+	
+	const FLAG_DROP = 0;
+	const FLAG_RETURN = 1;
+	const FLAG_CAPTURE = 2;
+	
 	public static function getInstance()
 	{
 		if(!(self::$_instance instanceof self))
@@ -244,6 +265,12 @@ class Server
 	{
 		$self = self::getInstance();
 		$self->_server = $server;
+	}
+	
+	public static function getPlugins()
+	{
+		$self = self::getInstance();
+		return $self->_server->getPlugins();
 	}
 	
 	public static function searchPlayer($search)
@@ -261,25 +288,71 @@ class Server
 		
 		switch($gametype)
 		{
-			case 0:
-			case 1:
-			case 2:
-				return 'Free for All';
-			case 3:
+			case self::GAME_TDM:
 				return 'Team Deathmatch';
-			case 4:
+			case self::GAME_TS:
 				return 'Team Survivor';
-			case 5:
+			case self::GAME_FTL:
 				return 'Follow the Leader';
-			case 6:
+			case self::GAME_CNH:
 				return 'Capture and Hold';
-			case 7:
+			case self::GAME_CTF:
 				return 'Capture The Flag';
-			case 8:
+			case self::GAME_BOMB:
 				return 'Bomb';
 			default:
-				return 'Unknown';
+				return 'Free for All';
 		}
+	}
+	
+	public function getTeamName($team)
+	{
+		if(is_object($team))
+			$team = $team->team;
+		
+		switch($team)
+		{
+			case self::TEAM_RED:
+				return 'Red';
+			case self::TEAM_BLUE:
+				return 'Blue';
+			case self::TEAM_SPEC:
+				return 'Spectator';
+			default:
+				return FALSE;
+		}
+	}
+	
+	public static function getTeamNumber($teamname)
+	{
+		switch(strtolower($teamname))
+		{
+			case 'red':
+				return self::TEAM_RED;
+			case 'blue':
+				return self::TEAM_BLUE;
+			case 'spec':
+			case 'spectator':
+				return self::TEAM_SPEC;
+			default:
+				return FALSE;
+		}
+	}
+	
+	public static function getTeamCount($players = FALSE)
+	{
+		$count = array(NULL, 0, 0, 0);
+		
+		if($players === FALSE)
+		{
+			$self = self::getInstance();
+			$players = $self->_server->players;
+		}
+		
+		foreach($players as $player)
+			$count[$player->team]++;
+		
+		return $count;
 	}
 	
 	public static function parseInfo($info)
@@ -288,11 +361,20 @@ class Server
 		
 		//Splitting the different parts of data
 		$info = explode('\\', $info);
-		array_shift($info); //The data starting with a backslash, we must shift the array of the first (always empty) element.
+		
+		//The data starting with a backslash sometimes, we must shift the array of the first element if it is empty.
+		if(empty($info[0]))
+			array_shift($info);
 		
 		for($i = 0; isset($info[$i]); ++$i)
 			$out[$info[$i]] = $info[++$i];
 		
 		return $out;
+	}
+	
+	public static function getPlayer($id)
+	{
+		$server = self::getInstance();
+		return $server->_server->players[$id];
 	}
 }

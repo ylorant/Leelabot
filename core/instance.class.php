@@ -42,6 +42,7 @@ class ServerInstance
 	
 	public $serverInfo; ///< Holds server info.
 	public $players; ///< Holds players data.
+	public $scores; ///< Current score (for round-based games).
 	
 	/** Constructor for the class.
 	 * This is the constructor, it sets the vars to their default values (for most of them, empty values).
@@ -98,6 +99,16 @@ class ServerInstance
 	public function getRConPassword()
 	{
 		return $this->_rconpassword;
+	}
+	
+	/** Get the active plugins for this server.
+	 * This returns the plugins which have to be processed by the plugin manager.
+	 * 
+	 * \return The active plugins list, in an array.
+	 */
+	public function getPlugins()
+	{
+		return $this->_plugins;
 	}
 	
 	/** Sets the name of the current server.
@@ -243,7 +254,11 @@ class ServerInstance
 		{
 			Leelabot::message('Gathering info for player $0 (Slot $1)...', array($player['name'], $id));
 			$playerData = array();
-			$dump = RCon::dumpUser($id);
+			if(!($dump = RCon::dumpUser($id)))
+			{
+				Leelabot::message('Cannot retrieve info for player $0.', array($player['name']), E_WARNING);
+				continue;
+			}
 			
 			//The characterfile argument is unique to bots, so we use it to know if a player is a bot or not
 			if(isset($dump['characterfile']))
@@ -258,8 +273,10 @@ class ServerInstance
 			}
 			
 			$playerData['name'] = preg_replace('#^[0-9]#', '', $dump['name']);
-			
 			$playerData['id'] = $id;
+			
+			$playerData['team'] = Server::TEAM_SPEC;
+			$playerData['begin'] = FALSE;
 			$this->players[$id] = new Storage($playerData);
 			$this->players[$id]->other = $dump;
 			
@@ -274,27 +291,34 @@ class ServerInstance
 		{
 			Leelabot::message('Gathering teams...');
 			//Red team
-			$redteam = RCon::redTeamList();
-			foreach($redteam as $id)
+			if(!($redteam = RCon::redTeamList()))
+				Leelabot::message('Cannot retrieve red team list');
+			else
 			{
-				$this->players[$id]->team = Server::TEAM_RED;
-				Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_RED));
+				foreach($redteam as $id)
+				{
+					$this->players[$id]->team = Server::TEAM_RED;
+					$this->players[$id]->begin = TRUE;
+					Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_RED));
+				}
 			}
 			
 			//Blue team
-			$blueteam = RCon::blueTeamList();
-			foreach($blueteam as $id)
+			if(!($blueteam = RCon::blueTeamList()))
+				Leelabot::message('Cannot retrieve blue team list');
+			else
 			{
-				$this->players[$id]->team = Server::TEAM_BLUE;
-				Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_BLUE));
+				foreach($blueteam as $id)
+				{
+					$this->players[$id]->team = Server::TEAM_BLUE;
+					$this->players[$id]->begin = TRUE;
+					Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_BLUE));
+				}
 			}
 			
-			//Spectators (all players without a team)
-			foreach($this->players as $id => $player)
-			{
-				if(empty($player->team))
-					$this->players[$id]->team = Server::TEAM_SPEC;
-			}
+			//Finally, we init scoreboard and virtually start a game (for the plugins).
+			$this->scores = array(1 => 0, 2 => 0);
+			Leelabot::$instance->plugins->callServerEvent('InitGame', $this->serverInfo);
 		}
 		
 		//Finally, we open the game log file
@@ -313,7 +337,7 @@ class ServerInstance
 		return TRUE;
 	}
 	
-	/** Exec a step of parsing.
+	/** Executes a step of parsing.
 	 * This function executes a step of parsing, i.e. reads the log, parses the read lines and calls the adapted events.
 	 * 
 	 * \return TRUE if all gone correctly, FALSE otherwise.
@@ -328,7 +352,7 @@ class ServerInstance
 			{
 				//Parsing line for event and arguments
 				$line =substr($line, 7);
-				echo '['.$this->_name.'] '.$line."\n";
+				Leelabot::printText('['.$this->_name.'] '.$line);
 				$line = explode(':',$line, 2);
 				
 				if(isset($line[1]))
@@ -336,30 +360,103 @@ class ServerInstance
 				
 				switch($line[0])
 				{
+					//A client connects
 					case 'ClientConnect':
 						$id = intval($line[1]);
-						$this->players[$id] = new Storage(array('id' => $id));
+						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE));
 						Leelabot::$instance->plugins->callServerEvent('ClientConnect', $id);
 						break;
+					//A client has disconnected
 					case 'ClientDisconnect':
 						$id = intval($line[1]);
 						Leelabot::$instance->plugins->callServerEvent('ClientDisconnect', $id);
 						unset($this->players[$id]);
 						break;
+					//The client has re-sent his personal info (like credit name, weapons, weapmodes, card number)
 					case 'ClientUserinfo':
 						list($id, $infostr) = explode(' ', $line[1], 2);
 						$userinfo = Server::parseInfo($infostr);
 						Leelabot::$instance->plugins->callServerEvent('ClientUserinfo', $userinfo);
-						$this->player->other = array_merge($this->player->other, $userinfo);
+						
+						//Basically it's a copypasta of the code user above for initial data storage
+						if(isset($userinfo['characterfile']))
+							$playerData['isBot'] = TRUE;
+						else
+						{
+							$playerData['isBot'] = FALSE;
+							$address = explode(':', $userinfo['ip']);
+							$playerData['addr'] = $address[0];
+							$playerData['port'] = $address[1];
+							$playerData['guid'] = $userinfo['cl_guid'];
+						}
+						$playerData['name'] = preg_replace('#^[0-9]#', '', $userinfo['name']);
+						$playerData['id'] = $id;
+						
+						$this->players[$id] = Storage::merge($this->players[$id], $playerData);
+						if(!isset($this->players[$id]->other))
+							$this->players[$id]->other = $userinfo;
+						else
+							$this->players[$id]->other = array_merge($this->players[$id]->other, $userinfo);
 						break;
+					//Change in client userinfo, useful for gathering teams
 					case 'ClientUserinfoChanged':
 						list($id, $infostr) = explode(' ', $line[1], 2);
 						$userinfo = Server::parseInfo($infostr);
 						Leelabot::$instance->plugins->callServerEvent('ClientUserinfoChanged', $userinfo);
+						$this->players[$id]->team = $userinfo['t'];
+						$this->players[$id]->other['cg_rgb'] = $userinfo['a0'].' '.$userinfo['a1'].' '.$userinfo['a2'];
+						$this->players[$id]->name = preg_replace('#^[0-9]#', '', $userinfo['n']);
 						break;
+					//Player start to play
+					case 'ClientBegin':
+						$id = intval($line[1]);
+						Leelabot::$instance->plugins->callServerEvent('ClientBegin', $id);
+						$this->players[$id]->begin = TRUE;
+						break;
+					//New round, map info is re-sended
 					case 'InitRound':
+						$serverinfo = Server::parseInfo($line[1]);
+						Leelabot::$instance->plugins->callServerEvent('InitRound', $serverinfo);
+					//New map, with new info
 					case 'InitGame':
+						if($line[0] == 'InitGame')
+						{
+							$serverinfo = Server::parseInfo($line[1]);
+							Leelabot::$instance->plugins->callServerEvent('InitGame', $serverinfo);
+							$this->scores = array(1 => 0, 2 => 0);
+						}
 						
+						if(!empty($this->serverInfo))
+							$this->serverInfo = array_merge($this->serverInfo, $serverinfo);
+						else
+							$this->serverInfo = $serverinfo;
+						break;
+					//The game has ended. Usually, next to that line are written the scores, but we just don't care about them
+					case 'Exit':
+						Leelabot::$instance->plugins->callServerEvent('Exit', $line[1]);
+						break;
+					//Survivor round has ended, with the winner
+					case 'SurvivorWinner':
+						$winner = Server::getTeamNumber($line[1]);
+						$this->scores[$winner]++;
+						break;
+					//The server goes down (it occurs also with a map change)
+					case 'ShutdownGame':
+						Leelabot::$instance->plugins->callServerEvent('ShutdownGame', $line[1]);
+						break;
+					//One player kills another, probably the most common action that will occur ?
+					case 'Kill':
+						$kill = explode(':', $line[1]);
+						$kill = explode(' ', $kill[0]);
+						Leelabot::$instance->plugins->callServerEvent('Kill', array('killer' => $kill[0], 'killed' => $kill[1]));
+						break;
+					//Player message
+					case 'say':
+						$message = explode(' ', $line[1], 2);
+						$id = intval($message[0]);
+						$contents = explode(':', $message[1], 2);
+						$contents = substr($contents[1], 1);
+						Leelabot::$instance->plugins->callServerEvent('Say',array($id, $contents));
 						break;
 				}
 				

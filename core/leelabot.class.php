@@ -159,7 +159,7 @@ class Leelabot
 		
 		//Notice that we have loaded successfully if more than one server loaded
 		if(count($this->servers))
-			Leelabot::message('Leelabot loaded successfully for $0 servers', array(count($this->servers)));
+			Leelabot::message('Leelabot loaded successfully for $0 server$1', array(count($this->servers), (count($this->servers) > 1 ? 's' : '')));
 		else
 		{
 			Leelabot::message('Can\'t load Leelabot for any configured server.', array(), E_ERROR);
@@ -264,9 +264,16 @@ class Leelabot
 				//Enable verbose mode.
 				case 'v':
 				case 'verbose':
-					Leelabot::$verbose = TRUE;
+					Leelabot::$verbose = 1;
 					Leelabot::message('Starting in Verbose mode.');
 					Leelabot::message('Command arguments : $0', array($this->dumpArray($CLIArguments)));
+					break;
+				case 'vv':
+				case 'veryverbose':
+					Leelabot::$verbose = 2;
+					Leelabot::message('Starting in Very Verbose mode.');
+					Leelabot::message('Command arguments : $0', array($this->dumpArray($CLIArguments)));
+					Leelabot::message('Current PHP version : $0', array(phpversion()));
 					break;
 			}
 		}
@@ -549,6 +556,7 @@ class Leelabot
 	 */
 	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE, $translate = TRUE)
 	{
+		$verbosity = 1;
 		//Getting type string
 		switch($type)
 		{
@@ -564,6 +572,11 @@ class Leelabot
 			case E_USER_ERROR:
 				$prefix = 'Error';
 				$force = TRUE;
+				$verbosity = 0;
+				break;
+			case E_DEBUG:
+				$prefix = 'Debug';
+				$verbosity = 2;
 				break;
 			default:
 				$prefix = 'Unknown';
@@ -585,7 +598,7 @@ class Leelabot
 		if(Leelabot::$_logFile)
 			fputs(Leelabot::$_logFile, date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL);
 		
-		if(Leelabot::$verbose || $force)
+		if(Leelabot::$verbose >= $verbosity || $force)
 			echo date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL;
 	}
 	
@@ -632,6 +645,28 @@ class Storage
 		$return = array();
 		foreach($object as $var => $val)
 			$return[$var] = $val;
+	}
+	
+	/** Merges a Storage object with another, or with an array.
+	 * This functions merges the properties of the Storage object $from with the available properties (or elements if it is an array) of $to, and returns the result.
+	 * 
+	 * \param $from The Storage object to merge.
+	 * \param $to The Storage object or the array to be merged on $from.
+	 * 
+	 * \returns the merged Storage object if it merged successfully, or FALSE otherwise.
+	 */
+	public static function merge($from, $to)
+	{
+		if(!is_object($from) || get_class($from) != 'Storage')
+			return FALSE;
+		
+		foreach($from as $key => &$el)
+		{
+			if(isset($to[$key]))
+				$el = $to[$key];
+		}
+		
+		return $from;
 	}
 }
 

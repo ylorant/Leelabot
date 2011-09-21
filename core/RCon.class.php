@@ -44,6 +44,7 @@ class Quake3RCon
 	const E_CONNECTION = 1; ///< Can't send data on the server.
 	const E_BADRCON = 2; ///< Bad RCon password.
 	const E_NOREPLY = 3; ///< No reply from the server.
+	const E_NORCON = 4; ///< No RCon available on the server (i.e. no rconpassword)
 	
 	public function __construct()
 	{
@@ -137,6 +138,11 @@ class Quake3RCon
 			$this->_error = self::E_BADRCON;
 			return FALSE;
 		}
+		elseif($data == "No rconpassword set on the server.")
+		{
+			$this->_error = self::E_NORCON;
+			return FALSE;
+		}
 		
 		$this->_valid[$this->_addr.':'.$this->_port] = TRUE;
 		return TRUE;
@@ -168,7 +174,7 @@ class Quake3RCon
 	
 	/** Waits a RCon reply from the server.
 	 * This function waits a RCon reply from the set gameserver. If the parameter timeout is given, it will wait a reply the specified numbers of seconds. If not, it
-	 * will directly return FALSE, after a 1ms wait.
+	 * will directly return FALSE, after a short wait (there is always a short timeout, because of network latences).
 	 * 
 	 * \param $timeout The time to wait the reply.
 	 * 
@@ -178,16 +184,16 @@ class Quake3RCon
 	{
 		$time = time();
 		$data = '';
+		$microtime = microtime(TRUE) + 0.05; //Set the micro-timeout at 50ms
 		while($time + $timeout >= time())
 		{
-			usleep(15000);
 			if($tmp = socket_read($this->_socket, 1024))
 				$data .= $tmp;
 			elseif($data)
 				break;
-			if($timeout === FALSE && !$data)
+			if($timeout === FALSE && !$data && $microtime < microtime(TRUE))
 				return FALSE;
-			
+			usleep(2000);
 		}
 		
 		if($time + $timeout < time())
@@ -226,6 +232,8 @@ class Quake3RCon
 				return "Bad RCon password.";
 			case self::E_NOREPLY:
 				return "No reply from the server.";
+			case self::E_NORCON:
+				return "No RCon available on the server.";
 			default:
 				return FALSE;
 		}

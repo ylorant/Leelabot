@@ -41,6 +41,7 @@ class PluginManager
 {
 	private $_main; ///<  Reference to main class
 	private $_plugins; ///< Plugins list
+	private $_pluginClasses; ///< Plugin classes names
 	private $_routines = array(); ///< Routines list
 	private $_serverEvents = array(); ///< Server events
 	private $_commands = array(); ///< Commands
@@ -172,7 +173,22 @@ class PluginManager
 		$this->_plugins[$params['name']]['obj']->init(); //Call to init() method of loaded plugin, for internal initializations and such.
 		Leelabot::message('Loaded plugin $0', array($params['name']));
 		
+		//Now that the plugin is loaded, we update the list of all plugins' classes names
+		$this->_reloadPluginsClasses();
+		
 		return TRUE;
+	}
+	
+	/** Reloads the plugins' classes cache.
+	 * This function reloads the cache containing the classes loaded for each plugin, for better performances while executing an event.
+	 * 
+	 * \return Nothing.
+	 */
+	private function _reloadPluginsClasses()
+	{
+		$this->_pluginClasses = array();
+		foreach($this->_plugins as $plugin)
+			$this->_pluginClasses[$plugin['className']] = $plugin['name'];
 	}
 	
 	/** Gets the currently loaded plugins.
@@ -196,11 +212,11 @@ class PluginManager
 	 */
 	public function addRoutine(&$plugin, $method, $time = 1)
 	{
-		Leelabot::message('Adding routine $0, executed every $1s', array(get_class($plugin).'::'.$method, $time));
+		Leelabot::message('Adding routine $0, executed every $1s', array(get_class($plugin).'::'.$method, $time), E_DEBUG);
 		
 		if(!method_exists($plugin, $method)) //Check if method exists
 		{
-			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			Leelabot::message('Error : Target method does not exists.', array(), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -220,11 +236,11 @@ class PluginManager
 	 */
 	public function addServerEvent($event, &$plugin, $method)
 	{
-		Leelabot::message('Adding method $0, on server event $1', array(get_class($plugin).'::'.$method, $event));
+		Leelabot::message('Adding method $0, on server event $1', array(get_class($plugin).'::'.$method, $event), E_DEBUG);
 		
 		if(!method_exists($plugin, $method)) //Check if method exists
 		{
-			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			Leelabot::message('Error : Target method does not exists.', array(), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -247,11 +263,11 @@ class PluginManager
 	 */
 	public function addCommand($event, &$plugin, $method)
 	{
-		Leelabot::message('Adding method $0, on client command $1', array(get_class($plugin).'::'.$method, '!'.$event));
+		Leelabot::message('Adding method $0, on client command $1', array(get_class($plugin).'::'.$method, '!'.$event), E_DEBUG);
 		
 		if(!method_exists($plugin, $method)) //Check if method exists
 		{
-			Leelabot::message('Target method does not exists.', array(), E_WARNING);
+			Leelabot::message('Target method does not exists.', array(), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -273,11 +289,11 @@ class PluginManager
 	 */
 	public function deleteRoutine(&$plugin, $method)
 	{
-		Leelabot::message('Deleting routine $0', array(get_class($plugin).'::'.$method));
+		Leelabot::message('Deleting routine $0', array(get_class($plugin).'::'.$method), E_DEBUG);
 		
 		if(!isset($this->_routines[get_class($plugin)]))
 		{
-			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_WARNING);
+			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -366,17 +382,17 @@ class PluginManager
 	 */
 	public function changeRoutineTimeInterval(&$plugin, $method, $time)
 	{
-		Leelabot::message('Changing routine $0 time interval to $1s', array(get_class($plugin).'::'.$method, $time));
+		Leelabot::message('Changing routine $0 time interval to $1s', array(get_class($plugin).'::'.$method, $time), E_DEBUG);
 		
 		if(!isset($this->_routines[get_class($plugin)]))
 		{
-			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_WARNING);
+			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_DEBUG);
 			return FALSE;
 		}
 		
 		if(!isset($this->_routines[get_class($plugin)][$method]))
 		{
-			Leelabot::message('Routine does not exists.', array(), E_WARNING);
+			Leelabot::message('Routine does not exists.', array(), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -389,7 +405,7 @@ class PluginManager
 	 * This function executes all the routines for all plugins, whether checking if their interval timed out, or not (so all routines are executed), depending
 	 * on the value of the \b $force param.
 	 * 
-	 * \param $force Forces the routines to be executed or not. By default it does not 
+	 * \param $force Forces the routines to be executed or not. By default it does not executes them.
 	 * 
 	 * \return TRUE if routines executed correctly, FALSE otherwise.
 	 */
@@ -408,15 +424,34 @@ class PluginManager
 		}
 	}
 	
+	/** Calls a server event.
+	 * This function executes all the callback methods bound to the given server event.
+	 * 
+	 * \param $event The server event called.
+	 * \param $params Parameter(s) to send to the callbacks.
+	 * 
+	 * \return TRUE if callbacks executed correctly, FALSE otherwise.
+	 */
 	public function callServerEvent($event, $params)
 	{
 		if(isset($this->_serverEvents[$event]))
 		{
-			foreach($this->_serverEvents[$event] as &$event)
-				$event[0]->$event[1]($params);
+			foreach($this->_serverEvents[$event] as $plugin => &$event)
+			{
+				if(in_array($this->_pluginClasses[$plugin], Server::getPlugins()))
+					$event[0]->$event[1]($params);
+			}
 		}
 	}
 	
+	/** Calls a client command.
+	 * This function executes all the callback methods bound to the given event.
+	 * 
+	 * \param $event The server event called.
+	 * \param $params Parameter(s) to send to the callbacks.
+	 * 
+	 * \return TRUE if callbacks executed correctly, FALSE otherwise.
+	 */
 	public function callCommand($event, $player, $params)
 	{
 		if(isset($this->_commands[$event]))
