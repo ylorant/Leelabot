@@ -1,0 +1,43 @@
+body
+{
+	background-color:#eee;
+	width:80%;
+	margin:auto;
+}
+
+.mainBox
+{
+	background-color:#fff;
+	border: 1px solid #ddd;
+	box-shadow: 10px #aaa;
+	padding:10px 25px;
+}
+
+h1
+{
+	margin-left:-25px;
+	color:#212370;
+	border-bottom:1px dashed #888;
+}
+
+h2
+{
+	color:#4D70AD;
+	margin:5px 10px;
+	border-bottom:1px solid #ccc;
+}
+
+li
+{
+	list-style-type:none;
+}
+
+pre
+{
+	display:inline;
+}
+
+input
+{
+	border:1px solid #ccc;
+}

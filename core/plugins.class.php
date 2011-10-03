@@ -45,6 +45,9 @@ class PluginManager
 	private $_routines = array(); ///< Routines list
 	private $_serverEvents = array(); ///< Server events
 	private $_commands = array(); ///< Commands
+	private $_commandLevels = array(); ///< Command levels
+	private $_defaultLevel; ///< Default level for new commands.
+	private $_quietReply; ///< Trigger for the automatic reply for invalid commands/Insufficient access
 	
 	/** Constructor for PluginManager
 	 * Initializes the class.
@@ -55,6 +58,63 @@ class PluginManager
 	{
 		$this->_main = $main;
 		$this->plugins = array();
+		$this->_defaultLevel = 0;
+		$this->_quietReply = FALSE;
+	}
+	
+	/** Sets the default right level.
+	 * This functions set the default right level for all future commands. This level will be interpreted (when adding the commands) as the new level 0, and when
+	 * plugins will decide to redefine the level of some of their commands, they will be redefined regarding the value of the default level.
+	 * 
+	 * \param $level The new default right level.
+	 * 
+	 * \return TRUE if the level set correctly, FALSE otherwise.
+	 */
+	public function setDefaultRightLevel($level)
+	{
+		if($level >= 0)
+			$this->_defaultLevel = $level;
+		else
+			return FALSE;
+			
+		Leelabot::message('Default right level is now $0', array($level), E_DEBUG);
+		
+		return TRUE;
+	}
+	
+	/** Sets a command's right level.
+	 * This functions sets a command's right level directly, without taking care of the default level set.
+	 * 
+	 * \param $cmd The command to modify.
+	 * \param $level The new level.
+	 * 
+	 * \return TRUE if the level set correctly, FALSE otherwise.
+	 */
+	public function setCommandLevel($cmd, $level)
+	{
+		if($level >= 0 && isset($this->_commands[$cmd]))
+			$this->_commandLevels[$cmd] = $level;
+		else
+			return FALSE;
+		
+		return TRUE;
+	}
+	
+	/** Sets the sending of automatic replies.
+	 * This function sets if the replies for inexistent commands and forbidden access (too low level). By default it is enabled.
+	 * 
+	 * \param $quiet The new quietReply state (Boolean or string, which will be interpreted with Leelabot::parseBool()).
+	 * 
+	 * \return The set state as a boolean (can be used to verify the goodness of the set value).
+	 */
+	public function setQuietReply($quiet = TRUE)
+	{
+		if(is_string($quiet))
+			$this->_quietReply = Leelabot::parseBool($quiet);
+		else
+			$this->_quietReply = (bool)$quiet;
+		
+		return $this->_quietReply;
 	}
 	
 	/** Loads plugins from an array.
@@ -160,7 +220,7 @@ class PluginManager
 			{
 				//Checks for routines
 				if(preg_match('#^Routine#', $method))
-					$this->addRoutine(&$this->_plugins[$params['name']]['obj'], $method);
+					$this->addRoutine($this->_plugins[$params['name']]['obj'], $method);
 				//Checks for server events
 				if(preg_match('#^SrvEvent#', $method))
 					$this->addServerEvent(preg_replace('#SrvEvent(.+)#', '$1', $method), $this->_plugins[$params['name']]['obj'], $method);
@@ -220,7 +280,7 @@ class PluginManager
 			return FALSE;
 		}
 		
-		$this->_routines[get_class($plugin)][$method] = array($plugin, $time, 0);
+		$this->_routines[get_class($plugin)][$method] = array($plugin, $time, array());
 		
 		return TRUE;
 	}
@@ -258,12 +318,16 @@ class PluginManager
 	 * \param $event The name of the event to be added (corresponds to a command from user).
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
+	 * \param $level The minimum level needed by the player to execute it.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
 	 */
-	public function addCommand($event, &$plugin, $method)
+	public function addCommand($event, &$plugin, $method, $level = NULL)
 	{
-		Leelabot::message('Adding method $0, on client command $1', array(get_class($plugin).'::'.$method, '!'.$event), E_DEBUG);
+		if($level === NULL)
+			$level = $this->_defaultLevel;
+		
+		Leelabot::message('Adding method $0, on client command $1, with level $2', array(get_class($plugin).'::'.$method, '!'.$event, $level), E_DEBUG);
 		
 		if(!method_exists($plugin, $method)) //Check if method exists
 		{
@@ -275,6 +339,7 @@ class PluginManager
 			$this->_commands[$event] = array();
 		
 		$this->_commands[$event][get_class($plugin)] = array($plugin, $method);
+		$this->_commandLevels[$event] = $level;
 		
 		return TRUE;
 	}
@@ -386,7 +451,7 @@ class PluginManager
 		
 		if(!isset($this->_routines[get_class($plugin)]))
 		{
-			Leelabot::message('Plugin $0 does not exists in routine list.', array($event), E_DEBUG);
+			Leelabot::message('Plugin $0 does not exists in routine list.', array(get_class($plugin)), E_DEBUG);
 			return FALSE;
 		}
 		
@@ -411,14 +476,19 @@ class PluginManager
 	 */
 	public function callAllRoutines($force = FALSE)
 	{
-		foreach($this->_routines as &$class)
+		$serverPlugins = Server::getPlugins();
+		$serverName = Server::getName();
+		foreach($this->_routines as $className => &$class)
 		{
 			foreach($class as $name => &$routine)
 			{
-				if($force || (time() >= $routine[2] + $routine[1] && time() != $routine[2]))
+				if($force || !isset($routine[2][$serverName]) || (time() >= $routine[2][$serverName] + $routine[1] && time() != $routine[2][$serverName]))
 				{
-					$routine[0]->$name();
-					$routine[2] = time();
+					if(in_array($this->_pluginClasses[$className], $serverPlugins))
+					{
+						$routine[0]->$name();
+						$routine[2][$serverName] = time();
+					}
 				}
 			}
 		}
@@ -436,9 +506,10 @@ class PluginManager
 	{
 		if(isset($this->_serverEvents[$event]))
 		{
+			$serverPlugins = Server::getPlugins();
 			foreach($this->_serverEvents[$event] as $plugin => &$event)
 			{
-				if(in_array($this->_pluginClasses[$plugin], Server::getPlugins()))
+				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
 					$event[0]->$event[1]($params);
 			}
 		}
@@ -448,6 +519,7 @@ class PluginManager
 	 * This function executes all the callback methods bound to the given event.
 	 * 
 	 * \param $event The server event called.
+	 * \param $player The ID of the player who sent the event
 	 * \param $params Parameter(s) to send to the callbacks.
 	 * 
 	 * \return TRUE if callbacks executed correctly, FALSE otherwise.
@@ -456,8 +528,29 @@ class PluginManager
 	{
 		if(isset($this->_commands[$event]))
 		{
-			foreach($this->_commands[$event] as &$event)
-				$event[0]->$event[1]($player, $params);
+			var_dump($this->_commandLevels);
+			
+			$serverPlugins = Server::getPlugins();
+			foreach($this->_commands[$event] as $plugin => &$class)
+			{
+				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
+				{
+					Leelabot::message('Level matching : $0/$1', array(Server::getPlayer($player)->level,  $this->_commandLevels[$event]), E_DEBUG);
+					if(Server::getPlayer($player)->level >= $this->_commandLevels[$event])
+						$class[0]->$class[1]($player, $params);
+					else
+					{
+						if(!$this->_quietReply)
+							RCon::say('You\'re not allowed to execute this command.');
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			if(!$this->_quietReply)
+				RCon::say('Command not found.');
 		}
 	}
 }

@@ -39,6 +39,7 @@ class ServerInstance
 	private $_logfile; ///< Log file info (address, logins for FTP/SSH, and other info)
 	private $_plugins; ///< List of plugins used by the server, may differ from global list.
 	private $_leelabot; ///< Reference to main Leelabot class.
+	private $_defaultLevel; ///< Default level for joining players
 	
 	public $serverInfo; ///< Holds server info.
 	public $players; ///< Holds players data.
@@ -53,6 +54,7 @@ class ServerInstance
 	{
 		$this->_leelabot = $main;
 		$this->_plugins = array();
+		$this->_defaultLevel = 0;
 		return TRUE;
 	}
 	
@@ -131,6 +133,16 @@ class ServerInstance
 		
 		$this->_name = $name;
 		return TRUE;
+	}
+	
+	/** Gets the name of the current server.
+	 * This function returns the name of the server.
+	 * 
+	 * \return The server's name.
+	 */
+	public function getName()
+	{
+		return $this->_name;
 	}
 	
 	/** Sets the location of the server's log file to read from.
@@ -212,6 +224,9 @@ class ServerInstance
 				case 'UsePlugins':
 					$this->_plugins = explode(',', str_replace(', ', ',', $value));
 					break;
+				case 'DefaultLevel':
+					$this->_defaultLevel = $value;
+					break;
 			}
 		}
 		
@@ -274,6 +289,7 @@ class ServerInstance
 			
 			$playerData['name'] = preg_replace('#^[0-9]#', '', $dump['name']);
 			$playerData['id'] = $id;
+			$playerData['level'] = $this->_defaultLevel;
 			
 			$playerData['team'] = Server::TEAM_SPEC;
 			$playerData['begin'] = FALSE;
@@ -282,8 +298,8 @@ class ServerInstance
 			
 			$data = array_merge($dump, $player);
 			
-			Leelabot::$instance->plugins->callServerEvent('ClientConnect', $id);
-			Leelabot::$instance->plugins->callServerEvent('ClientUserinfo', $data);
+			$this->_leelabot->plugins->callServerEvent('ClientConnect', $id);
+			$this->_leelabot->plugins->callServerEvent('ClientUserinfo', $data);
 		}
 		
 		//Getting team repartition for players
@@ -299,7 +315,8 @@ class ServerInstance
 				{
 					$this->players[$id]->team = Server::TEAM_RED;
 					$this->players[$id]->begin = TRUE;
-					Leelabot::$instance->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_RED));
+					$playerData = array('team' => 'red', 't' => Server::TEAM_RED, 'n' => $this->players[$id]->name);
+					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', $playerData);
 				}
 			}
 			
@@ -351,7 +368,7 @@ class ServerInstance
 			foreach($data as $line)
 			{
 				//Parsing line for event and arguments
-				$line =substr($line, 7);
+				$line =substr($line, 7); //Remove the time (todo : see if elapsed time for the map is useful (more than when we count it ourselves))
 				Leelabot::printText('['.$this->_name.'] '.$line);
 				$line = explode(':',$line, 2);
 				
@@ -362,25 +379,36 @@ class ServerInstance
 				{
 					//A client connects
 					case 'ClientConnect':
+						
 						$id = intval($line[1]);
-						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE));
+						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'level' => $this->_defaultLevel));
+						Leelabot::message('Client connected : $0', array($id), E_DEBUG);
 						Leelabot::$instance->plugins->callServerEvent('ClientConnect', $id);
 						break;
 					//A client has disconnected
 					case 'ClientDisconnect':
 						$id = intval($line[1]);
 						Leelabot::$instance->plugins->callServerEvent('ClientDisconnect', $id);
+						Leelabot::message('Client disconnected : $0', array($id), E_DEBUG);
 						unset($this->players[$id]);
 						break;
 					//The client has re-sent his personal info (like credit name, weapons, weapmodes, card number)
 					case 'ClientUserinfo':
 						list($id, $infostr) = explode(' ', $line[1], 2);
 						$userinfo = Server::parseInfo($infostr);
+						
+						Leelabot::message('Client send user info : $0', array($id), E_DEBUG);
+						Leelabot::message('	Name : $0', array($userinfo['name']), E_DEBUG);
+						Leelabot::message('	IP : $0', array($userinfo['ip']), E_DEBUG);
+						
 						Leelabot::$instance->plugins->callServerEvent('ClientUserinfo', $userinfo);
 						
 						//Basically it's a copypasta of the code user above for initial data storage
 						if(isset($userinfo['characterfile']))
+						{
 							$playerData['isBot'] = TRUE;
+							Leelabot::message('	Is a bot.', array(), E_DEBUG);
+						}
 						else
 						{
 							$playerData['isBot'] = FALSE;
@@ -402,6 +430,10 @@ class ServerInstance
 					case 'ClientUserinfoChanged':
 						list($id, $infostr) = explode(' ', $line[1], 2);
 						$userinfo = Server::parseInfo($infostr);
+						Leelabot::message('Client has send changed user info : $0', array($id), E_DEBUG);
+						Leelabot::message('	Name : $0', array($userinfo['n']), E_DEBUG);
+						Leelabot::message('	Team : $0', array(Server::getTeamName($userinfo['t'])), E_DEBUG);
+						
 						Leelabot::$instance->plugins->callServerEvent('ClientUserinfoChanged', $userinfo);
 						$this->players[$id]->team = $userinfo['t'];
 						$this->players[$id]->other['cg_rgb'] = $userinfo['a0'].' '.$userinfo['a1'].' '.$userinfo['a2'];
@@ -410,18 +442,24 @@ class ServerInstance
 					//Player start to play
 					case 'ClientBegin':
 						$id = intval($line[1]);
+						Leelabot::message('Client has begun : $0', array($id), E_DEBUG);
+						
 						Leelabot::$instance->plugins->callServerEvent('ClientBegin', $id);
 						$this->players[$id]->begin = TRUE;
 						break;
 					//New round, map info is re-sended
 					case 'InitRound':
 						$serverinfo = Server::parseInfo($line[1]);
+						Leelabot::message('New round started', array(), E_DEBUG);
+						
 						Leelabot::$instance->plugins->callServerEvent('InitRound', $serverinfo);
 					//New map, with new info
 					case 'InitGame':
 						if($line[0] == 'InitGame')
 						{
 							$serverinfo = Server::parseInfo($line[1]);
+							Leelabot::message('New map started : $0', array($serverinfo['mapname']), E_DEBUG);
+							
 							Leelabot::$instance->plugins->callServerEvent('InitGame', $serverinfo);
 							$this->scores = array(1 => 0, 2 => 0);
 						}
@@ -433,15 +471,19 @@ class ServerInstance
 						break;
 					//The game has ended. Usually, next to that line are written the scores, but we just don't care about them
 					case 'Exit':
+						Leelabot::message('Map ended', array(), E_DEBUG);
 						Leelabot::$instance->plugins->callServerEvent('Exit', $line[1]);
 						break;
 					//Survivor round has ended, with the winner
 					case 'SurvivorWinner':
+						Leelabot::message('Round ended, winner : $0', array($line[1]), E_DEBUG);
 						$winner = Server::getTeamNumber($line[1]);
-						$this->scores[$winner]++;
+						if($winner)
+							$this->scores[$winner]++;
 						break;
 					//The server goes down (it occurs also with a map change)
 					case 'ShutdownGame':
+						Leelabot::message('The server is going down', array($line[1]), E_DEBUG);
 						Leelabot::$instance->plugins->callServerEvent('ShutdownGame', $line[1]);
 						break;
 					//One player kills another, probably the most common action that will occur ?
@@ -456,12 +498,28 @@ class ServerInstance
 						$id = intval($message[0]);
 						$contents = explode(':', $message[1], 2);
 						$contents = substr($contents[1], 1);
+						Leelabot::message('$0 sended a message : $1',array(Server::getPlayer($id)->name, $contents), E_DEBUG);
 						Leelabot::$instance->plugins->callServerEvent('Say',array($id, $contents));
+						
+						//We check if it's a command
+						if($contents[0] == '!')
+						{
+							$contents = substr($contents, 1);
+							$args = explode(' ', $contents);
+							$command = array_shift($args);
+							Leelabot::message('Command catched : !$0', array($command), E_DEBUG);
+							Leelabot::$instance->plugins->callCommand($command, $id, $args);
+						}
 						break;
 				}
 				
 			}
 		}
+		
+		//Before returning, we execute all routines
+		Leelabot::$instance->plugins->callAllRoutines();
+		
+		return TRUE;
 	}
 	
 	/** Reads the log.

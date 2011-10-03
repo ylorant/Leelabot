@@ -89,9 +89,32 @@ class RCon
 		return Leelabot::$instance->intl->translate($self->_rcon->getErrorString($error));
 	}
 	
-	public static function say($message)
+	public static function say($message, $args = array(), $translate = TRUE)
 	{
+		//Parsing message vars
+		foreach($args as $id => $value)
+			$message = str_replace('$'.$id, $value, $message);
+		
+		if($translate)
+			$message = Leelabot::$instance->intl->translate($message);
+		
+		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
+		
 		self::send('say "^7'.$message.'"');
+	}
+	
+	public static function tell($player, $message, $args = array(), $translate = TRUE)
+	{
+		//Parsing message vars
+		foreach($args as $id => $value)
+			$message = str_replace('$'.$id, $value, $message);
+		
+		if($translate)
+			$message = Leelabot::$instance->intl->translate($message);
+		
+		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
+		
+		self::send('tell '.$player.' "^7'.$message.'"');
 	}
 	
 	public static function __callStatic($command, $arguments)
@@ -273,9 +296,30 @@ class Server
 		return $self->_server->getPlugins();
 	}
 	
+	public static function getName()
+	{
+		$self = self::getInstance();
+		return $self->_server->getName();
+	}
+	
 	public static function searchPlayer($search)
 	{
+		$self = self::getInstance();
 		
+		$matches = array();
+		foreach($self->_server->players as $player)
+		{
+			if(strpos($player->name, $search) !== FALSE)
+				$matches[] = $player->id;
+		}
+		
+		//If there is only one match, we return it instead of an array.
+		if(count($matches) == 1)
+			return $matches[0];
+		elseif(count($matches))
+			return $matches;
+		else
+			return FALSE;
 	}
 	
 	public static function getGametype($gametype = FALSE)
@@ -305,7 +349,7 @@ class Server
 		}
 	}
 	
-	public function getTeamName($team)
+	public static function getTeamName($team)
 	{
 		if(is_object($team))
 			$team = $team->team;

@@ -26,12 +26,7 @@ class PluginDummy extends Plugin
 {
 	public function init()
 	{
-		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 50);
-	}
-	
-	public function RoutineCheckPlayers()
-	{
-		echo date('h:i:s').' Check.'.PHP_EOL;
+		
 	}
 	
 	public function SrvEventClientBegin($id)
@@ -49,6 +44,23 @@ class PluginDummy extends Plugin
 	public function CommandShortRoutine($player, $command)
 	{
 		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 1);
+	}
+	
+	public function CommandHello($id, $command)
+	{
+		$player = Server::getPlayer($id);
+		if(isset($command[0]))
+		{
+			$target = Server::getPlayer(Server::searchPlayer($command[0]));
+			print_r($target);
+			if($target === FALSE)
+				$target = 'nobody';
+			if(is_array($target))
+				$target = $target[0];
+			Rcon::say('Hello '.$player->name.', it seems you like '.$target->name.' !');
+		}
+		else
+			Rcon::say('Hello '.$player->name.' !');
 	}
 }
 

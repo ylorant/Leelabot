@@ -41,6 +41,7 @@ class Leelabot
 	public $servers; ///< Server instances objects
 	public $plugins; ///< Plugin manager
 	public $RCon; ///< RCon query class
+	public $outerAPI; ///< Outer API class
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -110,9 +111,23 @@ class Leelabot
 						else
 							Leelabot::message('Locale successfully changed to "$0".', array($this->config['Main']['Locale']));
 						break;
+					case 'UseLog':
+						if(Leelabot::parseBool($value) == FALSE)
+						{
+							Leelabot::message('Disabling log (by Config).');
+							//Save log content for later parameters (like when using --nolog -log file.log)
+							if(Leelabot::$_logFile)
+							{
+								$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+								$logContent = file_get_contents($logFileInfo['uri']);
+								fclose(Leelabot::$_logFile);
+								Leelabot::$_logFile = FALSE;
+							}
+						}
+						break;
 					case 'LogFile':
 						Leelabot::message('Changing log file to $0 (by Config)', array($value));
-						//Save log content for later parameters (like --nolog -log file.log)
+						//Save log content for later parameters (like when using --nolog -log file.log)
 						if(Leelabot::$_logFile)
 						{
 							$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
@@ -142,9 +157,38 @@ class Leelabot
 		{
 			if(isset($this->config['Plugins']['AutoLoad']))
 			{
+				//Getting automatically loaded plugins
 				$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
 				$this->config['Plugins']['AutoLoad'] = array_map('trim', $this->config['Plugins']['AutoLoad']);
+				
+				//Setting default right level for commands
+				if(isset($this->config['Commands']['DefaultLevel']))
+					$this->plugins->setDefaultRightLevel($this->config['Commands']['DefaultLevel']);
+				else
+					$this->plugins->setDefaultRightLevel(0);
+				
+				//We load plugins
 				$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad']);
+				
+				//Setting user-defined levels for commands
+				if(isset($this->config['Commands']['Levels']))
+				{
+					foreach($this->config['Commands']['Levels'] as $key => $value)
+					{
+						if($key[0] = '!')
+							$this->plugins->setCommandLevel($key, $value);
+						elseif(intval($key) == $key) //We check if the param name is a level
+						{
+							$value = explode(',', $value);
+							foreach($value as $command)
+								$this->plugins->setCommandLevel($command, $key);
+						}
+					}
+				}
+				
+				//Setting the verbosity for the command replies
+				if(isset($this->config['Commands']['QuietReplies']))
+					$this->plugins->setQuietReply($this->config['Commands']['QuietReplies']);
 			}
 		}
 		else
@@ -156,6 +200,15 @@ class Leelabot
 		
 		//Loading server instances
 		$this->loadServerInstances();
+		
+		//Loading the OuterAPI (if required)
+		if(isset($this->config['API']) && (!isset($this->config['API']['Enable']) || Leelabot::parseBool($this->config['API']['Enable']) == TRUE))
+		{
+			$this->outerAPI = new OuterAPI();
+			$this->outerAPI->load($this->config['API']);
+		}
+		else
+			$this->outerAPI = NULL;
 		
 		//Notice that we have loaded successfully if more than one server loaded
 		if(count($this->servers))
@@ -185,6 +238,8 @@ class Leelabot
 				$this->servers[$name]->step();
 				usleep(2000);
 			}
+			if($this->outerAPI !== NULL)
+				$this->outerAPI->process();
 		}
 	}
 	
@@ -300,8 +355,8 @@ class Leelabot
 					else
 						Leelabot::message('Locale successfully changed to "$0".', array($value));
 					break;
-				case 'no-log': //Don't use a log file                              
-					Leelabot::message('Disabling log.');
+				case 'no-log': //Don't use a log file
+					Leelabot::message('Disabling log (by CLI).');
 				case 'log': //Define the log file in another place than the default
 					//Save log content for later parameters (like --nolog -log file.log)
 					if(Leelabot::$_logFile)
@@ -537,6 +592,22 @@ class Leelabot
 		return join(', ', $return);
 	}
 	
+	/** Parses a string data to get a boolean.
+	 * This function reads the string $var and returns the boolean of it, depending of its value. "1", "on", "true" and "yes" are recognized as TRUE, everything else
+	 * as FALSE.
+	 * 
+	 * \param $var The string to read.
+	 * 
+	 * \return TRUE or FALSE.
+	 */
+	public static function parseBool($var)
+	{
+		if(in_array(strtolower($var), array('1', 'on', 'true', 'yes')))
+			return TRUE;
+		else
+			return FALSE;
+	}
+	
 	/** Shows a message to the standard output.
 	 * This function shows a predefined message to the standard output. Unlike the printText function (which is a low-level function),
 	 * this one translates the message in the current locale, date it and adds a tag to it. It also writes it on the program log.
@@ -607,7 +678,8 @@ class Leelabot
 	 */
 	public static function errorHandler($errno, $errstr, $errfile, $errline)
 	{
-		Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
+		if(Leelabot::$verbose >= 2 || $errno == E_ERROR)
+			Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
 	}
 }
 
@@ -645,6 +717,8 @@ class Storage
 		$return = array();
 		foreach($object as $var => $val)
 			$return[$var] = $val;
+		
+		return $return;
 	}
 	
 	/** Merges a Storage object with another, or with an array.
