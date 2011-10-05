@@ -198,7 +198,7 @@ class NginyUS extends NginyUS_Framework
 				case 'GET': //It's a GET request (main parameter)
 					$data['page'] = explode(' ', $row[1]);
 					$data['page'] = $data['page'][0];
-					NginyUS::message('Requested page : '.$row[1]);
+					NginyUS::message('Requested page : '.$data['page']);
 					break;
 				case 'Host:':
 					$host = explode(':',$row[1], 2);

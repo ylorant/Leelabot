@@ -19,6 +19,7 @@ class NginyUS_SiteManager extends NginyUS_SystemPages
 			return FALSE;
 		
 		$this->siteList[$name] = clone $this->defaultSite;
+		$this->siteList[$name]->setName($name);
 	}
 	
 	public function getSite($name)
@@ -142,14 +143,21 @@ class NginyUS_Site extends NginyUS_Events
 	private $aliases;
 	private $processFile;
 	private $showIndexes;
+	private $name;
 	
 	public function __construct(&$siteManager)
 	{
 		$this->siteManager = $siteManager;
 	}
 	
+	public function setName($name)
+	{
+		$this->name = $name;
+	}
+	
 	public function setAliases($list)
 	{
+		NginyUS::message('[$0] New aliases : $1', array($this->name, join(', ',$list)), E_DEBUG);
 		$this->aliases = $list;
 	}
 	
@@ -160,6 +168,7 @@ class NginyUS_Site extends NginyUS_Events
 	
 	public function setDocumentRoot($root)
 	{
+		NginyUS::message('[$0] DocumentRoot is now $1', array($this->name, $root), E_DEBUG);
 		if($root[strlen($root)-1] == '/')
 			$root = substr($root, 0, strlen($root)-1);
 		$this->documentRoot = $root;
@@ -172,12 +181,14 @@ class NginyUS_Site extends NginyUS_Events
 	
 	public function loadFiles($fileList)
 	{
+		NginyUS::message('[$0] Loading files : $1', array($this->name, join(', ',$fileList)), E_DEBUG);
 		foreach($fileList as $file)
 			include($this->documentRoot.'/'.$file);
 	}
 	
 	public function setSiteRoot($root)
 	{
+		NginyUS::message('[$0] New SiteRoot $1', array($this->name, $root), E_DEBUG);
 		$this->siteRoot = $root;
 	}
 	

@@ -26,13 +26,26 @@
  * and the current server you are querying with these classes is changed automatically at each event for the correct one (but there is also some methods to dialog to
  * other servers).
  */
-	
+
+/**
+ * \brief RCon simple access class.
+ * 
+ * This class allows access to the RCon with a relative ease. All this class is made to be called statically, so don't try to instanciate an object wit it (except in special cases, like when you want to access other servers than the current server.
+ * This class is automatically set to the current server, i.e. The server from which we are reading events.
+ * Thanks to its __callStatic magic method, you can send a RCon command on the server just by calling RCon::somerconcommand($parameter, $parameter...), for example
+ * RCon::kick('all'), for kicking all players.
+ */
 class RCon
 {
-	private $_rcon;
-	private $_server;
-	private static $_instance;
+	private $_rcon; ///< Reference to Quake3RCon class
+	private $_server; ///< Reference to the server class.
+	private static $_instance; ///< Auto reference to the class (to make a static singleton).
 	
+	/** Returns the instance of the class.
+	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
+	 * 
+	 * \return The auto-reference to the singleton.
+	 */
 	public static function getInstance()
 	{
 		if(!(self::$_instance instanceof self))
@@ -41,7 +54,14 @@ class RCon
         return self::$_instance;
 	}
 	
-	
+	/** Sets the current server to query.
+	 * This function sets the data for the RCon class using the $server ServerInstance object given in argument, permitting it to query the good server without
+	 * giving its address, port or even its ServerInstance class at any time.
+	 * 
+	 * \param $server A reference of the server to set.
+	 * 
+	 * \return Nothing.
+	 */
 	public static function setServer(&$server)
 	{
 		$self = self::getInstance();
@@ -53,42 +73,96 @@ class RCon
 		$self->_rcon->setRConPassword($rcon);
 	}
 	
-	public static function setQueryClass(&$class)
+	/** Sets the Quake3RCon object.
+	 * This function sets the Quake3RCon object which will be used by the class to query the game server.
+	 * 
+	 * \param $object The object to use.
+	 * 
+	 * \return Nothing.
+	 */
+	public static function setQueryClass(&$object)
 	{
 		$self = self::getInstance();
-		$self->_rcon = $class;
+		$self->_rcon = $object;
 	}
 	
+	/** Sends a RCon query to the game server.
+	 * This function sends a RCon query to the gameserver, using the object previously bound to the class.
+	 * 
+	 * \param $rcon The query to send.
+	 * 
+	 * \return The result given by the Quake3RCon class.
+	 */
 	public static function send($rcon)
 	{
 		$self = self::getInstance();
 		return $self->_rcon->RCon($rcon);
 	}
 	
+	/** Waits and get a reply from the game server.
+	 * This function waits to get a reply to the server. If a timeout is given, it will wait the time wanted, but if the timeout is not specified, it will return
+	 * almost immediately (for network purposes, a 50ms wait is imposed, to "fight" the latence, but sometimes it is not sufficient, likely if you're using a 
+	 * saerver in outer space or something like that).
+	 * 
+	 * \param $timeout The timeout to wait.
+	 * 
+	 * \return The game server's reply.
+	 */
 	public static function getReply($timeout = FALSE)
 	{
 		$self = self::getInstance();
 		return $self->_rcon->getReply($timeout);
 	}
 	
+	/** Tests the connectivity to the server.
+	 * This function tests the connectivity with the server by sending a status command to it and waiting a reply. The test fails if the wait time is over
+	 * (by default, 5 seconds), or if the server replies by an error (Bad password, no password set).
+	 * 
+	 * \param $timeout	The timeout to wait for the test. It can be useful to raise this time if you're dialing a very far server or if your internet connection is 
+	 * 					really creepy. Defaults to 5 seconds.
+	 * 
+	 * \return TRUE if the test succeeded, FALSE otherwise.
+	 */
 	public static function test($timeout = 5)
 	{
 		$self = self::getInstance();
 		return $self->_rcon->test($timeout);
 	}
 	
+	/** Get last error from the Quake3RCon class.
+	 * This function returns the last error code given by the Quake3RCon class.
+	 * 
+	 * \return The last error code.
+	 */
 	public static function lastError()
 	{
 		$self = self::getInstance();
 		return $self->_rcon->lastError();
 	}
 	
+	/** Get the error string associated with an error code.
+	 * This function returns the error string for a code returned by Quake3RCon::lastError(), or for any given code.
+	 * 
+	 * \param $error Quake3RCon Error code.
+	 * 
+	 * \return The string associated with the code, or FALSE if the code does not correspond to any error.
+	 */
 	public static function getErrorString($error)
 	{
 		$self = self::getInstance();
 		return Leelabot::$instance->intl->translate($self->_rcon->getErrorString($error));
 	}
 	
+	/** Sends a "say" message to the server.
+	 * This functions sends a "say" message to the server, visible by everyone in the chat space.
+	 * 
+	 * \param $message The message to send. It will be parsed like in Leelabot::message().
+	 * \param $args The arguments of the message, for value replacement. Like in Leelabot::message().
+	 * \param $translate Boolean indicating if the method has to translate the message before sending. Default : TRUE.
+	 * 
+	 * \return Nothing.
+	 * \see RCon::tell()
+	 */
 	public static function say($message, $args = array(), $translate = TRUE)
 	{
 		//Parsing message vars
@@ -100,9 +174,20 @@ class RCon
 		
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
-		self::send('say "^7'.$message.'"');
+		return self::send('say "^7'.$message.'"');
 	}
 	
+	/** Sends a "tell" message to the server.
+	 * This functions sends a "tell" message to the server, visible by just one player in the chat space.
+	 * 
+	 * \param $player The id of the player to send the message.
+	 * \param $message The message to send. It will be parsed like in Leelabot::message().
+	 * \param $args The arguments of the message, for value replacement. Like in Leelabot::message().
+	 * \param $translate Boolean indicating if the method has to translate the message before sending. Default : TRUE.
+	 * 
+	 * \return Nothing.
+	 * \see RCon::say()
+	 */
 	public static function tell($player, $message, $args = array(), $translate = TRUE)
 	{
 		//Parsing message vars
@@ -114,14 +199,30 @@ class RCon
 		
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
-		self::send('tell '.$player.' "^7'.$message.'"');
+		return self::send('tell '.$player.' "^7'.$message.'"');
 	}
 	
+	/** Shortcut to all RCon commands.
+	 * This method is called when an inexistent method is called. Its sole action is to send as RCon command the method name called, with the arguments joined, to
+	 * make a coherent RCon query. It is a shortcut made to avoid the creation of many methods with the same body.
+	 * 
+	 * \param $command The RCon command that will be sended (the called method's name).
+	 * \param $arguments The list of arguments to that command (the called method's arguments).
+	 * 
+	 * \return The reply of RCon::send().
+	 */
 	public static function __callStatic($command, $arguments)
 	{
-		self::send($command.' '.join(' ', $arguments));
+		return self::send($command.' '.join(' ', $arguments));
 	}
 	
+	/** Lists the player in the blue team.
+	 * This function lists the players in the blue team, by reading the content of the g_blueteamlist var. If nobody has been in the blue team yet (since the map
+	 * start), this command will fail.
+	 * 
+	 * \return An array containing the IDs of the blue team's players.
+	 * \see RCon::redTeamList()
+	 */
 	public static function blueTeamList()
 	{
 		if(!self::send('g_blueteamlist'))
@@ -150,6 +251,13 @@ class RCon
 		return $list;
 	}
 	
+	/** Lists the player in the red team.
+	 * This function lists the players in the red team, by reading the content of the g_redteamlist var. If nobody has been in the red team yet (since the map
+	 * start), this command will fail.
+	 * 
+	 * \return An array containing the IDs of the red team's players.
+	 * \see RCon::blueTeamList()
+	 */
 	public static function redTeamList()
 	{
 		if(!self::send('g_redteamlist'))
@@ -178,6 +286,11 @@ class RCon
 		return $list;
 	}
 	
+	/** This function gets the status of the server.
+	 * This function gets the data from the command "status", contaning player list with some data (ID, IP, name...), and the map's name.
+	 * 
+	 * \return An array containing the map name (key "map") and a sub-array of the players (key "players").
+	 */
 	public static function status()
 	{
 		if(!self::send('status'))
@@ -210,6 +323,13 @@ class RCon
 		return $status;
 	}
 	
+	/** Gets the data of one player.
+	 * This function gets the data of one user, by sending the "dumpuser" command, and parse it to return an associative array contaning the data.
+	 * 
+	 * \param $id The ID of the player to dump.
+	 * 
+	 * \return An associative array of all the data gathered by the command.
+	 */
 	public static function dumpUser($id)
 	{
 		if(!self::send('dumpuser '.$id))
@@ -232,6 +352,12 @@ class RCon
 		return $user;
 	}
 	
+	/** Gets all the general server info.
+	 * This function gets all the "general" server informations (excluding specific players' info), by executing the RCon command "serverinfo". It works basically
+	 * like RCon::dumpUser() because the data is presented in the same way (it has to do the same things to get the organised array).
+	 * 
+	 * \return An associative array of all the servers' vars/data.
+	 */
 	public static function serverInfo()
 	{
 		if(!self::send('serverinfo'))
@@ -255,10 +381,15 @@ class RCon
 	}
 }
 
+/**
+ * \brief Holds the server related methods.
+ * This class holds all the unique server methods and constants (like teams, gametypes and flag statuses). The methods used in this class are mainly converters methods
+ * (except the methods to set/get the plugins, name and class).
+ */
 class Server
 {
-	private $_server;
-	private static $_instance;
+	private $_server; ///< Current server instance object
+	private static $_instance; ///< Auto-reference for static singleton
 	
 	const TEAM_RED = 1;
 	const TEAM_BLUE = 2;
@@ -276,6 +407,11 @@ class Server
 	const FLAG_RETURN = 1;
 	const FLAG_CAPTURE = 2;
 	
+	/** Returns the instance of the class.
+	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
+	 * 
+	 * \return The auto-reference to the singleton.
+	 */
 	public static function getInstance()
 	{
 		if(!(self::$_instance instanceof self))
@@ -284,24 +420,50 @@ class Server
         return self::$_instance;
 	}
 	
+	/** Sets the current server to query.
+	 * This function sets the data for the RCon class using the $server ServerInstance object given in argument, permitting it to query the good server without
+	 * giving its address, port or even its ServerInstance class at any time.
+	 * 
+	 * \param $server A reference of the server to set.
+	 * 
+	 * \return Nothing.
+	 */
 	public static function setServer(&$server)
 	{
 		$self = self::getInstance();
 		$self->_server = $server;
 	}
 	
+	/** Returns the server's active plugins
+	 * This function returns the server's active plugins, i.e. the plugins that will be processed each time an event is triggered  (or also for routines).
+	 *
+	 * \return An array containing the server's plugins list.
+	 */
 	public static function getPlugins()
 	{
 		$self = self::getInstance();
 		return $self->_server->getPlugins();
 	}
 	
+	/** Returns the server's name.
+	 * This function returns the current server's name, as set in the configuration.
+	 * 
+	 * \return The current server's name.
+	 */
 	public static function getName()
 	{
 		$self = self::getInstance();
 		return $self->_server->getName();
 	}
 	
+	/** Search player(s) on the server.
+	 * This function searches player(s) on the server, corresponding to the given mask. If only one player is found, the value returned is the sole ID of the
+	 * player (an int). 
+	 * 
+	 * \param $search The search mask, a regular expression.
+	 * 
+	 * \return The result(s). If only one player is found, only it's ID is returned. If multiple players are found, an array containing all the IDs is returned.
+	 */
 	public static function searchPlayer($search)
 	{
 		$self = self::getInstance();
@@ -309,7 +471,7 @@ class Server
 		$matches = array();
 		foreach($self->_server->players as $player)
 		{
-			if(strpos($player->name, $search) !== FALSE)
+			if(preg_match('/'.str_replace('/', '\/', $search).'/', $player->name,) !== FALSE)
 				$matches[] = $player->id;
 		}
 		
@@ -322,9 +484,17 @@ class Server
 			return FALSE;
 	}
 	
+	/** Returns the game type name.
+	 * This function returns the game type name, in a readable string, from the gametype number given in argument, or if not given, with the current server's
+	 * gametype of the server.
+	 * 
+	 * \param $gametype The wanted gametype number. If not given, the current server's gametype is taken.
+	 * 
+	 * \return A string containing the gmetype name.
+	 */
 	public static function getGametype($gametype = FALSE)
 	{
-		if(!$gametype)
+		if($gametype === FALSE)
 		{
 			$self = self::getInstance();
 			$gametype = $self->_server->serverInfo['g_gametype'];
@@ -349,6 +519,13 @@ class Server
 		}
 	}
 	
+	/** Returns the team's name of a team or a player.
+	 * This function returns the team name for a given team number or a given player data object.
+	 * 
+	 * \param $team A team number, or a player's data. if it is player data, it will return the team name corresponding with the 'team' property of that object.
+	 * 
+	 * \return A string containing the requierd team name.
+	 */
 	public static function getTeamName($team)
 	{
 		if(is_object($team))
@@ -367,6 +544,13 @@ class Server
 		}
 	}
 	
+	/** Returns the team number corresponding to a name.
+	 * This function returns the team number corresponding with the name given.
+	 * 
+	 * \param $teamname The team name.
+	 * 
+	 * \return The team number, or FALSE if the name is not recognized.
+	 */
 	public static function getTeamNumber($teamname)
 	{
 		switch(strtolower($teamname))
@@ -383,6 +567,13 @@ class Server
 		}
 	}
 	
+	/** Returns the player count of each team.
+	 * This function returns the player count for each team, in an array.
+	 * 
+	 * \param $players Array of player data. If not given, the current server's players will be used for counting.
+	 * 
+	 * \return An array containing the player count for each team.
+	 */
 	public static function getTeamCount($players = FALSE)
 	{
 		$count = array(NULL, 0, 0, 0);
@@ -399,6 +590,13 @@ class Server
 		return $count;
 	}
 	
+	/** Parses the info given by the log.
+	 * This function parses the data given by the server, in the server events InitGame, ClientUserInfo and the others.
+	 * 
+	 * \param $info The information to parse.
+	 * 
+	 * \return The info in an associative array.
+	 */
 	public static function parseInfo($info)
 	{
 		$out = array();
@@ -416,9 +614,16 @@ class Server
 		return $out;
 	}
 	
+	/** Returns the player data for an ID.
+	 * This function returns the player data for the given ID.
+	 * 
+	 * \param $id The ID of the player to get data from.
+	 * 
+	 * \return A Storage object of the player data. If the player does not exists, it returns NULL.
+	 */
 	public static function getPlayer($id)
 	{
 		$server = self::getInstance();
-		return $server->_server->players[$id];
+		return isset($server->_server->players[$id]) ? $server->_server->players[$id] : NULL;
 	}
 }

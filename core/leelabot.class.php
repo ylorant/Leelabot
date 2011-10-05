@@ -153,43 +153,40 @@ class Leelabot
 		$this->processCLIPostparsingArguments($CLIArguments);
 		
 		//Loading plugins (throws an error if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
-		if(isset($this->config['Plugins']))
+		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']))
 		{
-			if(isset($this->config['Plugins']['AutoLoad']))
+			//Getting automatically loaded plugins
+			$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
+			$this->config['Plugins']['AutoLoad'] = array_map('trim', $this->config['Plugins']['AutoLoad']);
+			
+			//Setting default right level for commands
+			if(isset($this->config['Commands']['DefaultLevel']))
+				$this->plugins->setDefaultRightLevel($this->config['Commands']['DefaultLevel']);
+			else
+				$this->plugins->setDefaultRightLevel(0);
+			
+			//We load plugins
+			$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad']);
+			
+			//Setting user-defined levels for commands
+			if(isset($this->config['Commands']['Levels']))
 			{
-				//Getting automatically loaded plugins
-				$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
-				$this->config['Plugins']['AutoLoad'] = array_map('trim', $this->config['Plugins']['AutoLoad']);
-				
-				//Setting default right level for commands
-				if(isset($this->config['Commands']['DefaultLevel']))
-					$this->plugins->setDefaultRightLevel($this->config['Commands']['DefaultLevel']);
-				else
-					$this->plugins->setDefaultRightLevel(0);
-				
-				//We load plugins
-				$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad']);
-				
-				//Setting user-defined levels for commands
-				if(isset($this->config['Commands']['Levels']))
+				foreach($this->config['Commands']['Levels'] as $key => $value)
 				{
-					foreach($this->config['Commands']['Levels'] as $key => $value)
+					if($key[0] = '!')
+						$this->plugins->setCommandLevel($key, $value);
+					elseif(intval($key) == $key) //We check if the param name is a level
 					{
-						if($key[0] = '!')
-							$this->plugins->setCommandLevel($key, $value);
-						elseif(intval($key) == $key) //We check if the param name is a level
-						{
-							$value = explode(',', $value);
-							foreach($value as $command)
-								$this->plugins->setCommandLevel($command, $key);
-						}
+						$value = explode(',', $value);
+						foreach($value as $command)
+							$this->plugins->setCommandLevel($command, $key);
 					}
 				}
-				
-				//Setting the verbosity for the command replies
-				if(isset($this->config['Commands']['QuietReplies']))
-					$this->plugins->setQuietReply($this->config['Commands']['QuietReplies']);
 			}
+			
+			//Setting the verbosity for the command replies
+			if(isset($this->config['Commands']['QuietReplies']))
+				$this->plugins->setQuietReply($this->config['Commands']['QuietReplies']);
 		}
 		else
 			Leelabot::message('There is no plugin configuration', array(), E_WARNING);
