@@ -48,6 +48,7 @@ class PluginDummy extends Plugin
 	
 	public function CommandHello($id, $command)
 	{
+		$rcon = ServerList::getServerRCon(Server::getName());
 		$player = Server::getPlayer($id);
 		if(isset($command[0]))
 		{
@@ -57,10 +58,10 @@ class PluginDummy extends Plugin
 				$target = 'nobody';
 			if(is_array($target))
 				$target = $target[0];
-			Rcon::say('Hello '.$player->name.', it seems you like '.$target->name.' !');
+			$rcon->say('Hello '.$player->name.', it seems you like '.$target->name.' !');
 		}
 		else
-			Rcon::say('Hello '.$player->name.' !');
+			$rcon->say('Hello '.$player->name.' !');
 	}
 }
 

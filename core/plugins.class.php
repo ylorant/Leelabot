@@ -502,7 +502,7 @@ class PluginManager
 	 * 
 	 * \return TRUE if callbacks executed correctly, FALSE otherwise.
 	 */
-	public function callServerEvent($event, $params)
+	public function callServerEvent($event, $params = NULL)
 	{
 		if(isset($this->_serverEvents[$event]))
 		{

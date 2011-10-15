@@ -73,6 +73,17 @@ class RCon
 		$self->_rcon->setRConPassword($rcon);
 	}
 	
+	/** Gets the current server to query.
+	 * This function returns the current server set for the class. It is useful for restoring the server when doing one-time RCon command sending.
+	 * 
+	 * \return The current set server.
+	 */
+	public static function getServer(&$server)
+	{
+		$self = self::getInstance();
+		return $self->_server;
+	}
+	
 	/** Sets the Quake3RCon object.
 	 * This function sets the Quake3RCon object which will be used by the class to query the game server.
 	 * 
@@ -471,7 +482,7 @@ class Server
 		$matches = array();
 		foreach($self->_server->players as $player)
 		{
-			if(preg_match('/'.str_replace('/', '\/', $search).'/', $player->name,) !== FALSE)
+			if(preg_match('/'.str_replace('/', '\/', $search).'/', $player->name) !== FALSE)
 				$matches[] = $player->id;
 		}
 		
@@ -625,5 +636,198 @@ class Server
 	{
 		$server = self::getInstance();
 		return isset($server->_server->players[$id]) ? $server->_server->players[$id] : NULL;
+	}
+	
+	/** Sets a custom server var.
+	 * This function sets a custom variable for the current server. Beware, the variables are not limited to your plugin, but are accessible in all plugins, so
+	 * be aware of the other plugins' var names, to avoid overwrite.
+	 * 
+	 * \param $var Var name.
+	 * \param $value Var value.
+	 * 
+	 * \return The set value.
+	 */
+	public static function set($var, $value)
+	{
+		$self = self::getInstance();
+		return $self->_server->pluginVars[$var] = $value;
+	}
+	
+	/** Gets a custom server var.
+	 * This function returns a custom variable set for the current server.
+	 * 
+	 * \param $var Var name.
+	 * 
+	 * \returns The variable value, or null if the variable does not exists.
+	 */
+	public static function get($var)
+	{
+		$self = self::getInstance();
+		return isset($self->_server->pluginVars[$var]) ? $self->_server->pluginVars[$var] : NULL;
+	}
+}
+
+/**
+ * \brief Multiple server access class.
+ * This class allow any plugin to access to any server where the bot is connected. The plugins can use it to send queries and retrieve statuses from multiple servers
+ * at a time.
+ */
+class ServerList
+{
+	private $_leelabot; ///< Reference to Leelabot class
+	private static $_instance; ///< Self-reference to the class (to make a static singleton)
+	
+	/** Returns the instance of the class.
+	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
+	 * 
+	 * \return The auto-reference to the singleton.
+	 */
+	public static function getInstance()
+	{
+		if(!(self::$_instance instanceof self))
+            self::$_instance = new self();
+ 
+        return self::$_instance;
+	}
+	
+	/** Sets the Leelabot class.
+	 * This function sets the object that the class will call to get all server instances, a Leelabot class.
+	 * 
+	 * \param $class The class to set.
+	 * 
+	 * \return Nothing.
+	 */
+	public static function setLeelabotClass(&$class)
+	{
+		$self = self::getInstance();
+		$self->_leelabot = $class;
+	}
+	
+	/** Gets a RCon instance for the specified server.
+	 * This function returns an instance of RCon (the same as the innerAPI one) for the specified server in argument.
+	 * 
+	 * \param $server The wanted server's name.
+	 * 
+	 * \return If the server exists, it returns an instance of RCon class. Else, it returns FALSE.
+	 */
+	public static function getServerRCon($server)
+	{
+		$self = self::getInstance();
+		if(!isset($self->_leelabot->servers[$server]))
+			return FALSE;
+		
+		$rcon = new RCon();
+		$Q3RCon = new Quake3RCon();
+		$rcon->setQueryClass($Q3RCon);
+		$rcon->setServer($self->_leelabot->servers[$server]);
+		
+		return $rcon;
+	}
+	
+	/** Gets a Server class instance for the specified server.
+	 * This function returns an instance of Server (the same as the innerAPI one) for the specified server in argument.
+	 * 
+	 * \param $server The wanted server's name.
+	 * 
+	 * \return If the server exists, it returns an instance of Server class. Else, it returns FALSE.
+	 */
+	public static function getServer($server)
+	{
+		$self = self::getInstance();
+		if(!isset($self->_leelabot->servers[$server]))
+			return FALSE;
+		
+		$rcon = new Server();
+		$rcon->setServer($self->_leelabot->servers[$server]);
+		
+		return $rcon;
+	}
+	
+	/** Deletes a server from the bot.
+	 * This function deletes a server from the bot. This server is of course deleted temporarily, the only way to do it permanently is to remove it from the config.
+	 * 
+	 * \param $name The server's name.
+	 * 
+	 * \return TRUE if the server deleted correctly, FALSE otherwise.
+	 */
+	public static function unload($name)
+	{
+		$self = self::getInstance();
+		
+		return $self->_leelabot->unloadServer($name);
+	}
+}
+
+/**
+ * \brief Locale access class.
+ * This class allows to use multiple locales at a time, by instanciating multiple objects of Intl class simultaneously. It loads the locales automatically, so just
+ * the methods for locale listing/check and translation are available.
+ */
+class Locale
+{
+	private $_defaultIntl; ///< Default Intl object, from where locale objects will be cloned.
+	private $_locales = array(); ///< Locales list.
+	
+	/** Returns the instance of the class.
+	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
+	 * 
+	 * \return The auto-reference to the singleton.
+	 */
+	public static function getInstance()
+	{
+		if(!(self::$_instance instanceof self))
+            self::$_instance = new self();
+ 
+        return self::$_instance;
+	}
+	
+	/** Inits the class.
+	 * This function inits the class, by loading the default template object.
+	 * 
+	 * \returns Nothing.
+	 */
+	public static function init()
+	{
+		$self = self::getInstance();
+		
+		$self->_defaultIntl = new Intl();
+	}
+	
+	/** Translates a message.
+	 * This method translates a message from an identifier or English to another locale, loading if necessary new locale files.
+	 * 
+	 * \param $locale The destination locale name.
+	 * \param $from The message to translate.
+	 * 
+	 * \return The translated message, or, if there was an error, the original message.
+	 */
+	public function translate($locale, $from)
+	{
+		$self = self::getInstance();
+		
+		$lcname = $self->_defaultIntl->localeExists($locale)
+		if(!$lcname)
+			return $from;
+		else
+		{
+			if(!isset($self->_locales[$lcname]))
+			{
+				$self->_locales[$lcname] = clone $self->_defaultIntl;
+				$self->_locales[$lcname]->setLocale($lcname);
+			}
+			
+			return $self->_locales[$lcname]->translate($from);
+		}
+	}
+	
+	/** Lists available locales
+	 * This function lists available locales.
+	 * 
+	 * \return An array containing the list of all available locales.
+	 */
+	public function getList()
+	{
+		$self = self::getInstance();
+		return $self->_defaultIntl->getLocaleList();
 	}
 }

@@ -56,6 +56,34 @@ class Intl
 		}
 	}
 	
+	/** Returns the list of available locales.
+	 * This function returns the list of all available locales, according with their parameter #display.
+	 * 
+	 * \return An associative array containing the locales ('identifier' => 'name').
+	 */
+	public function getLocaleList()
+	{
+		$list = array();
+		$dir = scandir($this->_root);
+		foreach($dir as $el)
+		{
+			if(is_dir($this->_root.'/'.$el))
+			{
+				if(is_file($this->_root.'/'.$el.'/lc.conf')) //Alias check
+				{
+					$parser = new Intl_Parser();
+					$data = $parser->parseFile($this->_root.'/'.$el.'/lc.conf');
+					unset($parser);
+					$list[$el] = $data['display'];
+				}
+				else
+					$list[$el] = $el;
+			}
+		}
+		
+		return $list;
+	}
+	
 	/** Returns the current locale.
 	 * This function returns the current locale set with the function setLocale, or, if not set, the default locale.
 	 * 
@@ -127,7 +155,7 @@ class Intl
 	 * This function checks if the locale exists, by its folder name, or by an alias.
 	 * 
 	 * \param $locale The locale to set.
-	 * \return TRUE if the locale exists, FALSE if not.
+	 * \return The locale's real name if the locale exists, FALSE if not.
 	 */
 	public function localeExists($locale)
 	{

@@ -152,6 +152,16 @@ class Leelabot
 		//Post-parsing CLI arguments (after loading the config because they override file configuration)
 		$this->processCLIPostparsingArguments($CLIArguments);
 		
+		//Creating RCon class and binding it to the InnerAPI
+		$this->_RCon = new Quake3RCon();
+		RCon::setQueryClass($this->_RCon);
+		
+		//Loading ServerList InnerAPI class
+		ServerList::setLeelabotClass($this);
+		
+		//Loading Locale InnerAPI class
+		Locale::init();
+		
 		//Loading plugins (throws an error if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
 		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']))
 		{
@@ -191,14 +201,10 @@ class Leelabot
 		else
 			Leelabot::message('There is no plugin configuration', array(), E_WARNING);
 		
-		//Creating RCon class and binding it to the API
-		$this->_RCon = new Quake3RCon();
-		RCon::setQueryClass($this->_RCon);
-		
 		//Loading server instances
 		$this->loadServerInstances();
 		
-		//Loading the OuterAPI (if required)
+		//Loading the OuterAPI (if required, i.e. There is an API section in config and if there's an Enable parameter, it is active)
 		if(isset($this->config['API']) && (!isset($this->config['API']['Enable']) || Leelabot::parseBool($this->config['API']['Enable']) == TRUE))
 		{
 			$this->outerAPI = new OuterAPI();
@@ -292,6 +298,49 @@ class Leelabot
 				unset($this->servers[$name]);
 			}
 		}
+	}
+	
+	/** Loads a new server.
+	 * This function creates and loads the config associated (if it exists). Finally it connects to the server.
+	 * 
+	 * \param $name The server name.
+	 * \param $config An associative array containing the config for the new server, where the keys corresponds to config vars' names. If not given, the config
+	 * will be loaded from the global config (i.e. the config files), if it exists.
+	 * 
+	 * \return TRUE if the server loaded correctly, FALSE otherwise.
+	 */
+	public function loadServer($name, $config = NULL)
+	{
+		$this->servers[$name] = new ServerInstance($this);
+		$this->servers[$name]->setName($name);
+		
+		if(is_array($config))
+			$this->servers[$name]->loadConfig($config);
+		elseif(isset($this->config['Server'][$name]))
+			$this->servers[$name]->loadConfig($this->config['Server'][$name]);
+		else
+			return FALSE;
+		
+		if(!$this->servers[$name]->connect())
+			return FALSE;
+		
+		return TRUE;
+	}
+	
+	/** Unloads a server.
+	 * This function unloads a previously loaded server. It does not disconnects the clients and everything, it justs removes it from the server list.
+	 * 
+	 * \param $name The server's name.
+	 * 
+	 * \return TRUE if the server unloaded successfully, FALSE otherwise.
+	 */
+	public function unloadServer($name)
+	{
+		if(!isset($this->_servers[$name]))
+			return FALSE;
+		
+		unset($this->_servers[$name]);
+		return TRUE;
 	}
 	
 	/** Processes pre-parsing CLI arguments.
