@@ -402,21 +402,23 @@ class Server
 	private $_server; ///< Current server instance object
 	private static $_instance; ///< Auto-reference for static singleton
 	
-	const TEAM_RED = 1;
-	const TEAM_BLUE = 2;
-	const TEAM_SPEC = 3;
+	//Teams ID
+	const TEAM_RED = 1; ///< Red team ID
+	const TEAM_BLUE = 2; ///< Blue team ID
+	const TEAM_SPEC = 3; ///< Spectators' ID
 	
-	const GAME_FFA = 1;
-	const GAME_TDM = 3;
-	const GAME_TS = 4;
-	const GAME_FTL = 5;
-	const GAME_CNH = 6;
-	const GAME_CTF = 7;
-	const GAME_BOMB = 8;
+	//Gametypes IDs
+	const GAME_FFA = 1; ///< Free For All
+	const GAME_TDM = 3; ///< Team Deathmatch
+	const GAME_TS = 4; ///< Team Survivor
+	const GAME_FTL = 5; ///< Follow The Leader
+	const GAME_CNH = 6; ///< Capture and Hold
+	const GAME_CTF = 7; ///< Capture the Flag
+	const GAME_BOMB = 8; ///< Bomb mode
 	
-	const FLAG_DROP = 0;
-	const FLAG_RETURN = 1;
-	const FLAG_CAPTURE = 2;
+	const FLAG_DROP = 0; ///< Flag drop
+	const FLAG_RETURN = 1; ///< Flag return
+	const FLAG_CAPTURE = 2; ///< Flag capture
 	
 	/** Returns the instance of the class.
 	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
@@ -638,6 +640,17 @@ class Server
 		return isset($server->_server->players[$id]) ? $server->_server->players[$id] : NULL;
 	}
 	
+	/** Returns the player list for the server.
+	 * This function returns the player data list for the server.
+	 * 
+	 * \return The player data list, in an array.
+	 */
+	public static function getPlayerList()
+	{
+		$server = self::getInstance();
+		return $server->_server->players;
+	}
+	
 	/** Sets a custom server var.
 	 * This function sets a custom variable for the current server. Beware, the variables are not limited to your plugin, but are accessible in all plugins, so
 	 * be aware of the other plugins' var names, to avoid overwrite.
@@ -756,17 +769,26 @@ class ServerList
 		
 		return $self->_leelabot->unloadServer($name);
 	}
+	
+	
+	public static function getList()
+	{
+		$self = self::getInstance();
+		
+		return array_keys($self->_leelabot->servers);
+	}
 }
 
 /**
- * \brief Locale access class.
+ * \brief Locales access class.
  * This class allows to use multiple locales at a time, by instanciating multiple objects of Intl class simultaneously. It loads the locales automatically, so just
  * the methods for locale listing/check and translation are available.
  */
-class Locale
+class Locales
 {
 	private $_defaultIntl; ///< Default Intl object, from where locale objects will be cloned.
 	private $_locales = array(); ///< Locales list.
+	private static $_instance; ///< Auto-reference for static singleton
 	
 	/** Returns the instance of the class.
 	 *This function returns the auto-reference to the singleton instance of the class. It should not be called by other classes.
@@ -805,7 +827,7 @@ class Locale
 	{
 		$self = self::getInstance();
 		
-		$lcname = $self->_defaultIntl->localeExists($locale)
+		$lcname = $self->_defaultIntl->localeExists($locale);
 		if(!$lcname)
 			return $from;
 		else
