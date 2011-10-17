@@ -28,16 +28,18 @@
  
 class PluginClientBase extends Plugin
 {
-	private $_autoteams = false;
+	private $_autoteams = FALSE; ///< AutoTeams toggle.
 	
 	public function init()
 	{
-		// nothing..
+		if(isset($this->_main->config['Plugin']['Clientbase']) && isset($this->_main->config['Plugin']['Clientbase']['AutoTeams']) && Leelabot::parseBool($this->_main->config['Plugin']['Clientbase']['AutoTeams']))
+			$this->_autoteams = TRUE;
 	}
 	
 	public function SrvEventClientUserinfo($data)
 	{
-		if($this->_autoteams) $this->balance();
+		if($this->_autoteams)
+			$this->balance();
 	}
 	
 	public function CommandTeams($player, $command)
@@ -72,10 +74,8 @@ class PluginClientBase extends Plugin
 			$teams_minus = Server::TEAM_RED;
 			$balance = true;
 		}
-		else // Else..
-		{
+		else
 			$balance = false;
-		}
 		
 		// If the teams are unbalanced
 		if($balance)
@@ -112,7 +112,8 @@ class PluginClientBase extends Plugin
 		}
 		else
 		{
-			if($player !== null) RCon::tell($player, 'Teams are already balanced !');
+			if($player !== NULL)
+				RCon::tell($player, 'Teams are already balanced !');
 		}
 		
 	}

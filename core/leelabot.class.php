@@ -42,6 +42,7 @@ class Leelabot
 	public $plugins; ///< Plugin manager
 	public $RCon; ///< RCon query class
 	public $outerAPI; ///< Outer API class
+	public $maxServers; ///< Max servers for the bot
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -65,7 +66,7 @@ class Leelabot
 		$CLIArguments = Leelabot::parseArgs($CLIArguments);
 		
 		//Loading plugins class
-		$this->plugins = new PluginManager();
+		$this->plugins = new PluginManager($this);
 		
 		//Checking CLI argument for root modification, and modification in case
 		if($rootParam = array_intersect(array('r', 'root'), array_keys($CLIArguments)))
@@ -92,6 +93,12 @@ class Leelabot
 		if(!$this->loadConfig())
 		{
 			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
+			exit();
+		}
+		//Checking if the number of servers defined in the config is not greater than the limit defined in the CLI
+		if($this->maxServers > 0 && count($this->config['Server']) > $this->maxServers)
+		{
+			Leelabot::message("Number of set servers in the config is greater than the limit ($0).", array($this->maxServers), E_ERROR);
 			exit();
 		}
 		
@@ -121,6 +128,7 @@ class Leelabot
 								$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
 								$logContent = file_get_contents($logFileInfo['uri']);
 								fclose(Leelabot::$_logFile);
+								unlink($logFileInfo['uri']);
 								Leelabot::$_logFile = FALSE;
 							}
 						}
@@ -160,7 +168,16 @@ class Leelabot
 		ServerList::setLeelabotClass($this);
 		
 		//Loading Locale InnerAPI class
-		Locale::init();
+		Locales::init();
+		
+		//Loading the OuterAPI (if required, i.e. There is an API section in config and if there's an Enable parameter, it is active)
+		if(isset($this->config['API']) && (!isset($this->config['API']['Enable']) || Leelabot::parseBool($this->config['API']['Enable']) == TRUE))
+		{
+			$this->outerAPI = new OuterAPI();
+			$this->outerAPI->load($this->config['API']);
+		}
+		else
+			$this->outerAPI = NULL;
 		
 		//Loading plugins (throws an error if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
 		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']))
@@ -204,15 +221,6 @@ class Leelabot
 		//Loading server instances
 		$this->loadServerInstances();
 		
-		//Loading the OuterAPI (if required, i.e. There is an API section in config and if there's an Enable parameter, it is active)
-		if(isset($this->config['API']) && (!isset($this->config['API']['Enable']) || Leelabot::parseBool($this->config['API']['Enable']) == TRUE))
-		{
-			$this->outerAPI = new OuterAPI();
-			$this->outerAPI->load($this->config['API']);
-		}
-		else
-			$this->outerAPI = NULL;
-		
 		//Notice that we have loaded successfully if more than one server loaded
 		if(count($this->servers))
 			Leelabot::message('Leelabot loaded successfully for $0 server$1', array(count($this->servers), (count($this->servers) > 1 ? 's' : '')));
@@ -221,6 +229,7 @@ class Leelabot
 			Leelabot::message('Can\'t load Leelabot for any configured server.', array(), E_ERROR);
 			exit();
 		}
+		
 	}
 	
 	/** Leelabot loop.
@@ -239,7 +248,7 @@ class Leelabot
 				Server::setServer($this->servers[$name]);
 				
 				$this->servers[$name]->step();
-				usleep(2000);
+				usleep(5000);
 			}
 			if($this->outerAPI !== NULL)
 				$this->outerAPI->process();
@@ -376,6 +385,9 @@ class Leelabot
 					Leelabot::message('Command arguments : $0', array($this->dumpArray($CLIArguments)));
 					Leelabot::message('Current PHP version : $0', array(phpversion()));
 					break;
+				case 'maxservers':
+					$this->maxServers = intval($value);
+					break;
 			}
 		}
 	}
@@ -436,6 +448,7 @@ class Leelabot
 	 */
 	public function loadConfig()
 	{
+		Leelabot::message('Loading config...');
 		if(!is_dir($this->_configDirectory))
 		{
 			Leelabot::message('Could not access to user-set confdir : $0', array($this->_configDirectory), E_WARNING);
@@ -724,7 +737,11 @@ class Leelabot
 	 */
 	public static function errorHandler($errno, $errstr, $errfile, $errline)
 	{
-		if(Leelabot::$verbose >= 2 || $errno == E_ERROR)
+		//Don't log error if it's a socket_accept() error (it floods the log)
+		if(strpos($errstr, 'socket_accept') !== FALSE)
+			return TRUE;
+		
+		if(Leelabot::$verbose >= 2 || $errno == E_ERROR )
 			Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
 	}
 }

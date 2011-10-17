@@ -1,1 +1,1 @@
-php ../../bot.php -r ../../ -c tests/outerapi/conf -v
+php ../../bot.php -r ../../ -c tests/outerapi/conf -vv

@@ -74,11 +74,12 @@ class RCon
 	}
 	
 	/** Gets the current server to query.
-	 * This function returns the current server set for the class. It is useful for restoring the server when doing one-time RCon command sending.
+	 * This function returns the current server set for the class. It is useful for restoring the server when doing one-time RCon command sending, but it is better
+	 * to use ServerList::getServerRCon().
 	 * 
 	 * \return The current set server.
 	 */
-	public static function getServer(&$server)
+	public static function getServer()
 	{
 		$self = self::getInstance();
 		return $self->_server;
@@ -225,6 +226,20 @@ class RCon
 	public static function __callStatic($command, $arguments)
 	{
 		return self::send($command.' '.join(' ', $arguments));
+	}
+	
+	/** Shortcut to all RCon commands (for instance mode).
+	 * This method is called when an inexistent method is called. Its sole action is to send as RCon command the method name called, with the arguments joined, to
+	 * make a coherent RCon query. It is a shortcut made to avoid the creation of many methods with the same body.
+	 * 
+	 * \param $command The RCon command that will be sended (the called method's name).
+	 * \param $arguments The list of arguments to that command (the called method's arguments).
+	 * 
+	 * \return The reply of RCon::send().
+	 */
+	public function __call($command, $arguments)
+	{
+		return $this->send($command.' '.join(' ', $arguments));
 	}
 	
 	/** Lists the player in the blue team.
@@ -447,6 +462,17 @@ class Server
 		$self->_server = $server;
 	}
 	
+	/** Gets the current server to query.
+	 * This function returns the current server set for the class.
+	 * 
+	 * \return The current set server.
+	 */
+	public static function getServer()
+	{
+		$self = self::getInstance();
+		return $self->_server;
+	}
+	
 	/** Returns the server's active plugins
 	 * This function returns the server's active plugins, i.e. the plugins that will be processed each time an event is triggered  (or also for routines).
 	 *
@@ -641,14 +667,29 @@ class Server
 	}
 	
 	/** Returns the player list for the server.
-	 * This function returns the player data list for the server.
+	 * This function returns the player data list for the server, or for only a team.
+	 * 
+	 * \param $team The team to get. If not given or incorrect (it does not correpond to team constants), all the players are returned.
 	 * 
 	 * \return The player data list, in an array.
 	 */
-	public static function getPlayerList()
+	public static function getPlayerList($team = FALSE)
 	{
 		$server = self::getInstance();
-		return $server->_server->players;
+		
+		if($team == FALSE || !in_array($team, array(self::TEAM_RED, self::TEAM_BLUE, self::TEAM_SPEC)))
+			return $server->_server->players;
+		else
+		{
+			$list = array();
+			foreach($server->_server->players as &$player)
+			{
+				if($player->team == $team)
+					$list[] = $player;
+			}
+		}
+		
+		return $list;
 	}
 	
 	/** Sets a custom server var.

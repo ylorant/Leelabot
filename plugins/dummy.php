@@ -63,6 +63,16 @@ class PluginDummy extends Plugin
 		else
 			$rcon->say('Hello '.$player->name.' !');
 	}
+	
+	public function WSMethodPlayer($id)
+	{
+		return serialize(Storage::toArray(Server::getPlayer($id)));
+	}
+	
+	public function WSMethodKick($server, $id)
+	{
+		return ServerList::getServerRCon($server)->kick($id);
+	}
 }
 
 return $this->initPlugin(array(

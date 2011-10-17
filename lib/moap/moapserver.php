@@ -33,6 +33,7 @@ class MOAPServer
 	private $_call; ///< The class name/The object to call when a query is received
 	private $_defaultMethod = 'default'; ///< The default method to fall back where a request does not success.
 	private $_aliases;
+	private $_replyCallback; ///< Reply callback
 	
 	/** Sets the reply class.
 	 * This function sets the class or the object that will be used for handling the queries.
@@ -53,6 +54,18 @@ class MOAPServer
 		return TRUE;
 	}
 	
+	/** Sets the reply callback.
+	 * This function sets the reply callback, which will be called by the class to send reply data.
+	 * 
+	 * \param $callback The callback to set.
+	 * 
+	 * \return Nothing.
+	 */
+	public function setReplyCallback($callback)
+	{
+		$this->_replyCallback = $callback;
+	}
+	
 	/** Handles a MOAP request.
 	 * This functions handles a MOAP request, from the parameters given in the $post parameter or, if not given, in the $_POST Superglobal.
 	 * 
@@ -66,7 +79,7 @@ class MOAPServer
 			$post = $_POST;
 		
 		//If there is no method specified, the default method is called (if it exists, else, nothing happens)
-		if(empty($post['request']) || !method_exists($this->_call, $post['request']))
+		if(empty($post['request']))
 		{
 			if(method_exists($this->_call, $this->_defaultMethod))
 				$this->_callMethod($this->_defaultMethod, $post);
@@ -74,12 +87,7 @@ class MOAPServer
 			return NULL;
 		}
 		else //A method to query is specified
-		{
-			if(method_exists($this->_call, $post['request']))
-				$this->_callMethod($post['request'], $post);
-			else
-				$this->_callMethod($this->_defaultMethod, $post);
-		}
+			$this->_callMethod($post['request'], $post);
 	}
 	
 	/** Calls a method, with given data.
@@ -98,6 +106,8 @@ class MOAPServer
 			if(preg_match('#param([0-9]+)#', $parname, $match)) //Check if it's a parameter
 				$args[$match[1]] = $param;
 		}
-		call_user_func_array(array($this->_call, $method), $args);
+		
+		$result = call_user_func_array(array($this->_call, $method), $args);
+		call_user_func($this->_replyCallback, $result);
 	}
 }

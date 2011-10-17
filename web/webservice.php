@@ -34,13 +34,17 @@ class LeelabotWebservice
 	private $_main;
 	private $_MOAPServer;
 	private $_id;
+	private $_methods = array();
 	
 	public function __construct(&$site, &$main)
 	{
 		$this->_site = $site;
 		$this->_main = $main;
 		
-		$site->addPage('/', 'LeelabotWebservice', 'Webservice');
+		//We set the webservice class into the OuterAPI class, for adding properly methods
+		Leelabot::$instance->outerAPI->setWSObject($this);
+		
+		$site->addPage('/', $this, 'Webservice');
 		
 		$this->loadWebservice();
 	}
@@ -52,15 +56,15 @@ class LeelabotWebservice
 			$this->_MOAPServer->handle();
 		else
 		{
-			$hiddenMethods = array('Webservice', 'loadWebservice', '__construct');
 			$this->_main->BufferSetReplyCode($id, 200);
+			$this->_main->BufferAppendData($id,'<html><head><title>Leelabot API function list</title></head><body>');
 			$this->_main->BufferAppendData($id,'<h1>List of available functions :</h1><ul>');
-			foreach(get_class_methods($this) as $method)
-			{
-				if(!in_array($method, $hiddenMethods))
-					$this->_main->BufferAppendData($id,'<li>'.$method.'()</li>');
-			}
+			
+			foreach(array_keys($this->_methods) as $method)
+				$this->_main->BufferAppendData($id,'<li>'.$method.'()</li>');
+			
 			$this->_main->BufferAppendData($id,'</ul><p>Please refer to the documentation for further details.</p>');
+			$this->_main->BufferAppendData($id, '</body></html>');
 			$this->_main->sendBuffer($id);
 		}
 	}
@@ -69,12 +73,26 @@ class LeelabotWebservice
 	{
 		$this->_MOAPServer = new MOAPServer();
 		$this->_MOAPServer->setClass($this);
+		$this->_MOAPServer->setReplyCallback(array($this, 'reply'));
 	}
 	
-	public function player($id)
+	public function reply($data)
 	{
-		$this->_main->BufferAppendData($this->_id, serialize(Storage::toArray(Server::getPlayer($id))));
+		$this->_main->BufferAppendData($this->_id, $data);
 		$this->_main->sendBuffer($this->_id);
+	}
+	
+	public function addMethod($method, $callback)
+	{
+		if(isset($this->_methods[$method]))
+			return FALSE;
+		$this->_methods[$method] = $callback;
+	}
+	
+	public function __call($method, $args)
+	{
+		if(isset($this->_methods[$method]))
+			return call_user_func_array($this->_methods[$method], $args);
 	}
 }
 

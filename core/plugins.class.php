@@ -62,6 +62,24 @@ class PluginManager
 		$this->_quietReply = FALSE;
 	}
 	
+	/** Returns the name of a plugin from its instance.
+	 * This function returns the name of a plugin, from its instance.
+	 * 
+	 * \param $object A plugin instance.
+	 * 
+	 * \return The plugins' name or NULL if the plugin class is not found.
+	 */
+	public function getName($object)
+	{
+		foreach($this->_plugins as $plugin)
+		{
+			if($plugin['obj'] == $object)
+				return $plugin['name'];
+		}
+		
+		return NULL;
+	}
+	
 	/** Sets the default right level.
 	 * This functions set the default right level for all future commands. This level will be interpreted (when adding the commands) as the new level 0, and when
 	 * plugins will decide to redefine the level of some of their commands, they will be redefined regarding the value of the default level.
@@ -227,6 +245,9 @@ class PluginManager
 				//Checks from command (found commands are used in lower case)
 				if(preg_match('#^Command#', $method))
 					$this->addCommand(strtolower(preg_replace('#Command(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
+				//Checks for Webservice methods
+				if(preg_match('#^WSMethod#', $method))
+					$this->addWSMethod(lcfirst(preg_replace('#WSMethod(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
 			}
 		}
 		
@@ -344,6 +365,24 @@ class PluginManager
 		return TRUE;
 	}
 	
+	/** Adds a method to the Webservice.
+	 * This function adds a method to the Outer API Webservice, which will be callable over a HTTP POST request (see MOAPServer and MOAPClient classes for more info).
+	 * 
+	 * \param $method The method name to bind (i.e. the method name tha will be called other HTTP)
+	 * \param $object The object of the plugin to call.
+	 * \param $callback The callback method.
+	 * 
+	 * \return TRUE if the method added correctly, FALSE otherwise (mainly if the webservice is disables).
+	 */
+	public function addWSMethod($method, &$object, $callback)
+	{
+		Leelabot::message('Adding method $0, on OuterAPI methode $1', array($callback, $method), E_DEBUG);
+		if(is_object($this->_main->outerAPI) && $this->_main->outerAPI->getWSState())
+			$this->_main->outerAPI->getWSObject()->addMethod($method, array($object, $callback));
+		else
+			return FALSE;
+	}
+	
 	/** Deletes a routine.
 	 * This function deletes a routine from the event manager.
 	 * 
@@ -433,6 +472,14 @@ class PluginManager
 			unset($this->_commands[$event]);
 		
 		return TRUE;
+	}
+	
+	/** 
+	 * 
+	 */
+	public function getCommandList()
+	{
+		
 	}
 	
 	/** Changes the time interval of a routine
@@ -559,18 +606,20 @@ class PluginManager
  * \brief Plugin parent class for leelabot.
  * 
  * This class is the default template used when plugins are defined. It contains the default constructor (binding main class and plugins class to private properties)
- * and some shortcuts methods for plugin handling (it is better to user $this->addRoutine('someRoutineMethod') than$this->_plugins->addRoutine($this, 
+ * and some shortcuts methods for plugin handling (it is better to user $this->addRoutine('someRoutineMethod') than $this->_plugins->addRoutine($this, 
  * 'someRoutineMethod'))
  */
 class Plugin
 {
 	protected $_main; ///< Reference to main class (Leelabot)
 	protected $_plugins; ///< Reference to plugin manager (PluginManager)
+	protected $config;
 	
 	public function __construct(&$plugins, &$main)
 	{
 		$this->_plugins = $plugins;
 		$this->_main = $main;
+		$this->config = $main->config['Plugin'][$plugins->getName($this)];
 	}
 	
 	/** Default plugin init function.
@@ -605,6 +654,14 @@ class Plugin
 	public function addRoutine($method, $time = 1)
 	{
 		return $this->_plugins->addRoutine($this, $method, $time);
+	}
+	
+	/** Shortcut to PluginManager::addWSMethod
+	 * \see PluginManager::addWSMethod
+	 */
+	public function addWSMethod($method, $callback)
+	{
+		return $this->_plugins->addOuterAPIMethod($method, $this, $callback);
 	}
 	
 	/** Shortcut to PluginManager::deleteServerEvent.

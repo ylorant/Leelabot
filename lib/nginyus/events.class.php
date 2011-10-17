@@ -9,9 +9,9 @@ class NginyUS_Events
 	private $classList = array();
 	
 	//Ajoute un évènement
-	public function addPage($path, $class, $fct)
+	public function addPage($path, &$class, $fct)
 	{
-		$this->_fcts[$path] = array(&$this->classes[$class],$fct);
+		$this->_fcts[$path] = array($class,$fct);
 	}
 	
 	public function rmPage($path)

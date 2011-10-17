@@ -193,6 +193,7 @@ class NginyUS extends NginyUS_Framework
 			{
 				case 'POST':
 					parse_str($query[1], $_POST);
+					NginyUS::message("Received POST data : $0", array($this->dumpArray($_POST)), E_DEBUG);
 					$data['rawPOST'] = $query[1];
 					$_SERVER['REQUEST_METHOD'] = $data['query'] = 'POST';
 				case 'GET': //It's a GET request (main parameter)
@@ -222,4 +223,29 @@ class NginyUS extends NginyUS_Framework
 		$data['url'] = $data['host'].$data['page'];
 		$this->siteManager->pageCall($id, $data);
 	}
+	
+	public function dumpArray($array)
+	{
+		if(!is_array($array))
+			$array = array(gettype($array) => $array);
+		
+		$return = array();
+		
+		foreach($array as $id => $el)
+		{
+			if(is_array($el))
+				$return[] = $id.'=Array';
+			elseif(is_object($el))
+				$return[] = $id.'='.get_class($el).' object';
+			elseif(is_string($el))
+				$return[] = $id.'="'.$el.'"';
+			elseif(is_bool($el))
+				$return[] = $id.'='.($el ? 'TRUE' : 'FALSE');
+			else
+				$return[] = $id.'='.(is_null($el) ? 'NULL' : $el);
+		}
+		
+		return join(', ', $return);
+	}
+	
 }

@@ -34,6 +34,8 @@ class OuterAPI
 	private $_server; ///< NginyUS server class
 	private $_manager; ///< Site manager class
 	private $_wsdl; ///< URL/Path to the WSDL file
+	private $_WSEnabled = FALSE; ///< Indicator for webservice activation
+	private $_WSObject;
 	
 	/** Loads the webserver and configures it.
 	 * This function loads the webserver and configures it from the data given in argument.
@@ -64,6 +66,7 @@ class OuterAPI
 		if(isset($config['Webservice']) && (!isset($config['Webservice']['Enable']) || Leelabot::parseBool($config['Webservice']['Enable'])))
 		{
 			Leelabot::message('Loading Webservice...');
+			$this->_WSEnabled = TRUE;
 			$WSConfig = $config['Webservice'];
 			
 			//Including the MOAP Webservice class
@@ -95,6 +98,38 @@ class OuterAPI
 		}
 		
 		$this->_server->connect();
+	}
+	
+	/** Returns if the webservice is active.
+	 * This function returns the current state of the webservice, active or not.
+	 * 
+	 * \return The current state of the webservice, as a boolean.
+	 */
+	public function getWSState()
+	{
+		return $this->_WSEnabled;
+	}
+	
+	/** Sets the Webservice Object.
+	 * This function sets the object that will handle all the webservices calls on the class.
+	 * 
+	 * \param $object The Webservice object.
+	 * 
+	 * \return Nothing.
+	 */
+	public function setWSObject(&$object)
+	{
+		$this->_WSObject = $object;
+	}
+	
+	/** Returns the object of the webservice.
+	 * This function returns the object of the webservice, useful for adding and deleting methods to the webservice.
+	 * 
+	 * \return The webservice object.
+	 */
+	public function getWSObject()
+	{
+		return $this->_WSObject;
 	}
 	
 	/** Processes the Webserver.

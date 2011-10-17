@@ -259,6 +259,9 @@ class ServerInstance
 			return FALSE;
 		}
 		
+		//Sending startup Event for plugins
+		$this->_leelabot->plugins->callServerEvent('StartupGame');
+		
 		Leelabot::message('Gathering server info...');
 		$this->serverInfo = RCon::serverInfo();
 		
@@ -410,7 +413,7 @@ class ServerInstance
 					//A client connects
 					case 'ClientConnect':
 						$id = intval($line[1]);
-						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'level' => $this->_defaultLevel));
+						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'level' => $this->_defaultLevel, 'time' => time()));
 						Leelabot::message('Client connected : $0', array($id), E_DEBUG);
 						$this->_leelabot->plugins->callServerEvent('ClientConnect', $id);
 						break;
