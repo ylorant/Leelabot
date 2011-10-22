@@ -71,7 +71,7 @@ class PluginClientBase extends Plugin
 	 */
 	public function CommandTime($player, $command)
 	{
-		RCon::tell($player, date($this->_main->Intl->getDateTimeFormat()));
+		RCon::tell($player, date($this->_main->intl->getDateTimeFormat()));
 	}
 	
 	/** !time command. Get time.
