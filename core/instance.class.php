@@ -433,7 +433,7 @@ class ServerInstance
 						Leelabot::message('	Name : $0', array($userinfo['name']), E_DEBUG);
 						Leelabot::message('	IP : $0', array($userinfo['ip']), E_DEBUG);
 						
-						$this->_leelabot->plugins->callServerEvent('ClientUserinfo', $userinfo);
+						$this->_leelabot->plugins->callServerEvent('ClientUserinfo', array($id, $userinfo));
 						
 						//Basically it's a copypasta of the code user above for initial data storage
 						if(isset($userinfo['characterfile']))
@@ -466,7 +466,7 @@ class ServerInstance
 						Leelabot::message('	Name : $0', array($userinfo['n']), E_DEBUG);
 						Leelabot::message('	Team : $0', array(Server::getTeamName($userinfo['t'])), E_DEBUG);
 						
-						$this->_leelabot->plugins->callServerEvent('ClientUserinfoChanged', $userinfo);
+						$this->_leelabot->plugins->callServerEvent('ClientUserinfoChanged', array($id, $userinfo));
 						$this->players[$id]->team = $userinfo['t'];
 						$this->players[$id]->other['cg_rgb'] = $userinfo['a0'].' '.$userinfo['a1'].' '.$userinfo['a2'];
 						$this->players[$id]->name = preg_replace('#^[0-9]#', '', $userinfo['n']);
@@ -510,6 +510,7 @@ class ServerInstance
 					case 'SurvivorWinner':
 						Leelabot::message('Round ended, winner : $0', array($line[1]), E_DEBUG);
 						$winner = Server::getTeamNumber($line[1]);
+						$this->_leelabot->plugins->callServerEvent('SurvivorWinner', $winner);
 						if($winner)
 							$this->scores[$winner]++;
 						break;
@@ -522,7 +523,7 @@ class ServerInstance
 					case 'Kill':
 						$kill = explode(':', $line[1]);
 						$kill = explode(' ', $kill[0]);
-						$this->_leelabot->plugins->callServerEvent('Kill', array('killer' => $kill[0], 'killed' => $kill[1]));
+						$this->_leelabot->plugins->callServerEvent('Kill', $kill);
 						break;
 					//Player message
 					case 'say':

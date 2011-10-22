@@ -71,10 +71,21 @@ class PluginManager
 	 */
 	public function getName($object)
 	{
-		foreach($this->_plugins as $plugin)
+		if(is_object($object))
 		{
-			if($plugin['obj'] == $object)
-				return $plugin['name'];
+			foreach($this->_plugins as $plugin)
+			{
+				if($plugin['obj'] == $object)
+					return $plugin['name'];
+			}
+		}
+		elseif(is_string($object))
+		{
+			foreach($this->_plugins as $plugin)
+			{
+				if($plugin['className'] == $object)
+					return $plugin['name'];
+			}
 		}
 		
 		return NULL;
@@ -474,12 +485,24 @@ class PluginManager
 		return TRUE;
 	}
 	
-	/** 
+	/** Returns the command list.
+	 * This function returns the list of all defined commands, for all plugins or only for a list of plugins.
 	 * 
+	 * \param $plugins Plugin list for which we want to get the commands.
+	 * 
+	 * \return an array containing in keys the commands' names, and in value a descriptive of them and their right level.
 	 */
-	public function getCommandList()
+	public function getCommandList($plugins = FALSE)
 	{
-		
+		$return = array();
+		if($plugins != FALSE)
+		{
+			foreach($this->_commands as $event => $info)
+			{
+				if(in_array($this->getName($info[0]), $plugins))
+					$return[$event] = $this->_commandLevels[$event];
+			}
+		}
 	}
 	
 	/** Changes the time interval of a routine
@@ -545,21 +568,25 @@ class PluginManager
 	 * This function executes all the callback methods bound to the given server event.
 	 * 
 	 * \param $event The server event called.
-	 * \param $params Parameter(s) to send to the callbacks.
+	 * \param $params Parameter(s) to send to the callbacks, in an array.
 	 * 
 	 * \return TRUE if callbacks executed correctly, FALSE otherwise.
 	 */
-	public function callServerEvent($event, $params = NULL)
+	public function callServerEvent($event, $params = array())
 	{
 		if(isset($this->_serverEvents[$event]))
 		{
+			if(!is_array($params))
+				$params = array($params);
+			
 			$serverPlugins = Server::getPlugins();
 			foreach($this->_serverEvents[$event] as $plugin => &$event)
 			{
 				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
-					$event[0]->$event[1]($params);
+					call_user_func_array($event, $params);
 			}
 		}
+		return TRUE;
 	}
 	
 	/** Calls a client command.
