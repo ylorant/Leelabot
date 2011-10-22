@@ -37,7 +37,7 @@ class PluginClientBase extends Plugin
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config). It sets the AutoTeams toggle.
 	 * 
-	 * \¶eturn Nothing.
+	 * \return Nothing.
 	 */
 	public function init()
 	{
@@ -52,11 +52,13 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	//A L'INTENTION D'SRWIEZ : Il y a 3 problèmes avec cette méthode. Viens me voir sur IRC pour en parler, et delete ce message, ainsi que les lignes au dessus.
-	public function SrvEventClientUserinfo($data)
+	public function SrvEventClientUserinfoChanged($id, $data)
 	{
 		if($this->_autoteams)
+		{
+			Server::getPlayer($id)->team = $data['t'];
 			$this->_balance();
+		}
 	}
 	
 	/** !teams command. Forces a team balance.
@@ -87,15 +89,15 @@ class PluginClientBase extends Plugin
 		if($teams_count[Server::TEAM_RED] >= ($teams_count[Server::TEAM_BLUE]+2)) // If there are more players in red team than in blue team.
 		{
 			$too_many_player = floor(($teams_count[Server::TEAM_RED]-$teams_count[Server::TEAM_BLUE])/2);
-			$teams_plus = Server::TEAM_RED;
-			$teams_minus = Server::TEAM_BLUE;
+			$src_team = Server::TEAM_RED;
+			$dest_team = strtolower(Server::getTeamName(Server::TEAM_BLUE));
 			$balance = TRUE;
 		}
 		elseif($teams_count[Server::TEAM_BLUE] >= ($teams_count[Server::TEAM_RED]+2)) // If there are more players in blue team than in red team.
 		{
 			$too_many_player = floor(($teams_count[Server::TEAM_BLUE]-$teams_count[Server::TEAM_RED])/2);
-			$teams_plus = Server::TEAM_BLUE;
-			$teams_minus = Server::TEAM_RED;
+			$src_team = Server::TEAM_BLUE;
+			$dest_team = strtolower(Server::getTeamName(Server::TEAM_RED));
 			$balance = TRUE;
 		}
 		else
@@ -104,19 +106,12 @@ class PluginClientBase extends Plugin
 		//If the teams are unbalanced
 		if($balance)
 		{
-			//Array for forceteam
-			//A L'INTENTION D'SRWIEZ : Ouais, mais non, dans Server (innerAPI), t'as getTeamName($teamID) qui sert à ça. En plus tu t'en sers qu'avec $teams_minus, tu pourrais juste faire $dest_team = Server::getTeamName($team_minus); une fois avant ta boucle ça économiserait de la recherche d'array et tout.
-			$teams_array = array('', 'red', 'blue');
-			
 			//We get player list
-			$players = Server::getPlayerList();
+			$players = Server::getPlayerList($src_team);
 			$last = array();
 			
 			foreach($players as $player)
-			{
-				if($player->team == $teams_plus)
-					$last[$player->time] = $player->id;
-			}
+				$last[$player->time] = $player->id;
 			
 			//We sorts the players of the team by time spent on the server.
 			krsort($last);
@@ -128,7 +123,7 @@ class PluginClientBase extends Plugin
 				$player = array_shift($last);
 				
 				//We change the team of the player
-				RCon::forceteam($player, $teams_array[$teams_minus]);
+				RCon::forceteam($player, $dest_team);
 				
 				--$too_many_player;
 			}
