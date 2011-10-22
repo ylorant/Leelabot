@@ -321,6 +321,7 @@ class ServerInstance
 					$this->players[$id]->begin = TRUE;
 					$playerData = array('team' => 'red', 't' => Server::TEAM_RED, 'n' => $this->players[$id]->name);
 					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', $playerData);
+					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
 				}
 			}
 			
@@ -334,6 +335,7 @@ class ServerInstance
 					$this->players[$id]->team = Server::TEAM_BLUE;
 					$this->players[$id]->begin = TRUE;
 					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_BLUE));
+					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
 				}
 			}
 			

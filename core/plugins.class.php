@@ -503,6 +503,11 @@ class PluginManager
 					$return[$event] = $this->_commandLevels[$event];
 			}
 		}
+		else
+		{
+			foreach($this->_commands as $event => $info)
+				$return[$event] = $this->_commandLevels[$event];
+		}
 	}
 	
 	/** Changes the time interval of a routine
