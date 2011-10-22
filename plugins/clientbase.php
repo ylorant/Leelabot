@@ -61,6 +61,32 @@ class PluginClientBase extends Plugin
 		}
 	}
 	
+	/** !time command. Get time.
+	 * This function is the command !time. It get date and time.
+	 * 
+	 * \param $player The player who send the command.
+	 * \param $command The command's parameters.
+	 * 
+	 * \return Nothing.
+	 */
+	public function CommandTime($player, $command)
+	{
+		RCon::tell($player, date($this->_main->Intl->getDateTimeFormat()));
+	}
+	
+	/** !time command. Get time.
+	 * This function is the command !time. It get date and time.
+	 * 
+	 * \param $player The player who send the command.
+	 * \param $command The command's parameters.
+	 * 
+	 * \return Nothing.
+	 */
+	public function CommandNextmap($player, $command)
+	{
+		RCon::tell($player, 'Nextmap is : $0', array(Server::getServer()->serverinfo['g_nextmap']));
+	}
+	
 	/** !teams command. Forces a team balance.
 	 * This function is the command !teams. It forces the team balance.
 	 * 
