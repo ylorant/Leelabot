@@ -295,8 +295,11 @@ class PluginIrc extends Plugin
 
 			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
 			{
-				foreach($this->_config['AutoPerform'] as $command)
-					$this->_send($command);
+				if(isset($this->_config['AutoPerform']))
+				{
+					foreach($this->_config['AutoPerform'] as $command)
+						$this->_send($command);
+				}
 				
 				$this->join($this->_config['Channels']);
 					
@@ -366,7 +369,7 @@ class PluginIrc extends Plugin
 						
 						foreach($servers as $server)
 						{
-							$rcon = getServerRCon($server);
+							$rcon = ServerList::getServerRCon($server);
 							$rcon->say('^4IRC : <$pseudo> $message', array('nick' => $pseudo, 'message' => $irc2urt));
 						}
 					}
