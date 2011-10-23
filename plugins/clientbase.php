@@ -96,7 +96,12 @@ class PluginClientBase extends Plugin
 		
 		$nextmap = $server->serverInfo['g_NextMap'];
 		
-		if($nextmap == '')
+		if($nextmap != '')
+		{
+			RCon::tell($player, 'Nextmap is : $0', array($nextmap));
+			return TRUE
+		}
+		else
 		{
 			$nextmap = Rcon::g_nextmap();
 			$nextmap = explode('"', $nextmap);
