@@ -279,7 +279,7 @@ class PluginIrc extends Plugin
 	/////////////////////////////////////////////
 	
 	//Exécutions à chaque fin de boucle, qu'il y ait un message transmis par le serveur ou non
-	public function RoutineIrcMain(&$main)
+	public function RoutineIrcMain()
 	{
 		$donnees = $this->_get();
 		
