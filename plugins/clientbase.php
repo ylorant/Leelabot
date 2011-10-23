@@ -94,49 +94,54 @@ class PluginClientBase extends Plugin
 	{
 		$server = Server::getServer();
 		
-		$nextmap = $server->serverinfo['g_nextmap'];
-		$nextmap = explode('"', $nextmap);
-		$nextmap = trim(str_replace('^7', '', $nextmap[3]));
+		$nextmap = $server->serverInfo['g_nextmap'];
 		
-		if($nextmap != '')
+		if($nextmap == '')
 		{
-			RCon::tell($player, 'Nextmap is : $0', array($nextmap));
-			return TRUE;
-		}
-		else
-		{
-			if($this->_cyclemapfile !== NULL)
+			$nextmap = Rcon::g_nextmap();
+			$nextmap = explode('"', $nextmap);
+			$nextmap = trim(str_replace('^7', '', $nextmap[3]));
+			
+			if($nextmap != '')
 			{
-		    	$content = Server::fileGetContents($this->_cyclemapfile);
-		        
-		        if($content !== FALSE)
-		        {
-			    	$tab_maps = explode("\n",$content);        
-			    	$current_map = $server->serverInfo['mapname'];    
-			    	$index = 0;
+				RCon::tell($player, 'Nextmap is : $0', array($nextmap));
+				return TRUE;
+			}
+			else
+			{
+				if($this->_cyclemapfile !== NULL)
+				{
+			    	$content = Server::fileGetContents($this->_cyclemapfile);
 			        
-			    	while ($index <= count($tab_maps) - 1)
-					{
-						if($current_map == $tab_maps[$index])
-							break;
-						else
-							$index++;
+			        if($content !== FALSE)
+			        {
+				    	$tab_maps = explode("\n",$content);        
+				    	$current_map = $server->serverInfo['mapname'];    
+				    	$index = 0;
+				        
+				    	while ($index <= count($tab_maps) - 1)
+						{
+							if($current_map == $tab_maps[$index])
+								break;
+							else
+								$index++;
+							if($tab_maps[$index] == '{')
+								for(;$tab_maps[$index-1] != '}';$index++);
+						}
+						
+						$index++;
+						
 						if($tab_maps[$index] == '{')
 							for(;$tab_maps[$index-1] != '}';$index++);
-					}
-					
-					$index++;
-					
-					if($tab_maps[$index] == '{')
-						for(;$tab_maps[$index-1] != '}';$index++);
-					
-					if(isset($tab_maps[$index]))
-						$nextmap = $tab_maps[$index];
-					else
-						$nextmap = $tab_maps[0];
 						
-					RCon::tell($player, 'Nextmap is : $0', array($nextmap));
-					return TRUE;
+						if(isset($tab_maps[$index]))
+							$nextmap = $tab_maps[$index];
+						else
+							$nextmap = $tab_maps[0];
+							
+						RCon::tell($player, 'Nextmap is : $0', array($nextmap));
+						return TRUE;
+					}
 				}
 			}
 		}
