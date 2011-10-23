@@ -269,9 +269,8 @@ class PluginIrc extends Plugin
 	{
         $a = 'вдайилкопыьз';
         $b = 'aaaeeeeiiuuc'; 
-        $string = utf8_decode($string);     
-        $string = strtr($string, utf8_decode($a), $b);
-        return utf8_encode($string); 
+        $string = strtr($string, $a, $b);
+        return $string; 
 	}
 	
 	/////////////////////////////////////////////
@@ -370,7 +369,7 @@ class PluginIrc extends Plugin
 						foreach($servers as $server)
 						{
 							$rcon = ServerList::getServerRCon($server);
-							$rcon->say('^4IRC : <$pseudo> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+							$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
 						}
 					}
 				}
