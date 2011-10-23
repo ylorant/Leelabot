@@ -357,7 +357,7 @@ class PluginIrc extends Plugin
 				{
 					if($this->_config['AutoSpeak'] == 1 OR $this->_config['AutoSpeak'] == 3)
 					{
-						$irc2urt = $this->normaliser(rtrim($message[2]))
+						$irc2urt = $this->normaliser(rtrim($message[2]));
 						$pseudo = explode(' ',$message[1]);
 						$pseudo = explode('!',$pseudo[0]);
 						$pseudo = $pseudo[0];
