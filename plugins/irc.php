@@ -146,7 +146,7 @@ class PluginIrc extends Plugin
 	
 	public function part($chan)
 	{
-		$this->-send('PART '.$chan);
+		$this->_send('PART '.$chan);
 	}
 	
 	public function isRights($name, $chan, $droit)
@@ -295,7 +295,7 @@ class PluginIrc extends Plugin
 
 			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
 			{
-				foreach($this->_autoperform as $command)
+				foreach($this->_config['AutoPerform'] as $command)
 					$this->_send($command);
 				
 				$this->join($this->_config['Channels']);
