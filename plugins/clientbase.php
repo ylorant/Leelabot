@@ -94,7 +94,7 @@ class PluginClientBase extends Plugin
 	{
 		$server = Server::getServer();
 		
-		$nextmap = $server->serverInfo['g_nextmap'];
+		$nextmap = $server->serverInfo['g_NextMap'];
 		
 		if($nextmap == '')
 		{
