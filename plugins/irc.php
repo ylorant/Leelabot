@@ -93,6 +93,8 @@ class PluginIrc extends Plugin
 			$this->_addCmd('!cyclemap', 'CmdCyclemap', '!cyclemap', 'Permet de faire un cyclemap.', 2);
 			$this->_addCmd('!restart', 'CmdRestart', '!restart', 'Permet de faire un restart.', 2);
 			$this->_addCmd('!reload', 'CmdReload', '!reload', 'Permet de faire un reload.', 2);
+			
+			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
 		}
 		else
 		{
@@ -269,8 +271,9 @@ class PluginIrc extends Plugin
 	{
         $a = 'вдайилкопыьз';
         $b = 'aaaeeeeiiuuc'; 
-        $string = strtr($string, $a, $b);
-        return $string; 
+        $string = utf8_decode($string);     
+        $string = strtr($string, utf8_decode($a), $b);
+        return utf8_encode($string); 
 	}
 	
 	/////////////////////////////////////////////
@@ -357,7 +360,7 @@ class PluginIrc extends Plugin
 				}
 				else
 				{
-					if($this->_config['AutoSpeak'] == 1 OR $this->_config['AutoSpeak'] == 3)
+					if(($this->_config['AutoSpeak'] == 1 OR $this->_config['AutoSpeak'] == 3) AND $this->_channel == $this->_config['MainChannel'])
 					{
 						$irc2urt = $this->normaliser(rtrim($message[2]));
 						$pseudo = explode(' ',$message[1]);
