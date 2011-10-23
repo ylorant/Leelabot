@@ -2,8 +2,8 @@
 /**
  * \file plugins/clientbase.php
  * \author Deniz Eser <srwiez@gmail.com>
- * \version 0.1
- * \brief Client base plugin for Leelabot. It allows to send !teams (balance teams). (at the moment)
+ * \version 0.9
+ * \brief Client base plugin for Leelabot. It allows to send !teams, !time, !nextmap.
  *
  * \section LICENSE
  *
@@ -21,6 +21,7 @@
  * \section DESCRIPTION
  *
  * This file contains a lot of commands for clients on the server (people who don't have admin rights).
+ * And optionally, it allows to have an automatic balancing of teams.
  * !teams = balance teams
  * !time = date & time
  * !nextmap = return next map
@@ -32,17 +33,24 @@
  */
 class PluginClientBase extends Plugin
 {
-	private $_autoteams = FALSE; ///< AutoTeams toggle.
+	private $_autoteams = TRUE; // AutoTeams toggle.
+	private $_cyclemapfile = NULL; // Cyclemap file destination.
 	
 	/** Init function. Loads configuration.
-	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config). It sets the AutoTeams toggle.
+	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
 	 * 
 	 * \return Nothing.
 	 */
 	public function init()
 	{
-		if(isset($this->_main->config['Plugin']['Clientbase']) && isset($this->_main->config['Plugin']['Clientbase']['AutoTeams']) && Leelabot::parseBool($this->_main->config['Plugin']['Clientbase']['AutoTeams']))
-			$this->_autoteams = TRUE;
+		if(isset($this->_main->config['Plugin']['Clientbase']))
+		{
+			if(isset($this->_main->config['Plugin']['Clientbase']['AutoTeams']))
+				$this->_autoteams = Leelabot::parseBool($this->_main->config['Plugin']['Clientbase']['AutoTeams']);
+			
+			if(isset($this->_main->config['Plugin']['Clientbase']['CycleMapFile']))
+				$this->_cyclemapfile = $this->_main->config['Plugin']['Clientbase']['CycleMapFile'];
+		}
 	}
 	
 	/** ClientUserinfo event. Perform team balance if needed.
@@ -69,22 +77,71 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandTime($player, $command)
+	public function CommandTime($player, $args)
 	{
 		RCon::tell($player, date($this->_main->intl->getDateTimeFormat()));
 	}
 	
-	/** !time command. Get time.
-	 * This function is the command !time. It get date and time.
+	/** !nextmap command. Return next map.
+	 * This function is the command !nextmap. Return next map.
 	 * 
 	 * \param $player The player who send the command.
 	 * \param $command The command's parameters.
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandNextmap($player, $command)
+	public function CommandNextmap($player, $args)
 	{
-		RCon::tell($player, 'Nextmap is : $0', array(Server::getServer()->serverinfo['g_nextmap']));
+		$server = Server::getServer();
+		
+		$nextmap = $server->serverinfo['g_nextmap'];
+		$nextmap = explode('"', $nextmap);
+		$nextmap = trim(str_replace('^7', '', $nextmap[3]));
+		
+		if($nextmap != '')
+		{
+			RCon::tell($player, 'Nextmap is : $0', array($nextmap));
+			return TRUE;
+		}
+		else
+		{
+			if($this->_cyclemapfile !== NULL)
+			{
+		    	$content = Server::fileGetContents($this->_cyclemapfile);
+		        
+		        if($content !== FALSE)
+		        {
+			    	$tab_maps = explode("\n",$content);        
+			    	$current_map = $server->serverInfo['mapname'];    
+			    	$index = 0;
+			        
+			    	while ($index <= count($tab_maps) - 1)
+					{
+						if($current_map == $tab_maps[$index])
+							break;
+						else
+							$index++;
+						if($tab_maps[$index] == '{')
+							for(;$tab_maps[$index-1] != '}';$index++);
+					}
+					
+					$index++;
+					
+					if($tab_maps[$index] == '{')
+						for(;$tab_maps[$index-1] != '}';$index++);
+					
+					if(isset($tab_maps[$index]))
+						$nextmap = $tab_maps[$index];
+					else
+						$nextmap = $tab_maps[0];
+						
+					RCon::tell($player, 'Nextmap is : $0', array($nextmap));
+					return TRUE;
+				}
+			}
+		}
+		
+		RCon::tell($player, "We don't know the next map");
 	}
 	
 	/** !teams command. Forces a team balance.
@@ -95,7 +152,7 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandTeams($player, $command)
+	public function CommandTeams($player, $args)
 	{
 		$this->_balance($player);
 	}
