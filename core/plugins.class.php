@@ -57,7 +57,7 @@ class PluginManager
 	public function __construct(&$main)
 	{
 		$this->_main = $main;
-		$this->plugins = array();
+		$this->_plugins = array();
 		$this->_defaultLevel = 0;
 		$this->_quietReply = FALSE;
 	}
@@ -162,22 +162,19 @@ class PluginManager
 		$loadedPlugins = array();
 		foreach($list as $plugin)
 		{
-			if(!in_array($plugin, array_keys($this->plugins))) //Do not load twice the same plugin
-			{
-				$return = $this->loadPlugin($plugin);
-				if($return !== FALSE)
-					$loadedPlugins[] = $plugin;
-				else
-					return FALSE;
-			}
+			$return = $this->loadPlugin($plugin);
+			if($return !== FALSE)
+				$loadedPlugins[] = $plugin;
+			else
+				return FALSE;
 		}
 		
 		return TRUE;
 	}
 	
 	/** Loads one plugin.
-	 * This function loads one plugin. It is a very basic function. It checks that plugin exists, and include its file. All the remaining work is done by
-	 * PluginManager::initPlugin(), called inside the plugin file.
+	 * This function loads one plugin. It is a very basic function. It checks that plugin exists and isn't loaded yet, and include its file. All the remaining work
+	 * is done by PluginManager::initPlugin(), called inside the plugin file.
 	 * 
 	 * \param $plugin Plugin to be loaded.
 	 * \return TRUE if plugin loaded successfully, FALSE otherwise. In fact, this value, beyond the "plugin not found" error, depends of the return value of 
@@ -186,6 +183,13 @@ class PluginManager
 	public function loadPlugin($plugin)
 	{
 		Leelabot::message('Loading plugin $0', array($plugin));
+		
+		//We check that the plugin is not already loaded
+		if(in_array($plugin, $this->getLoadedPlugins()))
+		{
+			Leelabot::message('Plugin $0 is already loaded', array($plugin), E_WARNING);
+			return FALSE;
+		}
 		
 		if(!is_file('plugins/'.$plugin.'.php'))
 		{
@@ -293,6 +297,21 @@ class PluginManager
 		return array_keys($this->_plugins);
 	}
 	
+	/** Returns the object of a plugin.
+	 * This function returns the object instancied for a plugin, allowing to query it directly.
+	 * 
+	 * \param $name The plugin's name.
+	 * 
+	 * \return The instance of the plugin's class, or NULL if it does not exists.
+	 */
+	public function getPlugin($name)
+	{
+		if(isset($this->_plugins[$name]))
+			return $this->_plugins[$name];
+		else
+			return NULL;
+	}
+	
 	/** Adds a routine to the event manager.
 	 * This function adds a routine to the event manager, i.e. a function that will be executed every once in a while.
 	 * 
@@ -387,7 +406,7 @@ class PluginManager
 	 */
 	public function addWSMethod($method, &$object, $callback)
 	{
-		Leelabot::message('Adding method $0, on OuterAPI methode $1', array($callback, $method), E_DEBUG);
+		Leelabot::message('Adding method $0, on OuterAPI method $1', array($callback, $method), E_DEBUG);
 		if(is_object($this->_main->outerAPI) && $this->_main->outerAPI->getWSState())
 			$this->_main->outerAPI->getWSObject()->addMethod($method, array($object, $callback));
 		else
@@ -651,7 +670,8 @@ class Plugin
 	{
 		$this->_plugins = $plugins;
 		$this->_main = $main;
-		$this->config = $main->config['Plugin'][$plugins->getName($this)];
+		if(isset($main->config['Plugin']) && isset($main->config['Plugin'][$plugins->getName($this)]))
+			$this->config = $main->config['Plugin'][$plugins->getName($this)];
 	}
 	
 	/** Default plugin init function.

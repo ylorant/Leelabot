@@ -894,3 +894,60 @@ class Locales
 		return $self->_defaultIntl->getLocaleList();
 	}
 }
+
+/**
+ * \brief Plugin access class.
+ * This class allow any plugin to access to the plugin manager, for getting other plugins' objects (to query them), or to load new plugins (although the dependency
+ * manager is preferred).
+ */
+class Plugins
+{
+	private static $_plugins; ///< Internal reference to plugin manager
+	
+	/** Returns the current plugins.
+	 * This function returns the list of all loaded plugins of the bot. Notice : the plugins returned may not be loaded on all servers, so be careful of that when
+	 * using this method.
+	 * 
+	 * \return An array containing the list of currently loaded plugins.
+	 */
+	public static function getList()
+	{
+		return self::$_plugins->getLoadedPlugins();
+	}
+	
+	/** Returns the object for a plugin.
+	 * This function returns the instance object for a plugin. With it, you will be able to access public properties for it or query directly its methods.
+	 * 
+	 * \warning If the methods you are calling for the plugin use RCon commands, be sure that you send them on the good server.
+	 * 
+	 * \param $plugin The wanted plugin's name.
+	 * 
+	 * \return The plugins object, or NULL if the plugin does not exists.
+	 */
+	public static function get($plugin)
+	{
+		return self::$_plugins->getPlugin($plugin);
+	}
+	
+	/** Loads a plugin.
+	 * This function loads the asked plugin. 
+	 * 
+	 * \see PluginManager::loadPlugin()
+	 */
+	public static function load($plugin)
+	{
+		return self::$_plugins->loadPlugin($plugin);
+	}
+	
+	/** Sets the plugin manager class.
+	 * This function sets the plugin manager class, which will be called by the other methods.
+	 * 
+	 * \param $obj A reference to the plugin manager class.
+	 * 
+	 * \return Nothing.
+	 */
+	public static function setPluginManager(&$obj)
+	{
+		self::$_plugins = $obj;
+	}
+}
