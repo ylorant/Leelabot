@@ -33,9 +33,10 @@ class OuterAPI
 {
 	private $_server; ///< NginyUS server class
 	private $_manager; ///< Site manager class
-	private $_wsdl; ///< URL/Path to the WSDL file
 	private $_WSEnabled = FALSE; ///< Indicator for webservice activation
-	private $_WSObject;
+	private $_WSObject; ///< Object queried by the webserver for the Webservice.
+	private $_WAEnabled = FALSE; ///< Indicator for Webadmin activation
+	private $_WAObject; ///< Object queried by the webserver for the Webadmin.
 	
 	/** Loads the webserver and configures it.
 	 * This function loads the webserver and configures it from the data given in argument.
@@ -63,6 +64,7 @@ class OuterAPI
 		//Getting the SiteManager
 		$this->_manager = $this->_server->manageSites();
 		
+		//Loading the webservice
 		if(isset($config['Webservice']) && (!isset($config['Webservice']['Enable']) || Leelabot::parseBool($config['Webservice']['Enable'])))
 		{
 			Leelabot::message('Loading Webservice...');
@@ -90,11 +92,45 @@ class OuterAPI
 			$this->_manager->loadConfig('webservice', array(
 				'SiteRoot' => $config['BindAddress'].'/api',
 				'Alias' => $WSConfig['Aliases'],
-				'DocumentRoot' => $config['WebRoot'],
-				'ProcessFiles' => 'webservice.php'));
+				'DocumentRoot' => 'core',
+				'ProcessFiles' => 'webservice.class.php'));
 			
-			if(!isset($soapConfig['password']))
-				Leelabot::message('Using Webservice without a password is not secure !', array(), E_WARNING);
+			//TODO : Add some password protection
+			if(!isset($WSConfig['Password']))
+				Leelabot::message('Using Webservice without a password is not secure !', array(), E_WARNING, TRUE);
+		}
+		
+		//Loading the webadmin
+		if(isset($config['Webadmin']) && (!isset($config['Webadmin']['Enable']) || Leelabot::parseBool($config['Webadmin']['Enable'])))
+		{
+			Leelabot::message('Loading Webadmin...');
+			$this->_WAEnabled = TRUE;
+			$WAConfig = $config['Webadmin'];
+			
+			//If there is aliases, we update them to add the admin path to them
+			if(!empty($WAConfig['Aliases']))
+			{
+				$newAliases = array();
+				foreach(explode(',', $WAConfig['Aliases']) as $alias)
+					$newAliases[] = trim($alias).'/admin';
+				
+				$WAConfig['Aliases'] = join(', ', $newAliases);
+			}
+			else
+				$WAConfig['Aliases'] = '';
+			
+			//Creating the site in the webserver
+			$this->_manager->newSite('webadmin');
+			$site = $this->_manager->getSite('webadmin');
+			$this->_manager->loadConfig('webadmin', array(
+				'SiteRoot' => $config['BindAddress'].'/admin',
+				'Alias' => $WAConfig['Aliases'],
+				'DocumentRoot' => 'web',
+				'ProcessFiles' => 'controllers/dispatcher.class.php'));
+			
+			//TODO : Add some password protection
+			if(!isset($WAConfig['Password']))
+				Leelabot::message('Using Webadmin without a password is not secure !', array(), E_WARNING, TRUE);
 		}
 		
 		$this->_server->connect();
@@ -130,6 +166,38 @@ class OuterAPI
 	public function getWSObject()
 	{
 		return $this->_WSObject;
+	}
+	
+	/** Returns if the webadmin is active.
+	 * This function returns the current state of the webadmin, active or not.
+	 * 
+	 * \return The current state of the webservice, as a boolean.
+	 */
+	public function getWAState()
+	{
+		return $this->_WAEnabled;
+	}
+	
+	/** Sets the Webadmin Object.
+	 * This function sets the object that will handle all the webadmin calls on the class.
+	 * 
+	 * \param $object The Webadmin object
+	 * 
+	 * \return Nothing.
+	 */
+	public function setWAObject(&$object)
+	{
+		$this->_WAObject = $object;
+	}
+	
+	/** Returns the object of the webadmin.
+	 * This function returns the object of the webadmin, useful for adding and deleting pages to the webadmin.
+	 * 
+	 * \return The webadmin object.
+	 */
+	public function getWAObject()
+	{
+		return $this->_WAObject;
 	}
 	
 	/** Processes the Webserver.

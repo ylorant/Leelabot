@@ -43,6 +43,7 @@ class Leelabot
 	public $RCon; ///< RCon query class
 	public $outerAPI; ///< Outer API class
 	public $maxServers; ///< Max servers for the bot
+	public $system; ///< Name of the system where the bot is executed (equivalent to uname -a on UN*X)
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -60,6 +61,7 @@ class Leelabot
 		$this->_configDirectory = 'conf';
 		Leelabot::$verbose = FALSE;
 		$this->servers = array();
+		$this->system = php_uname('a');
 		
 		//Parsing CLI arguments
 		$logContent = NULL;
@@ -688,6 +690,7 @@ class Leelabot
 	public static function message($message, $args = array(), $type = E_NOTICE, $force = FALSE, $translate = TRUE)
 	{
 		$verbosity = 1;
+		$prefix = "";
 		//Getting type string
 		switch($type)
 		{
@@ -697,13 +700,17 @@ class Leelabot
 				break;
 			case E_WARNING:
 			case E_USER_WARNING:
-				$prefix = 'Warning';
+			$prefix = 'Warning';
+				if(PHP_OS == 'Linux') //If we are on Linux, we use colors
+					echo "\033[0;33m";
 				break;
 			case E_ERROR:
 			case E_USER_ERROR:
 				$prefix = 'Error';
 				$force = TRUE;
 				$verbosity = 0;
+				if(PHP_OS == 'Linux') //If we are on Linux, we use colors (yes, I comment twice)
+					echo "\033[0;31m";
 				break;
 			case E_DEBUG:
 				$prefix = 'Debug';
@@ -730,7 +737,11 @@ class Leelabot
 			fputs(Leelabot::$_logFile, date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL);
 		
 		if(Leelabot::$verbose >= $verbosity || $force)
+		{
 			echo date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL;
+			if(PHP_OS == 'Linux')
+				echo "\033[0m";
+		}
 	}
 	
 	/** Error handler for Leelabot

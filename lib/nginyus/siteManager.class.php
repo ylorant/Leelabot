@@ -100,6 +100,7 @@ class NginyUS_SiteManager extends NginyUS_SystemPages
 				
 				foreach($site->getAliases() as $alias)
 				{
+					
 					$length = strlen($alias);
 					$host = substr($data['url'], 0, $length);
 					if($alias == $host)
@@ -108,7 +109,7 @@ class NginyUS_SiteManager extends NginyUS_SystemPages
 						$data['page'] = substr($data['url'], $length);
 						if($data['page'] == '')
 							$data['page'] = '/';
-						break;
+						break 2;
 					}
 				}
 			}
@@ -144,10 +145,13 @@ class NginyUS_Site extends NginyUS_Events
 	private $processFile;
 	private $showIndexes;
 	private $name;
+	private $siteManager;
+	private $fileinfo;
 	
 	public function __construct(&$siteManager)
 	{
 		$this->siteManager = $siteManager;
+		$this->fileinfo = finfo_open(FILEINFO_MIME_TYPE);
 	}
 	
 	public function setName($name)
@@ -205,5 +209,19 @@ class NginyUS_Site extends NginyUS_Events
 	public function disableIndexes()
 	{
 		$this->showIndexes = FALSE;
+	}
+	
+	public function callFilePage($id, $data)
+	{
+		if(!is_file($data['page']))
+			return FALSE;
+		
+		$file = file_get_contents($data['page']);
+		$fileinfo = finfo_file($this->fileinfo, $data['page']);
+		$this->siteManager->main->BufferSetReplyCode($id, 200);
+		$this->siteManager->main->addAutomaticHeaders($id);
+		$this->siteManager->main->BufferAddHeader($id, 'Content-type', $fileinfo);
+		$this->siteManager->main->BufferAppendData($id, $file);
+		$this->siteManager->main->sendBuffer($id);
 	}
 }

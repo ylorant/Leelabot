@@ -322,7 +322,7 @@ class Intl_Parser
 		//Content data verification (checks message pairs cohesion)
 		foreach($this->_data['content'] as $pair)
 		{
-			if(!isset($pair['from']) || !isset($pair['to']))
+			if(!isset($pair['id']))
 			{
 				$this->__construct();
 				return FALSE;
@@ -454,6 +454,10 @@ class Intl_Parser
 			//Sets current ID for ordering
 			case '#id':
 				$this->_currentID = $params;
+				if(!isset($this->_tempData['content'][$this->_currentID]))
+					$this->_tempData['content'][$this->_currentID] = array();
+				
+				$this->_tempData['content'][$this->_currentID]['id'] = $params;
 				break;
 			//Disable ID ordering
 			case '#noid':
@@ -467,12 +471,15 @@ class Intl_Parser
 						$this->_tempData['content'][$this->_currentID] = array();
 					
 					$element = &$this->_tempData['content'][$this->_currentID];
+					$id = $this->_currentID;
 				}
 				else
 				{
+					$id = $this->_globalID;
 					$this->_tempData['content'][$this->_globalID] = array();
 					$element = &$this->_tempData['content'][$this->_globalID];
 				}
+				$element['id'] = $id;
 				$element['from'] = str_replace('\n', "\n",$params);
 				break;
 			//In what the source text will be translated

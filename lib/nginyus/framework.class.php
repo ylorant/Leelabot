@@ -36,7 +36,7 @@ class NginyUS_Framework
 		return isset($this->buffers[$id]['headers'][$header]);
 	}
 	
-	private function addAutomaticHeaders($id)
+	public function addAutomaticHeaders($id)
 	{
 		$this->BufferAddHeader($id, 'Date', date('r'));
 		$this->BufferAddHeader($id, 'Server',NginyUS::NAME.'/'.NginyUS::VERSION);

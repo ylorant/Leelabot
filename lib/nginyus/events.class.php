@@ -4,6 +4,7 @@
 class NginyUS_Events
 {
 	private $_fcts = array();
+	private $_fpages = array();
 	private $_errorFcts = array();
 	public $classes = array();
 	private $classList = array();
@@ -12,6 +13,12 @@ class NginyUS_Events
 	public function addPage($path, &$class, $fct)
 	{
 		$this->_fcts[$path] = array($class,$fct);
+	}
+	
+	//Ajoute une page directe sur un fichier
+	public function addFilePage($path, $file)
+	{
+		$this->_fpages[$path] = $file;
 	}
 	
 	public function rmPage($path)
@@ -41,6 +48,13 @@ class NginyUS_Events
 		
 		$found = FALSE;
 		$page = $data['page'];
+		
+		if(in_array($page, array_keys($this->_fpages)))
+		{
+			$data['page'] = $this->_fpages[$data['page']];
+			return $this->callFilePage($id, $data);
+		}
+		
 		foreach($this->_fcts as $signal => $fct)
 		{
 			if(preg_match('#^'.$signal.'$#', $page, $matches))
@@ -52,6 +66,11 @@ class NginyUS_Events
 		}
 		
 		return $found;
+	}
+	
+	public function callFilePage($id, $data)
+	{
+		return FALSE;
 	}
 	
 	public function callErrorPage($error, $id, $data)

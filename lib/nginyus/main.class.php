@@ -218,7 +218,8 @@ class NginyUS extends NginyUS_Framework
 					$data[substr($row[0], 0, -1)] = $row[1];
 					break;
 			}
-			$_SERVER[substr($row[0],0, -1)] = $row[1];
+			if(isset($row[1]))
+				$_SERVER[substr($row[0],0, -1)] = $row[1];
 		}
 		$data['url'] = $data['host'].$data['page'];
 		$this->siteManager->pageCall($id, $data);
