@@ -148,6 +148,8 @@ class Intl
 			return FALSE;
 		
 		$this->_data = $data;
+		
+		$this->_locale = $dir;
 		return TRUE;
 	}
 	

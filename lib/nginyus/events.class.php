@@ -49,10 +49,14 @@ class NginyUS_Events
 		$found = FALSE;
 		$page = $data['page'];
 		
-		if(in_array($page, array_keys($this->_fpages)))
+		foreach($this->_fpages as $signal => $fpage)
 		{
-			$data['page'] = $this->_fpages[$data['page']];
-			return $this->callFilePage($id, $data);
+			if(preg_match('#^'.$signal.'$#', $page, $matches))
+			{
+				echo $page;
+				$data['page'] = preg_replace('#^'.$signal.'$#', $fpage, $page);
+				return $this->callFilePage($id, $data);
+			}
 		}
 		
 		foreach($this->_fcts as $signal => $fct)
@@ -88,7 +92,7 @@ class NginyUS_Events
 	
 	public function addErrorPage($error, $class, $fct)
 	{
-		$this->_errorFcts[$error] = array(&$this->classes[$class], $fct);
+		$this->_errorFcts[$error] = array(&$class, $fct);
 	}
 	
 	public function rmErrorPage($error)

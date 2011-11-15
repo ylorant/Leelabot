@@ -1,0 +1,125 @@
+<!--
+        top.tpl
+        
+        Copyright 2011 Yohann Lorant <linkboss@gmail.com>
+        
+        This program is free software; you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation; either version 2 of the License, or
+        (at your option) any later version.
+        
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public License
+        along with this program; if not, write to the Free Software
+        Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+        MA 02110-1301, USA.
+        
+        
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+	<title>Leelabot - Web administration</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 0.20" />
+	<script type="text/javascript" src="jquery"></script>
+	<link rel="stylesheet" media="screen" type="text/css" title="Design" href="style"/>
+</head>
+
+<body>
+	<div class="header">
+		<div class="menu">
+			<img class="logo" src="images/logo.png" />
+			<ul>
+				<li>Home</li>
+				<li>Status</li>
+				<li>Servers</li>
+				<li>Plugins</li>
+			</ul>
+		</div>
+	</div>
+	<div class="middle">
+		<div class="left">
+			<h2>Plugins</h2>
+			<hr />
+			<ul>
+				<li>Stats</li>
+				<li class="selected">Messages</li>
+				<li>Bans</li>
+				<li>Assault</li>
+			</ul>
+		</div>
+		<div class="content">
+			<h1>Bienvenue sur la page d'index !</h1>
+
+<p>While you're trying to develop or understand a program design, one of the best ways to think about objects is as
+"service providers." Your program itself will provide services to the user, and it will accomplish this by using the
+services offered by other objects. Your goal is to produce (or even better, locate in existing code libraries) a set of
+objects that provide the ideal services to solve your problem.</p>
+
+<p>A way to start doing this is to ask "if I could magically pull them out of a hat, what objects would solve my problem
+right away?" For example, suppose you are creating a bookkeeping program. You might imagine some objects that
+contain pre-defined bookkeeping input screens, another set of objects that perform bookkeeping calculations, and
+an object that handles printing of checks and invoices on all different kinds of printers. Maybe some of these
+objects already exist, and for the ones that don't, what would they look like? What services would those objects
+provide, and what objects would they need to fulfill their obligations? If you keep doing this, you will eventually
+reach a point where you can say either "that object seems simple enough to sit down and write" or "I'm sure that
+object must exist already." This is a reasonable way to decompose a problem into a set of objects.
+</p>
+
+<p>Thinking of an object as a service provider has an additional benefit: it helps to improve the cohesiveness of the
+object. High cohesion is a fundamental quality of software design: It means that the various aspects of a software
+component (such as an object, although this could also apply to a method or a library of objects) "fit together" well.
+One problem people have when <a href="news">designing objects</a> is cramming too much functionality into one object. For example,
+in your check printing module, you may decide you need an object that knows all about formatting and printing.
+You'll probably discover that this is too much for one object, and that what you need is three or more objects. One
+object might be a catalog of all the possible check layouts, which can be queried for information about how to print
+a check. One object or set of objects could be a generic printing interface that knows all about different kinds of
+printers (but nothing about bookkeeping-this one is a candidate for buying rather than writing yourself). And a third
+object could use the services of the other two to accomplish the task. Thus, each object has a cohesive set of
+services it offers. In a good object-oriented design, each object does one thing well, but doesn't try to do too much.
+As seen here, this not only allows the discovery of objects that might be purchased (the printer interface object),
+but it also produces the possibility of an object that might be reused somewhere else (the catalog of check layouts).
+</p>
+
+<p>Thinking of an object as a service provider has an additional benefit: it helps to improve the cohesiveness of the
+object. High cohesion is a fundamental quality of software design: It means that the various aspects of a software
+component (such as an object, although this could also apply to a method or a library of objects) "fit together" well.
+One problem people have when designing objects is cramming too much functionality into one object. For example,
+in your check printing module, you may decide you need an object that knows all about formatting and printing.
+You'll probably discover that this is too much for one object, and that what you need is three or more objects. One
+object might be a catalog of all the possible check layouts, which can be queried for information about how to print
+a check. One object or set of objects could be a generic printing interface that knows all about different kinds of
+printers (but nothing about bookkeeping-this one is a candidate for buying rather than writing yourself). And a third
+object could use the services of the other two to accomplish the task. Thus, each object has a cohesive set of
+services it offers. In a good object-oriented design, each object does one thing well, but doesn't try to do too much.
+As seen here, this not only allows the discovery of objects that might be purchased (the printer interface object),
+but it also produces the possibility of an object that might be reused somewhere else (the catalog of check layouts).
+</p>
+
+<p>Thinking of an object as a service provider has an additional benefit: it helps to improve the cohesiveness of the
+object. High cohesion is a fundamental quality of software design: It means that the various aspects of a software
+component (such as an object, although this could also apply to a method or a library of objects) "fit together" well.
+One problem people have when designing objects is cramming too much functionality into one object. For example,
+in your check printing module, you may decide you need an object that knows all about formatting and printing.
+You'll probably discover that this is too much for one object, and that what you need is three or more objects. One
+object might be a catalog of all the possible check layouts, which can be queried for information about how to print
+a check. One object or set of objects could be a generic printing interface that knows all about different kinds of
+printers (but nothing about bookkeeping-this one is a candidate for buying rather than writing yourself). And a third
+object could use the services of the other two to accomplish the task. Thus, each object has a cohesive set of
+services it offers. In a good object-oriented design, each object does one thing well, but doesn't try to do too much.
+As seen here, this not only allows the discovery of objects that might be purchased (the printer interface object),
+but it also produces the possibility of an object that might be reused somewhere else (the catalog of check layouts).
+</p>
+		</div>
+	</div>
+</body>
+
+</html>

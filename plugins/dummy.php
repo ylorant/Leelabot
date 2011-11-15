@@ -1,9 +1,10 @@
 <?php
 /**
+ * 
  * \file plugins/dummy.php
  * \author Yohann Lorant <linkboss@gmail.com>
  * \version 0.5
- * \brief Dummy plugin for Leelabot.
+ * \brief Dummy plugin for leelabot. It is not very useful.
  *
  * \section LICENSE
  *
@@ -73,9 +74,15 @@ class PluginDummy extends Plugin
 	{
 		return ServerList::getServerRCon($server)->kick($id);
 	}
+	
+	public function WAPageHello()
+	{
+		return "Hello, world !";
+	}
 }
 
 return $this->initPlugin(array(
 'name' => 'dummy',
 'className' => 'PluginDummy',
+'display' => 'Dummy plugin',
 'autoload' => TRUE));

@@ -264,6 +264,7 @@ class ServerInstance
 		
 		Leelabot::message('Gathering server info...');
 		$this->serverInfo = RCon::serverInfo();
+		print_r($this->serverInfo);
 		
 		Leelabot::message('Gathering server players...');
 		$status = RCon::status();
@@ -679,6 +680,65 @@ class ServerInstance
 		}
 		
 		return TRUE;
+	}
+	
+	/** Gets a file from the server.
+	 * This function gets the contents of a file from the server, with the protocole set to read the log (so it also works on remote servers).
+	 * 
+	 * \param $file File name.
+	 * 
+	 * \return A string containing the file's contents, or FALSE if an error happened.
+	 */
+	public function fileGetContents($file)
+	{
+		switch($this->_logfile['type'])
+		{
+			case 'file':
+				return file_get_contents($file);
+				break;
+			case 'ftp':
+				$buffer = fopen('php://memory', 'r+');
+				if(!ftp_fget($this->_logfile['ftp'], $buffer, $file, FTP_BINARY))
+					return FALSE;
+				
+				fseek($buffer, 0);
+				$str = '';
+				while(!feof($buffer))
+					$str .= fgets($buffer);
+				
+				fclose($buffer);
+				return $str;
+				break;
+		}
+	}
+	
+	/** Writes to a file on the server.
+	 * This function writes the given string to a file on the server, using the appropriate writing method (so it also works on remote servers).
+	 * 
+	 * \param $file The file to write to.
+	 * \param $content The content to write.
+	 * 
+	 * \return TRUE if the file wrote correctly, or FALSE if anything unexpected happened.
+	 */
+	public function filePutContents($file, $content)
+	{
+		switch($this->_logfile['type'])
+		{
+			case 'file':
+				return file_put_contents($file, $content);
+				break;
+			case 'ftp':
+				$buffer = fopen('php://memory', 'r+');
+				fputs($buffer, $content);
+				fseek($buffer, 0);
+				$ret = ftp_fput($this->_logfile['ftp'], $file, $buffer, FTP_BINARY);
+				fclose($buffer);
+				if(!$ret)
+					return FALSE;
+				else
+					return TRUE;
+				break;
+		}
 	}
 }
 

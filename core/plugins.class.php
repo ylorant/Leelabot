@@ -238,6 +238,7 @@ class PluginManager
 		$this->_plugins[$params['name']] = array(
 		'obj' => NULL,
 		'name' => $params['name'],
+		'display' => $params['display'],
 		'dependencies' => (isset($params['dependencies']) ? $params['dependencies'] : array()),
 		'className' => $params['className']);
 		$this->_plugins[$params['name']]['obj'] = new $params['className']($this, $this->_main);
@@ -263,6 +264,9 @@ class PluginManager
 				//Checks for Webservice methods
 				if(preg_match('#^WSMethod#', $method))
 					$this->addWSMethod(lcfirst(preg_replace('#WSMethod(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
+				//Checks for Webadmin pages
+				if(preg_match('#^WAPage#', $method))
+					$this->addWAPage(strtolower(preg_replace('#WAPage(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
 			}
 		}
 		
@@ -411,6 +415,24 @@ class PluginManager
 			$this->_main->outerAPI->getWSObject()->addMethod($method, array($object, $callback));
 		else
 			return FALSE;
+	}
+	
+	/** Adds a page to the webadmin.
+	 * This function adds a page to the OuterAPI webadmin, pointing to the given method. The callback needs to return the HTML of the page, without the design 
+	 * (it will be added manually).
+	 * 
+	 * \param $page The page name. It will be a sub-page of the plugin's section (to avoid pages collisions).
+	 * \param $object Reference to the plugin object that will handle the call. Plugin name will be guessed from this object.
+	 * \param $callback The callback method to be called.
+	 */
+	public function addWAPage($page, &$object, $callback)
+	{
+		if(!$plugin = $this->getName($object))
+			return FALSE;
+			
+		if(is_object($this->_main->outerAPI) && $this->_main->outerAPI->getWAState())
+			$this->_main->outerAPI->getWAObject()->addPluginPage($plugin.'/'.$page, array($object, $callback));
+		
 	}
 	
 	/** Deletes a routine.

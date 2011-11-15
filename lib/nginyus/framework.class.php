@@ -40,7 +40,7 @@ class NginyUS_Framework
 	{
 		$this->BufferAddHeader($id, 'Date', date('r'));
 		$this->BufferAddHeader($id, 'Server',NginyUS::NAME.'/'.NginyUS::VERSION);
-		$this->BufferAddHeader($id, 'Connection', 'close');
+		$this->BufferAddHeader($id, 'Connection', 'keep-alive');
 		$this->BufferAddHeader($id, 'Content-Length', strlen($this->buffers[$id]['data']));
 		$this->BufferAddHeader($id, 'Expires', date('r', strtotime('+5 mins', time())));
 		$this->BufferAddHeader($id, 'Last-Modified', date('r'));
@@ -65,8 +65,20 @@ class NginyUS_Framework
 		$finfo = finfo_open(FILEINFO_MIME_TYPE);
 		$mime = finfo_file($finfo, $file);
 		
-		$this->BufferAddHeader($id, 'Content-type', $mime);
 		$this->BufferSetReplyCode($id, 200);
+		$this->addAutomaticHeaders($id);
+		$this->BufferAddHeader($id, 'Content-type', $mime);
+		
+		switch(pathinfo($file, PATHINFO_EXTENSION))
+		{
+			case 'css':
+				$this->BufferAddHeader($id, 'Content-type', 'text/css');
+				break;
+			case 'js':
+				$this->BufferAddHeader($id, 'Content-type', 'text/javascript');
+				break;
+		}
+		
 		$this->BufferAppendData($id, file_get_contents($file));
 		$this->sendBuffer($id);
 	}
@@ -83,7 +95,7 @@ class NginyUS_Framework
 			
 			NginyUS::message('Reply code : $0', array($this->buffers[$id]['code']), E_DEBUG);
 			
-			$text = 'HTTP/1.1 '.$this->buffers[$id]['code'];
+			$text = 'HTTP/1.1 '.$this->buffers[$id]['code']." OK\n";
 			foreach($this->buffers[$id]['headers'] as $ref => $header)
 				$text .= $ref.': '.$header."\r\n";
 			
@@ -93,7 +105,8 @@ class NginyUS_Framework
 			$text = $this->buffers[$id]['raw'];
 		
 		$this->sendData($id, $text);
-		$this->closeConnection($id);
+		unset($this->buffers[$id]);
+		//$this->closeConnection($id);
 	}
 	
 	public function downloadFile($id, $file)

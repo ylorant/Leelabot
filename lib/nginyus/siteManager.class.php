@@ -129,7 +129,12 @@ class NginyUS_SiteManager extends NginyUS_SystemPages
 		{
 			$errorFound = FALSE;
 			if($exec)
+			{
+				$localDir = getcwd();
+				chdir($exec->getDocumentRoot());
 				$errorFound = $exec->callErrorPage(404, $id, $data);
+				chdir($localDir);
+			}
 			
 			if(!$errorFound)
 				$this->error404($id, $data);
@@ -216,12 +221,8 @@ class NginyUS_Site extends NginyUS_Events
 		if(!is_file($data['page']))
 			return FALSE;
 		
-		$file = file_get_contents($data['page']);
-		$fileinfo = finfo_file($this->fileinfo, $data['page']);
-		$this->siteManager->main->BufferSetReplyCode($id, 200);
-		$this->siteManager->main->addAutomaticHeaders($id);
-		$this->siteManager->main->BufferAddHeader($id, 'Content-type', $fileinfo);
-		$this->siteManager->main->BufferAppendData($id, $file);
-		$this->siteManager->main->sendBuffer($id);
+		$this->siteManager->main->sendFileContents($id, $data['page']);
+		
+		return TRUE;
 	}
 }

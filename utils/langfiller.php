@@ -39,13 +39,15 @@ if(is_file($args[0]))
 }
 elseif(is_dir($args[0]))
 {
+	mkdir('lang');
 	$dir = scandir($args[0]);
 	foreach($dir as $file)
 	{
 		$contents = file_get_contents($args[0].'/'.$file);
-	preg_match_all('#Leelabot::message\(("|\')(.+)(",|"\)|\',|\'\))(.+\))?;#isU', $contents, $matches);
-	
-	file_put_contents($file.'.lc', '#from '.join("\n#to \n\n#from ", $matches[2])."\n#to ");
+		preg_match_all('#Leelabot::message\(("|\')(.+)(",|"\)|\',|\'\))(.+\))?;#isU', $contents, $matches);
+		
+		if(count($matches[2]))
+			file_put_contents('lang/'.$file.'.lc', '#from '.join("\n#to \n\n#from ", $matches[2])."\n#to ");
 	}
 }
 else

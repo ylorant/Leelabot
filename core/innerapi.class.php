@@ -719,6 +719,19 @@ class Server
 		$self = self::getInstance();
 		return isset($self->_server->pluginVars[$var]) ? $self->_server->pluginVars[$var] : NULL;
 	}
+	
+	/** Gets a file from the server.
+	 * This function gets the contents of a file from the server, with the protocole set to read the log (so it also works on remote servers).
+	 * 
+	 * \param $file File name.
+	 * 
+	 * \return A string containing the file's contents, or FALSE if an error happened.
+	 */
+	public static function fileGetContents($file)
+	{
+		$self = self::getInstance();
+		return $self->_server->fileGetContents($file);
+	}
 }
 
 /**

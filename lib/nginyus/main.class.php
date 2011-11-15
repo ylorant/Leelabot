@@ -7,8 +7,10 @@ class NginyUS extends NginyUS_Framework
 	private $addr;
 	private $port;
 	private $clients = array();
+	private $times = array();
 	private $lastClientID = 0;
 	private $freedID = array();
+	private $timeout = 20;
 	public $serverInfo = array();
 	
 	public static $continue;
@@ -68,6 +70,12 @@ class NginyUS extends NginyUS_Framework
 			NgniyUS::message('Port not valid : $0', array($addr), E_WARNING);
 	}
 	
+	//Sets the timeout
+	public function setTimeout($s)
+	{
+		$this->timeout = $s;
+	}
+	
 	//Requires site manager object
 	public function manageSites()
 	{
@@ -103,7 +111,7 @@ class NginyUS extends NginyUS_Framework
 		//Some client want to connect
 		if(($tempSocket = @socket_accept($this->socket)) !== FALSE)
 		{
-			NginyUS::message('Hey, someone is connecting !', array(), E_DEBUG);
+			
 			if(isset($this->freedID[0]))
 			{
 				$id = $this->freedID[0];
@@ -112,7 +120,9 @@ class NginyUS extends NginyUS_Framework
 			}
 			else
 				$id = count($this->clients);
+			NginyUS::message('Hey, someone is connecting ! ID: $0', array($id), E_DEBUG);
 			$this->clients[$id] = $tempSocket;
+			$this->times[$id] = time();
 		}
 		
 		//Now we read data from all clients... Only if there is someone to read from
@@ -134,8 +144,23 @@ class NginyUS extends NginyUS_Framework
 				{
 					$buffer = '';
 					$buffer = socket_read($this->clients[$id], 1024);
-					$this->parseQuery($id, $buffer);
+					if($buffer)
+					{
+						$this->times[$id] = time();
+						$this->parseQuery($id, $buffer);
+					}
 				}
+			}
+		}
+		
+		$now = time();
+		//Checking timeouts
+		foreach($this->times as $id => $time)
+		{
+			if($time + $this->timeout < $now)
+			{
+				NginyUS::message('Timeout from client $0', array($id));
+				$this->closeConnection($id);
 			}
 		}
 	}
@@ -165,6 +190,7 @@ class NginyUS extends NginyUS_Framework
 				NginyUS::error('Cannot close the socket : '.socket_strerror(socket_last_error()), E_WARNING);
 			unset($this->clients[$id]);
 			unset($this->buffers[$id]);
+			unset($this->times[$id]);
 		}
 	}
 	
@@ -176,6 +202,7 @@ class NginyUS extends NginyUS_Framework
 	//Parses HTTP query
 	public function parseQuery($id, $query)
 	{
+		NginyUS::message("New query from $0", array($id), E_DEBUG);
 		if(!$query)
 			return FALSE;
 		$data = array();
@@ -199,7 +226,7 @@ class NginyUS extends NginyUS_Framework
 				case 'GET': //It's a GET request (main parameter)
 					$data['page'] = explode(' ', $row[1]);
 					$data['page'] = $data['page'][0];
-					NginyUS::message('Requested page : '.$data['page']);
+					NginyUS::message('Requested page : $0', array($data['page']), E_DEBUG);
 					break;
 				case 'Host:':
 					$host = explode(':',$row[1], 2);

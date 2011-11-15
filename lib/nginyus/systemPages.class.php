@@ -5,6 +5,7 @@ class NginyUS_SystemPages
 	public function error404($id, $data)
 	{
 		$this->main->BufferSetReplyCode($id, 404);
+		$this->main->BufferAddHeader($id,'Connection', 'close');
 		$this->main->BufferAppendData($id, '
 			<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"> 
 			<html><head> 
