@@ -732,6 +732,20 @@ class Server
 		$self = self::getInstance();
 		return $self->_server->fileGetContents($file);
 	}
+	
+	/** Writes to a file on the server.
+	 * This function writes the given string to a file on the server, using the appropriate writing method (so it also works on remote servers).
+	 * 
+	 * \param $file The file to write to.
+	 * \param $content The content to write.
+	 * 
+	 * \return TRUE if the file wrote correctly, or FALSE if anything unexpected happened.
+	 */
+	public static function filePutContents($file, $contents)
+	{
+		$self = self::getInstance();
+		return $self->_server->filePutContents($file, $contents);
+	}
 }
 
 /**
