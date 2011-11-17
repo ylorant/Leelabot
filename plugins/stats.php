@@ -74,13 +74,13 @@ class PluginStats extends Plugin
 		if(isset($this->config['ShowStats']))
 			$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
 		else
-			$this->config['ShowStats'] = array('hits', 'kills', 'streaks', 'heads', 'caps', 'ratio');
+			$this->config['ShowStats'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
 		
 		// What kind of awards will be displayed
 		if(isset($this->config['ShowAwards']))
 			$this->config['ShowAwards'] = explode(',', $this->config['ShowAwards']);
 		else
-			$this->config['ShowAwards'] = array('hits', 'kills', 'streaks', 'heads', 'caps', 'ratio');
+			$this->config['ShowAwards'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
 			
 		// Display flag captures on top
 		if(isset($this->config['DisplayCaps']))
@@ -126,13 +126,13 @@ class PluginStats extends Plugin
 	public function SrvEventStartupGame()
 	{
 		//Stats of players
-		Server::set('stats', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'ratio' => array(NULL,0), 'caps' => array(NULL,0), 'heads' => array(NULL,0)));
+		Server::set('stats', array());
 		
 		//Stats config of players
 		Server::set('statsConfig', array());
 		
 		//Awards of game
-		Server::set('awards', array());
+		Server::set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0)));
 		
 		//Ratio list
 		Server::set('ratioList', array());
@@ -175,16 +175,16 @@ class PluginStats extends Plugin
 	{
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
-		$_ratioList = Server::set('ratioList');
+		$_ratioList = Server::get('ratioList');
 		
 		$_stats[$id] = array();
 		$_stats[$id]['hits'] = 0;
 		$_stats[$id]['kills'] = 0;
 		$_stats[$id]['deaths'] = 0;
-		$_stats[$id]['caps'] = 0;
 		$_stats[$id]['streaks'] = 0;
 		$_stats[$id]['curstreak'] = 0;
 		$_stats[$id]['heads'] = 0;
+		$_stats[$id]['caps'] = 0;
 		$_stats[$id]['ratio'] = 0;
 		
 		$_ratioList[$id] = 0;
@@ -202,14 +202,14 @@ class PluginStats extends Plugin
 	{
 		$_stats = Server::get('stats');
 		$_awards = Server::get('awards');
-		$_ratioList = Server::set('ratioList');
+		$_ratioList = Server::get('ratioList');
 		
 		unset($_stats[$id]);
 		unset($_ratioList[$id]);
 		
-		$awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'ratio' => array(NULL,0), 'caps' => array(NULL,0), 'heads' => array(NULL,0));
+		$awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0));
 		
-		$stat = array('hits', 'kills', 'deaths', 'caps', 'streaks', 'heads');
+		$stat = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
 		
 		foreach($_stats as $id => $player)
 		{
@@ -500,7 +500,7 @@ class PluginStats extends Plugin
 		if($admin !== NULL) $user = $admin;
 		
 		//On affiche enfin les stats
-		Rcon::tell($user, '$stats', array(join('^3 - ', $buffer)));
+		Rcon::tell($user, '$stats', array('stats' => join('^3 - ', $buffer)));
 	}
 	
 	//Stats to zero ...
@@ -522,7 +522,7 @@ class PluginStats extends Plugin
 		}
 		
 		//Awards to zero
-		$_awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'ratio' => array(NULL,0), 'caps' => array(NULL,0), 'heads' => array(NULL,0));
+		$_awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0));
 		
 		Server::set('stats', $_stats);
 		Server::set('awards', $_awards);
