@@ -43,13 +43,13 @@ class PluginClientBase extends Plugin
 	 */
 	public function init()
 	{
-		if(isset($this->_main->config['Plugin']['Clientbase']))
+		if($this->config)
 		{
-			if(isset($this->_main->config['Plugin']['Clientbase']['AutoTeams']))
-				$this->_autoteams = Leelabot::parseBool($this->_main->config['Plugin']['Clientbase']['AutoTeams']);
+			if(isset($this->config['AutoTeams']))
+				$this->_autoteams = Leelabot::parseBool($this->config['AutoTeams']);
 			
-			if(isset($this->_main->config['Plugin']['Clientbase']['CycleMapFile']))
-				$this->_cyclemapfile = $this->_main->config['Plugin']['Clientbase']['CycleMapFile'];
+			if(isset($this->config['CycleMapFile']))
+				$this->_cyclemapfile = $this->config['CycleMapFile'];
 		}
 	}
 	
@@ -160,6 +160,8 @@ class PluginClientBase extends Plugin
 	 * It is executed on new connections and when a player changes team (if AutoTeams is enabled in plugin config).
 	 * It only changes the team of new players. 
 	 * 
+	 * \param $player The player who send the command. (if is player has send command)
+	 * 	 
 	 * \return Nothing.
 	 */
 	private function _balance($player = null)
@@ -217,6 +219,20 @@ class PluginClientBase extends Plugin
 				RCon::tell($player, 'Teams are already balanced');
 		}
 		
+	}
+	
+	/** Balances teams.
+	 * This function balances the teams according to the arrival order of the players. 
+	 * It is executed on new connections and when a player changes team (if AutoTeams is enabled in plugin config).
+	 * It only changes the team of new players. 
+	 * 
+	 * \param $server The server that has requested the balance.
+	 * 	 
+	 * \return Nothing.
+	 */
+	public function WSMethodBalanceTeams($server)
+	{
+		// TODO
 	}
 }
 

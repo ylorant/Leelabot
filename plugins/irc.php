@@ -32,8 +32,7 @@ class PluginIrc extends Plugin
 {
 	//Private vars
 	private $_socket; // Socket of bot
-	
-	private $_config = array(); // Config of Bot
+	private $_connected = FALSE; // if bot connected to irc
 	
 	private $_pseudo;
 	private $_channel;
@@ -50,31 +49,11 @@ class PluginIrc extends Plugin
 	public function init()
 	{
 		//Config
-		if(isset($this->_main->config['Plugin']['Irc']) && isset($this->_main->config['Plugin']['Irc']['Server']) && isset($this->_main->config['Plugin']['Irc']['Port']) && isset($this->_main->config['Plugin']['Irc']['Nick']) && isset($this->_main->config['Plugin']['Irc']['User']) && isset($this->_main->config['Plugin']['Irc']['Channels']) && isset($this->_main->config['Plugin']['Irc']['MainChannel']) && isset($this->_main->config['Plugin']['Irc']['MessageMode']))
+		if($this->config && isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']))
 		{
-			$this->_config = $this->_main->config['Plugin']['Irc'];
-			
-			/*
-			if(isset($this->_config['AutoSpeak']) && in_array($this->_config['AutoSpeak'] , array(1, 2))
-			if(isset($this->_config['AutoSpeak']) && in_array($this->_config['AutoSpeak'] , array(0, 3))
-			
-			if(isset($this->_config['AutoPerform']))
-			
-			if($this->_autoSpeak == 1 OR $this->_autoSpeak == 2)
-			{
-				$this->_plugins->addServerEvent('say:','irc','SrvEventIrc');
-			}
-			
-			if($this->_autoSpeak == 0 OR $this->_autoSpeak == 3)
-			{
-				$this->_plugins->addClientEvent('!irc','irc','SrvEventIrc',0);
-			}
-			*/
-			
 			//Connection
 			$this->_connect();
 			
-		
 			//IRC commands
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
 			$this->_addCmd('!status', 'CmdStatus', '!status', 'Permet d\'avoir les infos sur la partie actuel.', 0);
@@ -108,23 +87,49 @@ class PluginIrc extends Plugin
 	
 	private function _connect()
 	{
-		$this->_socket = fsockopen($this->_config['Server'], $this->_config['Port']);
-		stream_set_blocking($this->_socket, 0);
-		
-		$this->_send("USER".str_repeat(' '.$this->_config['User'], 4));
-		$this->_send("NICK ".$this->_config['Nick']);
-		
-		Leelabot::message('The bot "$0" is connected to $1:$2', array($this->_config['Nick'], $this->_config['Server'], $this->_config['Port']));
+		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port']))
+		{
+			stream_set_blocking($this->_socket, 0);
+			
+			$this->_connected = TRUE;
+			
+			$this->_send("USER".str_repeat(' '.$this->config['User'], 4));
+			$this->_send("NICK ".$this->config['Nick']);
+			
+			Leelabot::message('The bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
+		}
+		else
+		{
+			$this->_connected = TRUE;
+			Leelabot::message('The connection has failed. We will try again in a few seconds.', array());
+		}
 	}
 	
 	private function _send($commande)
 	{
-		fputs($this->_socket, $commande."\r\n");
+		if($this->_connected)
+		{
+			fputs($this->_socket, $commande."\r\n");
+		}
 	}
 	
 	private function _get()
 	{
-		return fgets($this->_socket,1024); // On lit les données du serveur
+		if($this->_connected)
+		{
+			if($return = fgets($this->_socket,1024)) // On lit les données du serveur
+			{
+				return $return;
+			}
+			else
+			{
+				// TODO $this->_connected = false; (timeout, server connection close, etc..)
+			}
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 	
 	/////////////////////////////////////////////
@@ -297,23 +302,23 @@ class PluginIrc extends Plugin
 
 			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
 			{
-				if(isset($this->_config['AutoPerform']))
+				if(isset($this->config['AutoPerform']))
 				{
-					foreach($this->_config['AutoPerform'] as $command)
+					foreach($this->config['AutoPerform'] as $command)
 						$this->_send($command);
 				}
 				
-				$this->join($this->_config['Channels']);
+				$this->join($this->config['Channels']);
 					
-				Leelabot::message('The bot has join $0', array($this->_config['Channels']));
+				Leelabot::message('The bot has join $0', array($this->config['Channels']));
 			}
 			
 			if($commande[1] == '433')
 			{
-				$this->_config['Nick'] = $this->_config['Nick'].'_';
-				$this->_send("NICK ".$this->_config['Nick']);
+				$this->config['Nick'] = $this->config['Nick'].'_';
+				$this->_send("NICK ".$this->config['Nick']);
 				
-				Leelabot::message('The nickname has changed for $0', array($this->_config['Nick']));
+				Leelabot::message('The nickname has changed for $0', array($this->config['Nick']));
 			}
 			
 			if($commande[1] == 'PRIVMSG') //Si c'est un message
@@ -332,7 +337,7 @@ class PluginIrc extends Plugin
 					{
 						if($this->_cmdIrc[$cmd[0]]['r'] == 1)
 						{
-							if($this->isRights(trim($pseudo), $this->_config['MainChannel'], '+'))
+							if($this->isRights(trim($pseudo), $this->config['MainChannel'], '+'))
 							{
 								$this->{$this->_cmdIrc[$cmd[0]]['func']}();
 							}
@@ -343,7 +348,7 @@ class PluginIrc extends Plugin
 						}
 						elseif($this->_cmdIrc[$cmd[0]]['r'] == 2)
 						{
-							if($this->isRights(trim($pseudo), $this->_config['MainChannel'], '@'))
+							if($this->isRights(trim($pseudo), $this->config['MainChannel'], '@'))
 							{
 								$this->{$this->_cmdIrc[$cmd[0]]['func']}();
 							}
@@ -360,7 +365,7 @@ class PluginIrc extends Plugin
 				}
 				else
 				{
-					if(($this->_config['AutoSpeak'] == 1 OR $this->_config['AutoSpeak'] == 3) AND $this->_channel == $this->_config['MainChannel'])
+					if(($this->config['AutoSpeak'] == 1 OR $this->config['AutoSpeak'] == 3) AND $this->_channel == $this->config['MainChannel'])
 					{
 						$irc2urt = $this->normaliser(rtrim($message[2]));
 						$pseudo = explode(' ',$message[1]);
@@ -386,7 +391,7 @@ class PluginIrc extends Plugin
 	
 	public function CommandIrcco($player, $args)
 	{
-		$this->_send('NAMES '.$this->_config['MainChannel']);
+		$this->_send('NAMES '.$this->config['MainChannel']);
 		$continue = TRUE;
 		while($continue)
 		{
@@ -413,18 +418,18 @@ class PluginIrc extends Plugin
 		{
 			$nick = $this->_rmColor(Server::getPlayer($id)->name);
 			$message = $this->_rmColor(impode(' ', $args));
-			$this->privmsg($this->_config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
+			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
 		}
 	}
 	
 	//Event serveur : IRC (envoie sur IRC tout ce qui se dit)
 	public function SrvEventSay($id, $contents)
 	{
-		if($contents[0] != '!' && (isset($this->_config['AutoSpeak']) OR in_array($this->_config['AutoSpeak'], array(1, 2))))
+		if($contents[0] != '!' && (isset($this->config['AutoSpeak']) OR in_array($this->config['AutoSpeak'], array(1, 2))))
 		{
 			$nick = $this->_rmColor(Server::getPlayer($id)->name);
 			$message = $this->_rmColor($contents);
-			$this->privmsg($this->_config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
+			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
 		}
 	}
 }

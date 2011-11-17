@@ -41,10 +41,10 @@ class PluginTeamspeak extends Plugin
 	 */
 	public function init()
 	{
-		if(isset($this->_main->config['Plugin']['Teamspeak']))
+		if(isset($this->config))
 		{
-			if(isset($this->_main->config['Plugin']['Teamspeak']['ChooseChannel']))
-				$this->_channelId = $this->_main->config['Plugin']['Teamspeak']['ChooseChanne'];
+			if(isset($this->config['ChooseChannel']))
+				$this->_channelId = $this->config['ChooseChannel'];
 		}
 	}
 }
