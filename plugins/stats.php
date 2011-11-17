@@ -65,7 +65,7 @@ class PluginStats extends Plugin
 	 */
 	public function init()
 	{
-		if(isset($this->config))
+		if(!isset($this->config))
 		{
 			$this->config = array();
 		}
@@ -123,31 +123,26 @@ class PluginStats extends Plugin
 		$this->_disableStatsReset--;
 	}
 	
-	public function SrvEventInitGame($serverinfo)
+	public function SrvEventStartupGame()
 	{
-		//Many conditions to verify the existence of variables.
-		
 		//Stats of players
-		if(Server::get('stats') === NULL)
-			Server::set('stats', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'ratio' => array(NULL,0), 'caps' => array(NULL,0), 'heads' => array(NULL,0)));
+		Server::set('stats', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'ratio' => array(NULL,0), 'caps' => array(NULL,0), 'heads' => array(NULL,0)));
 		
 		//Stats config of players
-		if(Server::get('statsConfig') === NULL)
-			Server::set('statsConfig', array());
+		Server::set('statsConfig', array());
 		
 		//Awards of game
-		if(Server::get('awards') === NULL)
-			Server::set('awards', array());
+		Server::set('awards', array());
 		
 		//Ratio list
-		if(Server::get('ratioList') === NULL)
-			Server::set('ratioList', array());
+		Server::set('ratioList', array());
 		
 		//If other plugin want to disable stats reset
-		if(Server::get('disableStatsReset') === NULL)
-			Server::set('disableStatsReset', 0);
-		
-		
+		Server::set('disableStatsReset', 0);
+	}
+	
+	public function SrvEventInitGame($serverinfo)
+	{
 		//And Finally stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
@@ -176,7 +171,7 @@ class PluginStats extends Plugin
 	}
 	
 	//Event serveur : Connect (On initialise les stats pour ce joueur)
-	public function SrvEventConnect($id)
+	public function SrvEventClientConnect($id)
 	{
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
@@ -203,7 +198,7 @@ class PluginStats extends Plugin
 	}
 	
 	//Event serveur : Disconnect (on détruit les stats et les paramètres pour ce joueur) et on recalcul les awards
-	public function SrvEventDisconnect($id)
+	public function SrvEventClientDisconnect($id)
 	{
 		$_stats = Server::get('stats');
 		$_awards = Server::get('awards');
@@ -387,6 +382,51 @@ class PluginStats extends Plugin
 		}
 		
 		Server::set('stats', $_stats);
+	}
+	
+	//Event client : !stats (on affiche juste les stats du joueur ayant appelé la commande)
+	public function CommandStats($id, $cmd)
+	{
+		$this->_showStatsMsg($id);
+	}
+	
+	//Event client : !awards (on affiche juste les awards)
+	public function CommandAwards($id, $cmd)
+	{
+		$this->_showAwardsMsg($id);
+	}
+	
+	//Event client : !statsreset (On réinitialise les stats)
+	public function CommandStatsReset($id, $cmd)
+	{
+		$this->_statsInit();
+	}
+	
+	
+	//Event client : !statscfg (on configure les stats selon les différents paramètres)
+	public function CommandStatsCfg($id, $cmd)
+	{
+		if($cmd[0])
+		{
+			$_statsConfig = Server::get('statsConfig');
+			
+			switch($cmd[0])
+			{
+				case 'verbosity':
+				case 'v':
+					if(is_numeric($cmd[1]) && $cmd[1] <= 3 && $cmd[1] >= 0 )
+						$this->_statsConfig[$id]['verbosity'] = $cmd[1];
+					else
+						Rcon::tell($id, 'You must enter a number between 0 and 3.');
+					break;
+			}
+			
+			Server::set('statsConfig', $_statsConfig);
+		}
+		else
+		{
+			Rcon::tell($id, 'You must enter the name of the configuration.');
+		}
 	}
 	
 	private function _showAwardsMsg($player = NULL)
