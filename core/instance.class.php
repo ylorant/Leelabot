@@ -264,10 +264,19 @@ class ServerInstance
 		
 		Leelabot::message('Gathering server info...');
 		$this->serverInfo = RCon::serverInfo();
-		print_r($this->serverInfo);
+		if(!$this->serverInfo)
+		{
+			Leelabot::message('Can\'t gather server info.', array(), E_WARNING);
+			return FALSE;
+		}
 		
 		Leelabot::message('Gathering server players...');
 		$status = RCon::status();
+		if(!$status)
+		{
+			Leelabot::message('Can\'t gather server players.', array(), E_WARNING);
+			return FALSE;
+		}
 		
 		$this->players = array();
 		foreach($status['players'] as $id => $player)
