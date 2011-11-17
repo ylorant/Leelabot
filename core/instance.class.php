@@ -528,6 +528,12 @@ class ServerInstance
 						$kill = explode(' ', $kill[0]);
 						$this->_leelabot->plugins->callServerEvent('Kill', $kill);
 						break;
+					//One player hit another, OMG FLOOD OF GAME LOG ! 
+					case 'Hit':
+						$hit = explode(':', $line[1]);
+						$hit = explode(' ', $hit[0]);
+						$this->_leelabot->plugins->callServerEvent('Hit', $hit);
+						break;
 					//Player message
 					case 'say':
 						$message = explode(' ', $line[1], 2);

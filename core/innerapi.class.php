@@ -818,10 +818,10 @@ class ServerList
 		if(!isset($self->_leelabot->servers[$server]))
 			return FALSE;
 		
-		$rcon = new Server();
-		$rcon->setServer($self->_leelabot->servers[$server]);
+		$instance = new Server();
+		$instance->setServer($self->_leelabot->servers[$server]);
 		
-		return $rcon;
+		return $instance;
 	}
 	
 	/** Deletes a server from the bot.
