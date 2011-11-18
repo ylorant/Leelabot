@@ -387,6 +387,7 @@ class PluginStats extends Plugin
 	//Event serveur : Flag (si il capture, on ajoute 1 au compteur de capture du joueur)
 	public function SrvEventFlag($flag)
 	{
+	var_dump($flag);
 		if(Server::getServer()->serverInfo['g_gametype'] == 7)
 		{
 			if($flag[1] == 2) //Si c'est une capture
