@@ -174,6 +174,7 @@ class RCon
 	 * 
 	 * \return Nothing.
 	 * \see RCon::tell()
+	 * \see RCon::topMessage()
 	 */
 	public static function say($message, $args = array(), $translate = TRUE)
 	{
@@ -199,6 +200,7 @@ class RCon
 	 * 
 	 * \return Nothing.
 	 * \see RCon::say()
+	 * \see RCon::topMessage()
 	 */
 	public static function tell($player, $message, $args = array(), $translate = TRUE)
 	{
@@ -212,6 +214,31 @@ class RCon
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
 		return self::send('tell '.$player.' "^7'.$message.'"');
+	}
+	
+	/** Sends a command with translate on top
+	 * This functions sends a message to the server, visible by everyone on top.
+	 * 
+	 * \param $message The message to send. It will be parsed like in Leelabot::message().
+	 * \param $args The arguments of the message, for value replacement. Like in Leelabot::message().
+	 * \param $translate Boolean indicating if the method has to translate the message before sending. Default : TRUE.
+	 * 
+	 * \return Nothing.
+	 * \see RCon::tell()
+	 * \see RCon::say()
+	 */
+	public static function topMessage($message, $args = array(), $translate = TRUE)
+	{
+		//Parsing message vars
+		foreach($args as $id => $value)
+			$message = str_replace('$'.$id, $value, $message);
+		
+		if($translate)
+			$message = Leelabot::$instance->intl->translate($message);
+		
+		Leelabot::message('Message on top : $0', array($message), E_DEBUG);
+		
+		return self::send($message);
 	}
 	
 	/** Shortcut to all RCon commands.

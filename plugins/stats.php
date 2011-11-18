@@ -259,7 +259,7 @@ class PluginStats extends Plugin
 				if($this->config['DisplayHeads'] AND ($_stats[$hit[1]]['heads']/5) == 0)
 				{
 					if($player1->team == 1) $color = '^1';
-					if($player1->team == 2) $color = '^4';
+					elseif($player1->team == 2) $color = '^4';
 					Rcon::topMessage('^3Headshots : $playercolor$playername ^2$heads', array('playercolor' => $color, 'playername' => $player1->name, 'heads' => $_stats[$hit[1]]['heads']));
 				}
 			
@@ -337,7 +337,7 @@ class PluginStats extends Plugin
 						if($this->config['DisplayStreaks'])
 						{
 							if($player0->team == 1) $color = '^1';
-							if($player0->team == 2) $color = '^4';
+							elseif($player0->team == 2) $color = '^4';
 							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $player0->name, 'streaks' => $_stats[$kill[0]]['streaks']));
 						}
 					}
@@ -382,6 +382,40 @@ class PluginStats extends Plugin
 		}
 		
 		Server::set('stats', $_stats);
+	}
+	
+	//Event serveur : Flag (si il capture, on ajoute 1 au compteur de capture du joueur)
+	public function SrvEventFlag($flag)
+	{
+		if(Server::getServer()->serverInfo['g_gametype'] == 7)
+		{
+			if($flag[1] == 2) //Si c'est une capture
+			{
+				$_stats = Server::get('stats');
+				$_awards = Server::get('awards');
+				
+				$_stats[$flag[0]]['caps']++;
+				
+				if($this->config['DisplayCaps'])
+				{
+					$player = Server::getPlayer($flag[0]);
+					
+					if($player->team == 1) $color = '^1';
+					elseif($player->team == 2) $color = '^4';
+					Rcon::topMessage(' $playercolor$playername : ^2$caps ^3caps', array('playercolor' => $color, 'playername' => $player->name, 'caps' => $_stats[$flag[0]]['caps']));
+				}
+				
+				//Gestion des awards
+				if($_stats[$flag[0]]['caps'] > $_awards['caps'][1])
+				{
+					$_awards['caps'][0] = $flag[0];
+					$_awards['caps'][1] = $_stats[$flag[0]]['caps'];
+				}
+				
+				Server::set('awards', $_awards);
+				Server::set('stats', $_stats);
+			}
+		}
 	}
 	
 	//Event client : !stats (on affiche juste les stats du joueur ayant appelé la commande)

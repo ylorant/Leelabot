@@ -534,14 +534,26 @@ class ServerInstance
 					//One player kills another, probably the most common action that will occur ?
 					case 'Kill':
 						$kill = explode(':', $line[1]);
-						$kill = explode(' ', $kill[0]);
+						$kill = explode(' ', trim($kill[0]));
 						$this->_leelabot->plugins->callServerEvent('Kill', $kill);
 						break;
 					//One player hit another, OMG FLOOD OF GAME LOG ! 
 					case 'Hit':
 						$hit = explode(':', $line[1]);
-						$hit = explode(' ', $hit[0]);
+						$hit = explode(' ', trim($hit[0]));
 						$this->_leelabot->plugins->callServerEvent('Hit', $hit);
+						break;
+					//Item of player, example : take kevlar. (utility ?)
+					case 'Item':
+						$item = explode(':', $line[1]);
+						$item = explode(' ', trim($item[0]));
+						$this->_leelabot->plugins->callServerEvent('Item', $item);
+						break;
+					//Actions on flag
+					case 'Flag':
+						$flag = explode(':', $line[1]);
+						$flag = explode(' ', trim($flag[0]));
+						$this->_leelabot->plugins->callServerEvent('Flag', $flag);
 						break;
 					//Player message
 					case 'say':
