@@ -254,7 +254,7 @@ class PluginStats extends Plugin
 			{
 				$_stats[$shooter->id]['heads']++;
 				
-				if($this->config['DisplayHeads'] AND ($_stats[$shooter->id]['heads']/5) == 0)
+				if($this->config['DisplayHeads'] AND ($_stats[$shooter->id]['heads']%5) == 0)
 				{
 					if($shooter->team == 1) $color = '^1';
 					elseif($shooter->team == 2) $color = '^4';
