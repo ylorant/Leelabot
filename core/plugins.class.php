@@ -663,7 +663,7 @@ class PluginManager
 					else
 					{
 						if(!$this->_quietReply)
-							RCon::say('You\'re not allowed to execute this command.');
+							RCon:tell($player, 'You\'re not allowed to execute this command.');
 						break;
 					}
 				}
@@ -672,7 +672,7 @@ class PluginManager
 		else
 		{
 			if(!$this->_quietReply)
-				RCon::say('Command not found.');
+				RCon::tell($player, 'Command not found.');
 		}
 	}
 }

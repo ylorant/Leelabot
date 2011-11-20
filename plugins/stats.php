@@ -258,6 +258,7 @@ class PluginStats extends Plugin
 				{
 					if($shooter->team == 1) $color = '^1';
 					elseif($shooter->team == 2) $color = '^4';
+					else $color = '';
 					Rcon::topMessage('^3Headshots : $playercolor$playername ^2$heads', array('playercolor' => $color, 'playername' => $shooter->name, 'heads' => $_stats[$shooter->id]['heads']));
 				}
 			
@@ -337,6 +338,7 @@ class PluginStats extends Plugin
 						{
 							if($killer->team == 1) $color = '^1';
 							elseif($killer->team == 2) $color = '^4';
+							else $color = '';
 							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $player0->name, 'streaks' => $_stats[$killer->id]['streaks']));
 						}
 					}
@@ -401,6 +403,7 @@ class PluginStats extends Plugin
 				{
 					if($player->team == 1) $color = '^1';
 					elseif($player->team == 2) $color = '^4';
+					else $color = '';
 					Rcon::topMessage(' $playercolor$playername : ^2$caps ^3caps', array('playercolor' => $color, 'playername' => $player->name, 'caps' => $_stats[$player->id]['caps']));
 				}
 				

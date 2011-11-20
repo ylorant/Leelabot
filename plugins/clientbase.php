@@ -94,7 +94,32 @@ class PluginClientBase extends Plugin
 	public function CommandHelp($player, $command)
 	{
 		$list = Plugins::getCommandList();
-		var_dump($list);
+		$player = Server::getPlayer($player);
+		
+		if(empty($command[0]))
+		{
+			$cmdHelp = strtolower(str_replace('!', '', $command[0]));
+			
+			if(isset($this->_main->config['CommandsHelp']))
+			{
+				if(isset($this->_main->config['CommandsHelp'][$cmdHelp]))
+				{
+					Rcon::tell($player->id, '$cmd : $help', array('cmd' => '!'.$cmdHelp, 'help' => $this->_main->config['CommandsHelp'][$cmdHelp]));
+					break;
+				}
+			}
+			
+			Rcon::tell($player->id, '$cmd have not description.', array('cmd' => '!'.$cmdHelp));
+		}
+		else
+		{
+			foreach($list as $cmd => $level)
+				if($level > $player->level)
+					unset($list[$cmd]);
+					
+			$list = implode(', ', $list);
+			Rcon::tell($player->id, 'List of commands : $list', array('list' => $list));
+		}
 	}
 	
 	/** !nextmap command. Return next map.
