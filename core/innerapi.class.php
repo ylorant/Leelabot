@@ -1014,7 +1014,7 @@ class Plugins
 	 * 
 	 * \return an array containing in keys the commands' names, and in value a descriptive of them and their right level.
 	 */
-	public function getCommandList($plugins = FALSE)
+	public static function getCommandList($plugin = FALSE)
 	{
 		return self::$_plugins->getCommandList($plugin);
 	}

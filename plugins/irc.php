@@ -414,9 +414,9 @@ class PluginIrc extends Plugin
 	
 	public function CommandIrc($player, $args)
 	{
-		if($this->_autoSpeak == 0 OR $this->_autoSpeak == 3)
+		if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 3)
 		{
-			$nick = $this->_rmColor(Server::getPlayer($id)->name);
+			$nick = $this->_rmColor(Server::getPlayer($player)->name);
 			$message = $this->_rmColor(impode(' ', $args));
 			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
 		}

@@ -94,7 +94,7 @@ class PluginClientBase extends Plugin
 	public function CommandHelp($player, $command)
 	{
 		$list = Plugins::getCommandList();
-		print_r($list);
+		var_dump($list);
 	}
 	
 	/** !nextmap command. Return next map.
