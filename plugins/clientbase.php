@@ -114,7 +114,7 @@ class PluginClientBase extends Plugin
 				if(isset($this->_main->config['Commands']['Help'][$cmdHelp]))
 				{
 					Rcon::tell($player->id, '$cmd : $help', array('cmd' => '!'.$cmdHelp, 'help' => $this->_main->config['Commands']['Help'][$cmdHelp]));
-					break;
+					return true;
 				}
 			}
 			

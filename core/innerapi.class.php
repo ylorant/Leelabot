@@ -213,7 +213,7 @@ class RCon
 		
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
-		return self::send('tell '.$player.' "'.$message.'"');
+		return self::send('tell '.$player.' "^3'.$message.'"');
 	}
 	
 	/** Sends a command with translate on top
