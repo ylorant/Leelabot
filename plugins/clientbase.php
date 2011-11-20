@@ -98,6 +98,15 @@ class PluginClientBase extends Plugin
 		
 		if(empty($command[0]))
 		{
+			foreach($list as $cmd => $level)
+				if($level > $player->level)
+					unset($list[$cmd]);
+					
+			$list = implode(', ', array_keys($list));
+			Rcon::tell($player->id, 'List of commands : $list', array('list' => $list));
+		}
+		else
+		{
 			$cmdHelp = strtolower(str_replace('!', '', $command[0]));
 			
 			if(isset($this->_main->config['CommandsHelp']))
@@ -110,15 +119,6 @@ class PluginClientBase extends Plugin
 			}
 			
 			Rcon::tell($player->id, '$cmd have not description.', array('cmd' => '!'.$cmdHelp));
-		}
-		else
-		{
-			foreach($list as $cmd => $level)
-				if($level > $player->level)
-					unset($list[$cmd]);
-					
-			$list = implode(', ', $list);
-			Rcon::tell($player->id, 'List of commands : $list', array('list' => $list));
 		}
 	}
 	
