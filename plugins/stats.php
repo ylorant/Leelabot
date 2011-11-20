@@ -141,13 +141,6 @@ class PluginStats extends Plugin
 		Server::set('disableStatsReset', 0);
 	}
 	
-	public function SrvEventInitPlaying()
-	{
-		//And Finally stats to zero except if the other plugins don't want.
-		if(!Server::get('disableStatsReset'))
-			$this->_statsInit();
-	}
-	
 	public function SrvEventInitGame($serverinfo)
 	{
 		//And Finally stats to zero except if the other plugins don't want.
@@ -347,7 +340,7 @@ class PluginStats extends Plugin
 							if($killer->team == 1) $color = '^1';
 							elseif($killer->team == 2) $color = '^4';
 							else $color = '';
-							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $player0->name, 'streaks' => $_stats[$killer->id]['streaks']));
+							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $killer->name, 'streaks' => $_stats[$killer->id]['streaks']));
 						}
 					}
 					
