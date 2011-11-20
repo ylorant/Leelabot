@@ -187,7 +187,7 @@ class RCon
 		
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
-		return self::send('say "^7'.$message.'"');
+		return self::send('say "'.$message.'"');
 	}
 	
 	/** Sends a "tell" message to the server.
@@ -213,7 +213,7 @@ class RCon
 		
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
-		return self::send('tell '.$player.' "^7'.$message.'"');
+		return self::send('tell '.$player.' "'.$message.'"');
 	}
 	
 	/** Sends a command with translate on top

@@ -118,7 +118,7 @@ class PluginClientBase extends Plugin
 				}
 			}
 			
-			Rcon::tell($player->id, '$cmd have not description.', array('cmd' => '!'.$cmdHelp));
+			Rcon::tell($player->id, 'Command $cmd have not description.', array('cmd' => '!'.$cmdHelp));
 		}
 	}
 	
