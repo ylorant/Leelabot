@@ -141,6 +141,13 @@ class PluginStats extends Plugin
 		Server::set('disableStatsReset', 0);
 	}
 	
+	public function SrvEventInitPlaying()
+	{
+		//And Finally stats to zero except if the other plugins don't want.
+		if(!Server::get('disableStatsReset'))
+			$this->_statsInit();
+	}
+	
 	public function SrvEventInitGame($serverinfo)
 	{
 		//And Finally stats to zero except if the other plugins don't want.

@@ -187,7 +187,7 @@ class RCon
 		
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
-		return self::send('say "'.$message.'"');
+		return self::send('say "^3'.$message.'"');
 	}
 	
 	/** Sends a "tell" message to the server.
@@ -717,6 +717,28 @@ class Server
 		}
 		
 		return $list;
+	}
+	
+	/** Returns the scores of teams.
+	 * This function returns the scores data list for the server, or for only a team.
+	 * 
+	 * \param $team The team to get. If not given or incorrect (it does not correpond to team constants), the scores of all team are returned.
+	 * 
+	 * \return The scores data list, in an array or strinf if one team was requested.
+	 */
+	public static function getScores($team = FALSE)
+	{
+		$server = self::getInstance();
+		
+		if(in_array($team, array(self::TEAM_RED, self::TEAM_BLUE)))
+		{
+			return $server->_server->scores[$team];
+		}
+		else
+		{
+			return $server->_server->scores;
+		}
+		
 	}
 	
 	/** Sets a custom server var.

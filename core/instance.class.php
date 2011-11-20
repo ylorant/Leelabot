@@ -45,6 +45,7 @@ class ServerInstance
 	public $players; ///< Holds players data.
 	public $scores; ///< Current score (for round-based games).
 	public $pluginVars = array(); ///< Custom-set plugin vars.
+	public $playing = FALSE;
 	
 	/** Constructor for the class.
 	 * This is the constructor, it sets the vars to their default values (for most of them, empty values).
@@ -352,6 +353,15 @@ class ServerInstance
 			//Finally, we init scoreboard and virtually start a game (for the plugins).
 			$this->scores = array(1 => 0, 2 => 0);
 			$this->_leelabot->plugins->callServerEvent('InitGame', $this->serverInfo);
+			
+			$teams_count = Server::getTeamCount();
+		
+			if($teams_count[Server::TEAM_RED] >= 1 && $teams_count[Server::TEAM_BLUE] >= 1)
+			{
+				Leelabot::message('Players on this server can play, round has started', array(), E_DEBUG);
+				$this->_leelabot->plugins->callServerEvent('InitPlaying'); // useless for the first round of map
+				$this->playing = TRUE;
+			}
 		}
 		
 		//Finally, we open the game log file
@@ -496,6 +506,12 @@ class ServerInstance
 						$serverinfo = Server::parseInfo($line[1]);
 						Leelabot::message('New round started', array(), E_DEBUG);
 						
+						if($this->playing == FALSE)
+						{
+							$this->_leelabot->plugins->callServerEvent('InitPlaying'); // useless for the first round of map
+							$this->playing = TRUE;
+						}
+						
 						$this->_leelabot->plugins->callServerEvent('InitRound', $serverinfo);
 					//New map, with new info
 					case 'InitGame':
@@ -503,6 +519,9 @@ class ServerInstance
 						{
 							$serverinfo = Server::parseInfo($line[1]);
 							Leelabot::message('New map started : $0', array($serverinfo['mapname']), E_DEBUG);
+						
+							if($this->playing == TRUE)
+								$this->playing = FALSE;
 							
 							$this->_leelabot->plugins->callServerEvent('InitGame', $serverinfo);
 							$this->scores = array(1 => 0, 2 => 0);
