@@ -330,7 +330,7 @@ class PluginStats extends Plugin
 						$_awards['kills'][0] = $killer->id;
 						$_awards['kills'][1] = $_stats[$killer->id]['kills'];
 					}
-					if($_stats[$killer->id['streaks'] > $_awards['streaks'][1])
+					if($_stats[$killer->id]['streaks'] > $_awards['streaks'][1])
 					{
 						$_awards['streaks'][0] = $killer->id;
 						$_awards['streaks'][1] = $_stats[$killer->id]['streaks'];
