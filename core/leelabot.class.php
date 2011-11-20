@@ -98,6 +98,7 @@ class Leelabot
 			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
 			exit();
 		}
+		print_r($this->config);
 		//Checking if the number of servers defined in the config is not greater than the limit defined in the CLI
 		if($this->maxServers > 0 && count($this->config['Server']) > $this->maxServers)
 		{
