@@ -49,8 +49,15 @@ class PluginIrc extends Plugin
 	public function init()
 	{
 		//Config
+		print_r($this->config);
 		if(isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']))
 		{
+			// Autospeak IRC <=> URT
+			if(isset($this->config['AutoSpeak']))
+				$this->config['AutoSpeak'] = $this->config['AutoSpeak'];
+			else
+				$this->config['AutoSpeak'] = 0;
+			
 			//Connection
 			$this->_connect();
 			
