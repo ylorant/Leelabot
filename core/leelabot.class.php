@@ -511,7 +511,7 @@ class Leelabot
 		}
 		
 		//Parsing string and determining recursive array
-		$inidata = parse_ini_string($cfgdata, TRUE);
+		$inidata = parse_ini_string($cfgdata, TRUE, INI_SCANNER_RAW);
 		if(!$inidata)
 			return FALSE;
 		foreach($inidata as $section => $content)
