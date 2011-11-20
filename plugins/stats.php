@@ -576,6 +576,7 @@ class PluginStats extends Plugin
 			$curStat['ratio'] = 0;
 			$curStat['caps'] = 0;
 			$curStat['streaks'] = 0;
+			$curStat['curstreak'] = 0;
 			$curStat['heads'] = 0;
 		}
 		
