@@ -152,18 +152,16 @@ class PluginStats extends Plugin
 	public function SrvEventExit()
 	{
 		$_stats = Server::get('stats');
+		$_statsConfig = Server::get('statsConfig');
 		
-		if($this->_main->clientMsg != '!restart')
+		foreach($_stats as $id => $curent)
 		{
-			foreach($_stats as $id => $curent)
-			{
-				if($this->_statsConfig[$id]['verbosity'] >= 1)
-					$this->_showStatsMsg($id);
-			}
-			
-			if(!empty($this->showAwards))
-				$this->_showAwardsMsg();
+			if($_statsConfig[$id]['verbosity'] >= 1)
+				$this->_showStatsMsg($id);
 		}
+		
+		if(!empty($this->config['ShowAwards']))
+			$this->_showAwardsMsg();
 		
 		//Stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
@@ -424,7 +422,7 @@ class PluginStats extends Plugin
 	{
 		$player = Server::getPlayer($id);
 		
-		if(!isset($cmd[1]))
+		if(!isset($cmd[0]))
 		{
 			$this->_showStatsMsg($player->id);
 		}
@@ -432,7 +430,7 @@ class PluginStats extends Plugin
 		{
 			if($player->level >= 80)
 			{
-				$target = Server::getPlayer(Server::searchPlayer($cmd[1]));
+				$target = Server::getPlayer(Server::searchPlayer($cmd[0]));
 				
 				if($target === FALSE)
 					Rcon::tell($player->id, 'Unknow player');

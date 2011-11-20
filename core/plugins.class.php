@@ -549,6 +549,8 @@ class PluginManager
 			foreach($this->_commands as $event => $info)
 				$return[$event] = $this->_commandLevels[$event];
 		}
+		
+		return $return;
 	}
 	
 	/** Changes the time interval of a routine
