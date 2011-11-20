@@ -551,10 +551,7 @@ class ServerInstance
 					//Actions on flag
 					case 'Flag':
 						$flag = explode(':', $line[1]);
-					print_r($line);
-					print_r($flag);
 						$flag = explode(' ', $flag[0]);
-					print_r($flag);
 						$this->_leelabot->plugins->callServerEvent('Flag', $flag);
 						break;
 					//Player message

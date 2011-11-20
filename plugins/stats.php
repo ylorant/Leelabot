@@ -239,42 +239,42 @@ class PluginStats extends Plugin
 		Server::set('ratioList', $_ratioList);
 	}
 	
-	public function SrvEventHit($hit)
+	public function SrvEventHit($player, $shooter, $partOfBody, $weapon)
 	{
-		$player0 = Server::getPlayer($hit[0]);
-		$player1 = Server::getPlayer($hit[1]);
+		$player = Server::getPlayer($player);
+		$shooter = Server::getPlayer($shooter);
 		
 		// Si les 2 joueurs sont pas dans la même équipe.
-		if($player0->team != $player1->team)
+		if($player->team != $shooter->team)
 		{
 			$_stats = Server::get('stats');
 			$_awards = Server::get('awards');
 			
-			$_stats[$hit[1]]['hits']++;
+			$_stats[$shooter->id]['hits']++;
 			
-			if($hit[2] <= 1)
+			if($partOfBody <= 1)
 			{
-				$_stats[$hit[1]]['heads']++;
+				$_stats[$shooter->id]['heads']++;
 				
-				if($this->config['DisplayHeads'] AND ($_stats[$hit[1]]['heads']/5) == 0)
+				if($this->config['DisplayHeads'] AND ($_stats[$shooter->id]['heads']/5) == 0)
 				{
-					if($player1->team == 1) $color = '^1';
-					elseif($player1->team == 2) $color = '^4';
-					Rcon::topMessage('^3Headshots : $playercolor$playername ^2$heads', array('playercolor' => $color, 'playername' => $player1->name, 'heads' => $_stats[$hit[1]]['heads']));
+					if($shooter->team == 1) $color = '^1';
+					elseif($shooter->team == 2) $color = '^4';
+					Rcon::topMessage('^3Headshots : $playercolor$playername ^2$heads', array('playercolor' => $color, 'playername' => $shooter->name, 'heads' => $_stats[$shooter->id]['heads']));
 				}
 			
-				if($_stats[$hit[1]]['heads'] > $_awards['heads'][1])
+				if($_stats[$shooter->id]['heads'] > $_awards['heads'][1])
 				{
-					$_awards['heads'][0] = $hit[1];
-					$_awards['heads'][1] = $_stats[$hit[1]]['heads'];
+					$_awards['heads'][0] = $shooter->id;
+					$_awards['heads'][1] = $_stats[$shooter->id]['heads'];
 				}
 			}
 			
 			//Gestion des awards
-			if($_stats[$hit[1]]['hits'] > $_awards['hits'][1])
+			if($_stats[$shooter->id]['hits'] > $_awards['hits'][1])
 			{
-				$_awards['hits'][0] = $hit[1];
-				$_awards['hits'][1] = $_stats[$hit[1]]['hits'];
+				$_awards['hits'][0] = $shooter->id;
+				$_awards['hits'][1] = $_stats[$shooter->id]['hits'];
 			}
 		
 			Server::set('awards', $_awards);
@@ -283,12 +283,15 @@ class PluginStats extends Plugin
 	}
 	
 	//Event serveur : Kill (on gère les kills avec ajout des kills-deaths en fonction du type de kill)
-	public function SrvEventKill($kill)
+	public function SrvEventKill($killer, $killed, $type, $weapon = NULL)
 	{
 		$_stats = Server::get('stats');
 		
+		$killer = Server::getPlayer($killer);
+		$killed = Server::getPlayer($killed);
+		
 		//Switch d'analyse du type de mort
-		switch($kill[2])
+		switch($type)
 		{
 			//Tous les kills n'impliquant qu'une personne (slapped, nuked, lemming...), on ne rajoute qu'une death
 			case '1':
@@ -299,68 +302,66 @@ class PluginStats extends Plugin
 			case '31':
 			case '32':
 			case '34':
-				$_stats[$kill[1]]['deaths']++;
+				$_stats[$killed->id]['deaths']++;
 				break;
 			//Au changement d'équipe, on ne fait rien
 			case '10':
 				break;
 			//Le reste, on ajoute un kill au tueur, puis une death au mort
 			default:
-				$player0 = Server::getPlayer($kill[0]);
-				$player1 = Server::getPlayer($kill[1]);
 		
 				// Si les 2 joueurs sont pas dans la même équipe.
-				if($player0->team != $player1->team)
+				if($killer->team != $killed->team)
 				{
 					$_awards = Server::get('awards');
 					$_ratioList = Server::get('ratioList');
 					$_statsConfig = Server::get('statsConfig');
 					
-					$_stats[$kill[0]]['kills']++;
-					$_stats[$kill[0]]['curstreak']++;
-					if($_stats[$kill[0]]['curstreak'] > $_stats[$kill[0]]['streaks'])
-						$_stats[$kill[0]]['streaks'] = $_stats[$kill[0]]['curstreak'];
-					$_stats[$kill[1]]['deaths']++;
-					$_stats[$kill[1]]['curstreak'] = 0;
+					$_stats[$killer->id]['kills']++;
+					$_stats[$killer->id]['curstreak']++;
+					if($_stats[$killer->id]['curstreak'] > $_stats[$killer->id]['streaks'])
+						$_stats[$killer->id]['streaks'] = $_stats[$killer->id]['curstreak'];
+					$_stats[$killer->id]['deaths']++;
+					$_stats[$killer->id]['curstreak'] = 0;
 					
 					//Gestion des awards
-					if($_stats[$kill[0]]['kills'] > $_awards['kills'][1])
+					if($_stats[$killer->id]['kills'] > $_awards['kills'][1])
 					{
-						$_awards['kills'][0] = $kill[0];
-						$_awards['kills'][1] = $_stats[$kill[0]]['kills'];
+						$_awards['kills'][0] = $killer->id;
+						$_awards['kills'][1] = $_stats[$killer->id]['kills'];
 					}
-					if($_stats[$kill[0]]['streaks'] > $_awards['streaks'][1])
+					if($_stats[$killer->id['streaks'] > $_awards['streaks'][1])
 					{
-						$_awards['streaks'][0] = $kill[0];
-						$_awards['streaks'][1] = $_stats[$kill[0]]['streaks'];
+						$_awards['streaks'][0] = $killer->id;
+						$_awards['streaks'][1] = $_stats[$killer->id]['streaks'];
 				
 						if($this->config['DisplayStreaks'])
 						{
-							if($player0->team == 1) $color = '^1';
-							elseif($player0->team == 2) $color = '^4';
-							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $player0->name, 'streaks' => $_stats[$kill[0]]['streaks']));
+							if($killer->team == 1) $color = '^1';
+							elseif($killer->team == 2) $color = '^4';
+							Rcon::topMessage('^3New Streaks : $playercolor$playername ^2$streaks', array('playercolor' => $color, 'playername' => $player0->name, 'streaks' => $_stats[$killer->id]['streaks']));
 						}
 					}
 					
-					if($_stats[$kill[1]]['deaths'] > $_awards['deaths'][1])
+					if($_stats[$killed->id]['deaths'] > $_awards['deaths'][1])
 					{
-						$_awards['deaths'][0] = $kill[1];
-						$_awards['deaths'][1] = $_stats[$kill[1]]['deaths'];
+						$_awards['deaths'][0] = $killed->id;
+						$_awards['deaths'][1] = $_stats[$killed->id]['deaths'];
 					}
 						
 					
-					if($_stats[$kill[0]]['deaths'] == 0)
-						$ratio = $_stats[$kill[0]]['kills'];
+					if($_stats[$killer->id]['deaths'] == 0)
+						$ratio = $_stats[$killer->id]['kills'];
 					else
-						$ratio = $_stats[$kill[0]]['kills'] / $_stats[$kill[0]]['deaths'];
+						$ratio = $_stats[$killer->id]['kills'] / $_stats[$killer->id]['deaths'];
 						
-					if($_stats[$kill[1]]['deaths'] == 0)
-						$dratio = $_stats[$kill[1]]['kills'];
+					if($_stats[$killed->id]['deaths'] == 0)
+						$dratio = $_stats[$killed->id]['kills'];
 					else
-						$dratio = $_stats[$kill[1]]['kills'] / $_stats[$kill[1]]['deaths'];
+						$dratio = $_stats[$killed->id]['kills'] / $_stats[$killed->id]['deaths'];
 					
-					$_ratioList[$kill[0]] = $ratio;
-					$_ratioList[$kill[1]] = $dratio;
+					$_ratioList[$killer->id] = $ratio;
+					$_ratioList[$killed->id] = $dratio;
 					
 					arsort($_ratioList);
 					$keys = array_keys($_ratioList);
@@ -369,10 +370,10 @@ class PluginStats extends Plugin
 					$_awards['ratio'][0] = $keys[0];
 					
 					//Affichage des stats ou pas selon 
-					if($_statsConfig[$kill[1]]['verbosity'] >= 2)
-						$this->_showStatsMsg($kill[1]);
-					if($_statsConfig[$kill[0]]['verbosity'] >= 3)
-						$this->_showStatsMsg($kill[0]);
+					if($_statsConfig[$killed->id]['verbosity'] >= 2)
+						$this->_showStatsMsg($killed->id);
+					if($_statsConfig[$killer->id]['verbosity'] >= 3)
+						$this->_showStatsMsg($killer->id);
 						
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
@@ -385,32 +386,31 @@ class PluginStats extends Plugin
 	}
 	
 	//Event serveur : Flag (si il capture, on ajoute 1 au compteur de capture du joueur)
-	public function SrvEventFlag($flag)
+	public function SrvEventFlag($player, $flagaction)
 	{
-	var_dump($flag);
+		$player = Server::getPlayer($player);
+		
 		if(Server::getServer()->serverInfo['g_gametype'] == 7)
 		{
-			if($flag[1] == 2) //Si c'est une capture
+			if($flagaction == 2) //Si c'est une capture
 			{
 				$_stats = Server::get('stats');
 				$_awards = Server::get('awards');
 				
-				$_stats[$flag[0]]['caps']++;
+				$_stats[$player->id]['caps']++;
 				
 				if($this->config['DisplayCaps'])
 				{
-					$player = Server::getPlayer($flag[0]);
-					
 					if($player->team == 1) $color = '^1';
 					elseif($player->team == 2) $color = '^4';
-					Rcon::topMessage(' $playercolor$playername : ^2$caps ^3caps', array('playercolor' => $color, 'playername' => $player->name, 'caps' => $_stats[$flag[0]]['caps']));
+					Rcon::topMessage(' $playercolor$playername : ^2$caps ^3caps', array('playercolor' => $color, 'playername' => $player->name, 'caps' => $_stats[$player->id]['caps']));
 				}
 				
 				//Gestion des awards
-				if($_stats[$flag[0]]['caps'] > $_awards['caps'][1])
+				if($_stats[$player->id]['caps'] > $_awards['caps'][1])
 				{
-					$_awards['caps'][0] = $flag[0];
-					$_awards['caps'][1] = $_stats[$flag[0]]['caps'];
+					$_awards['caps'][0] = $player->id;
+					$_awards['caps'][1] = $_stats[$player->id]['caps'];
 				}
 				
 				Server::set('awards', $_awards);
