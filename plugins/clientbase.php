@@ -109,11 +109,11 @@ class PluginClientBase extends Plugin
 		{
 			$cmdHelp = strtolower(str_replace('!', '', $command[0]));
 			
-			if(isset($this->_main->config['CommandsHelp']))
+			if(isset($this->_main->config['Commands']['Help']))
 			{
-				if(isset($this->_main->config['CommandsHelp'][$cmdHelp]))
+				if(isset($this->_main->config['Commands']['Help'][$cmdHelp]))
 				{
-					Rcon::tell($player->id, '$cmd : $help', array('cmd' => '!'.$cmdHelp, 'help' => $this->_main->config['CommandsHelp'][$cmdHelp]));
+					Rcon::tell($player->id, '$cmd : $help', array('cmd' => '!'.$cmdHelp, 'help' => $this->_main->config['Commands']['Help'][$cmdHelp]));
 					break;
 				}
 			}
