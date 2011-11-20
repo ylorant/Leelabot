@@ -320,7 +320,7 @@ class PluginStats extends Plugin
 					$_stats[$killer->id]['curstreak']++;
 					if($_stats[$killer->id]['curstreak'] > $_stats[$killer->id]['streaks'])
 						$_stats[$killer->id]['streaks'] = $_stats[$killer->id]['curstreak'];
-					$_stats[$killer->id]['deaths']++;
+					$_stats[$killed->id]['deaths']++;
 					$_stats[$killer->id]['curstreak'] = 0;
 					
 					//Gestion des awards
