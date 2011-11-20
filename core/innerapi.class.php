@@ -1004,4 +1004,18 @@ class Plugins
 	{
 		self::$_plugins = $obj;
 	}
+	
+	
+	
+	/** Returns the command list.
+	 * This function returns the list of all defined commands, for all plugins or only for a list of plugins.
+	 * 
+	 * \param $plugins Plugin list for which we want to get the commands.
+	 * 
+	 * \return an array containing in keys the commands' names, and in value a descriptive of them and their right level.
+	 */
+	public function getCommandList($plugins = FALSE)
+	{
+		return self::$_plugins->getCommandList($plugin);
+	}
 }

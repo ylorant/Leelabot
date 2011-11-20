@@ -3,7 +3,7 @@
  * \file plugins/clientbase.php
  * \author Deniz Eser <srwiez@gmail.com>
  * \version 0.9
- * \brief Client base plugin for Leelabot. It allows to send !teams, !time, !nextmap.
+ * \brief Client base plugin for Leelabot. It allows to send !teams, !time, !nextmap, !help.
  *
  * \section LICENSE
  *
@@ -25,6 +25,7 @@
  * !teams = balance teams
  * !time = date & time
  * !nextmap = return next map
+ * !help = list of commands
  */
 
 /**
@@ -77,9 +78,23 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandTime($player, $args)
+	public function CommandTime($player, $command)
 	{
 		RCon::tell($player, date($this->_main->intl->getDateTimeFormat()));
+	}
+	
+	/** !help command. Get help and list of commands.
+	 * This function is the command !help. It get list of commands and help.
+	 * 
+	 * \param $player The player who send the command.
+	 * \param $command The command's parameters.
+	 * 
+	 * \return Nothing.
+	 */
+	public function CommandHelp($player, $command)
+	{
+		$list = Plugins::getCommandList();
+		print_r($list);
 	}
 	
 	/** !nextmap command. Return next map.
@@ -90,7 +105,7 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandNextmap($player, $args)
+	public function CommandNextmap($player, $command)
 	{
 		$nextmap = Rcon::g_nextmap();
 		$nextmap = explode('"', $nextmap);
@@ -150,7 +165,7 @@ class PluginClientBase extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandTeams($player, $args)
+	public function CommandTeams($player, $command)
 	{
 		$this->_balance($player);
 	}

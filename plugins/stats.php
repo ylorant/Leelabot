@@ -2,7 +2,7 @@
 /**
  * \file plugins/stats.php
  * \author Deniz Eser <srwiez@gmail.com>
- * \version 0.1
+ * \version 0.9
  * \brief Statistics plugin for Leelabot. It allows to have game stats for each player.
  *
  * \section LICENSE
@@ -422,7 +422,28 @@ class PluginStats extends Plugin
 	//Event client : !stats (on affiche juste les stats du joueur ayant appelé la commande)
 	public function CommandStats($id, $cmd)
 	{
-		$this->_showStatsMsg($id);
+		$player = Server::getPlayer($id);
+		
+		if(!isset($cmd[1]))
+		{
+			$this->_showStatsMsg($player->id);
+		}
+		else
+		{
+			if($player->level >= 80)
+			{
+				$target = Server::getPlayer(Server::searchPlayer($cmd[1]));
+				
+				if($target === FALSE)
+					Rcon::tell($player->id, 'Unknow player');
+				elseif(is_array($target))
+					$this->_showStatsMsg($target[0]->id, $player->id);
+			}
+			else
+			{
+				Rcon::tell($player->id, 'This command does not take parameters.');
+			}
+		}
 	}
 	
 	//Event client : !awards (on affiche juste les awards)
