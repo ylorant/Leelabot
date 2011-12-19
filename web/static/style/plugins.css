@@ -1,0 +1,68 @@
+.green { background-color:#46B946; }
+.rgreen { background-color:#7FB945; }
+.red { background-color:#B94646; }
+.orange { background-color:#B97F45; }
+.yellow { background-color:#B9A645; }
+
+.pluginbox
+{
+	position:relative;
+	width:50%;
+	margin:auto;
+	background-color:#F3F2F3;
+	border:1px solid #ddd;
+	margin-top:20px;
+	padding:10px 15px;
+	border-radius:5px;
+}
+
+.pluginbox h2
+{
+	margin-top:3px;
+	margin-bottom:0px;
+	padding-bottom:15px;
+	font-size:180%;
+	font-weight:normal;
+	color:#444;
+	text-shadow:0px 1px 1px #fff;
+	border-bottom:1px solid #ddd;
+}
+
+.pluginbox .status, .pluginbox .loadbox
+{
+	padding:10px 15px;
+	color:white;
+	border-radius:5px;
+	float:right;
+	width:110px;
+	font-weight:bold;	
+}
+
+.pluginbox .status img, .pluginbox .loadbox img
+{
+	float:right;
+}
+
+.pluginbox p
+{
+	text-shadow:0px 1px 0px white;
+	color:#222;
+}
+
+.pluginbox .serverbox
+{
+	background-color:#ddd;
+	padding:5px 10px;
+	border-radius:5px;
+	text-shadow:0px 1px 0px white;
+	margin-bottom:0px;
+	color:#222;
+}
+
+.pluginbox .loadbox
+{
+	display:none;
+	position:absolute;
+	right:15px;
+	cursor:pointer;
+}
