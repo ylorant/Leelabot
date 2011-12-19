@@ -131,13 +131,15 @@ class PluginIrc extends Plugin
 	{
 		if($this->_connected)
 		{
-			if($return = fgets($this->_socket, 1024)) // On lit les données du serveur
+			$return = fgets($this->_socket, 1024);
+			
+			if($return) // On lit les données du serveur
 			{
 				return $return;
 			}
 			elseif($return === FALSE && $this->_connected = true)
 			{
-				if(!feof($this->_socket))
+				if(feof($this->_socket))
 				{
 					$this->_connected = false; 
 			    }
