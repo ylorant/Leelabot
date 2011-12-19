@@ -580,7 +580,7 @@ class PluginIrc extends Plugin
 		
 		foreach($this->_main->config['Plugin']['stats']['ShowAwards'] as $award)
 		{
-			if(in_array($award, $this->_main->config['Plugin']['stats']['ShowAwards']]) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			if(in_array($award, $this->_main->config['Plugin']['stats']['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
 			{
 				if($_awards[$award][0] !== NULL)
 					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
