@@ -1,0 +1,13 @@
+/** \page Parsing Urban Terror Log
+ * 
+ * \section Ganaral events
+ *
+ *
+ * \section ClientUserinfoChanged
+ * 
+ * Here are the different parameters returned in a ClientUserinfoChanged :
+ * 		\li \b t : Player team
+ * 		\li \b n : Player nick
+ * 		\li \b aX : Arm band color (X = 0 : red, 1 : green, 2 : blue)
+ * 		\li \b fX : fun stuff
+ */

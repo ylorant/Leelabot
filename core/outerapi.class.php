@@ -129,8 +129,12 @@ class OuterAPI
 				'ProcessFiles' => 'controllers/dispatcher.class.php'));
 			
 			//TODO : Add some password protection
-			if(!isset($WAConfig['Password']))
+			if(!(isset($WAConfig['Password']) && Leelabot::parseBool($WAConfig['Password']) == TRUE))
 				Leelabot::message('Using Webadmin without a password is not secure !', array(), E_WARNING, TRUE);
+			else
+			{
+				
+			}
 		}
 		
 		$this->_server->connect();

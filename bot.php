@@ -2,7 +2,7 @@
 
 error_reporting(E_ALL | E_STRICT);
 
-//Defining debug level constant
+//Defining debug level constant for user error (2^15)
 define('E_DEBUG', 32768);
 
 //Including all components needed by the program.

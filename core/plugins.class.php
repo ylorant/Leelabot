@@ -48,6 +48,7 @@ class PluginManager
 	private $_commandLevels = array(); ///< Command levels
 	private $_defaultLevel; ///< Default level for new commands.
 	private $_quietReply; ///< Trigger for the automatic reply for invalid commands/Insufficient access
+	private $_pluginCache = array(); ///< Cache for already loaded plugins (to avoid class redefinition when reloading plugins)
 	
 	/** Constructor for PluginManager
 	 * Initializes the class.
@@ -193,12 +194,38 @@ class PluginManager
 		
 		if(!is_file('plugins/'.$plugin.'.php'))
 		{
-			Leelabot::message('Plugin $0 does not exists (File : $1)', array($plugin, getcwd().'/plugins/$0.php'), E_WARNING);
+			Leelabot::message('Plugin $0 does not exists (File : $1)', array($plugin, getcwd().'/plugins/'.$plugin.'.php'), E_WARNING);
 			return FALSE;
 		}
 		
-		//Loading plugin file and creating class
-		include('plugins/'.$plugin.'.php');
+		
+		if(!isset($this->_pluginCache[$plugin]))
+			include('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
+		else
+			$this->initPlugin($this->_pluginCache[$plugin]); //Else we reload the plugin with the cached data from the first loading
+	}
+	
+	/** Unloads a plugin.
+	 * This function unloads a plugin. It does not unload the dependencies with it yet.
+	 * 
+	 * \param $plugin The plugin to unload.
+	 * 
+	 * \return TRUE if the plugin successuly unloaded, FALSE otherwise.
+	 */
+	public function unloadPlugin($plugin)
+	{
+		//We check that the plugin is not already loaded
+		if(!in_array($plugin, $this->getLoadedPlugins()))
+		{
+			Leelabot::message('Plugin $0 is not loaded', array($plugin), E_WARNING);
+			return FALSE;
+		}
+		
+		$this->_plugins[$plugin]['obj']->destroy();
+		unset($this->_plugins[$plugin]['obj']);
+		unset($this->_plugins[$plugin]);
+		
+		return TRUE;
 	}
 	
 	/** Initializes a plugin.
@@ -214,11 +241,15 @@ class PluginManager
 	 */
 	public function initPlugin($params)
 	{
+		//Checking that we have everything needed to load the plugin
 		if(!is_array($params) || !isset($params['name']) || !isset($params['className']))
 		{
 			Leelabot::message('Cannot load plugin with given data : $0', array(Leelabot::dumpArray($params)), E_WARNING);
 			return FALSE;
 		}
+		
+		//Putting plugin data in memory for future use
+		$this->_pluginCache[$params['name']] = $params;
 		
 		//Load dependencies if necessary
 		if(isset($params['dependencies']) && is_array($params['dependencies']))
@@ -238,7 +269,7 @@ class PluginManager
 		$this->_plugins[$params['name']] = array(
 		'obj' => NULL,
 		'name' => $params['name'],
-		'display' => $params['display'],
+		'display' => (isset($params['display']) ? $params['display'] : $params['name']),
 		'dependencies' => (isset($params['dependencies']) ? $params['dependencies'] : array()),
 		'className' => $params['className']);
 		$this->_plugins[$params['name']]['obj'] = new $params['className']($this, $this->_main);
@@ -531,7 +562,7 @@ class PluginManager
 	 * 
 	 * \param $plugins Plugin list for which we want to get the commands.
 	 * 
-	 * \return an array containing in keys the commands' names, and in value a descriptive of them and their right level.
+	 * \return an array containing in keys the commands' names, and in value their right level.
 	 */
 	public function getCommandList($plugins = FALSE)
 	{
@@ -600,7 +631,7 @@ class PluginManager
 		{
 			foreach($class as $name => &$routine)
 			{
-				if($force || !isset($routine[2][$serverName]) || (time() >= $routine[2][$serverName] + $routine[1] && time() != $routine[2][$serverName]))
+				if($force || !isset($routine[2][$serverName]) || (time() >= $routine[2][$serverName] + $routine[1] /*&& time() != $routine[2][$serverName] */))
 				{
 					if(in_array($this->_pluginClasses[$className], $serverPlugins))
 					{
@@ -650,8 +681,6 @@ class PluginManager
 	{
 		if(isset($this->_commands[$event]))
 		{
-			var_dump($this->_commandLevels);
-			
 			$serverPlugins = Server::getPlugins();
 			foreach($this->_commands[$event] as $plugin => &$class)
 			{
@@ -688,7 +717,7 @@ class Plugin
 {
 	protected $_main; ///< Reference to main class (Leelabot)
 	protected $_plugins; ///< Reference to plugin manager (PluginManager)
-	protected $config;
+	protected $config; ///< Plugin configuration
 	
 	public function __construct(&$plugins, &$main)
 	{
@@ -706,6 +735,16 @@ class Plugin
 	 * \return TRUE.
 	 */
 	public function init()
+	{
+		return TRUE;
+	}
+	
+	/** Default plugin destroy function.
+	 * This function is empty. Its unique purpose is to avoid using method_exists() on PluginManager::unloadPlugin(). Returns TRUE.
+	 * 
+	 * \return TRUE.
+	 */
+	public function destroy()
 	{
 		return TRUE;
 	}

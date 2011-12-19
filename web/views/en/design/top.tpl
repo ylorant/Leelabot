@@ -29,7 +29,8 @@
 	<title>Leelabot - Urban Terror Admin bot</title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<meta name="generator" content="Geany 0.20" />
-	<script type="text/javascript" src="/admin/jquery"></script>
+	<script type="text/javascript" src="/admin/js/jquery.js"></script>
+	<script type="text/javascript" src="/admin/js/{$category}{if="!empty($subcategory)"}/{$subcategory}{/if}.js"></script>
 	<link rel="stylesheet" media="screen" type="text/css" title="Design" href="/admin/style/design/design.css" />
 	<link rel="stylesheet" media="screen" type="text/css" title="Design" href="/admin/style/{$category}{if="!empty($subcategory)"}/{$subcategory}{/if}.css" />
 </head>
@@ -57,10 +58,9 @@
 				</ul>
 				<hr />
 				<ul>
-					<li{if="$subcategory == 'stats'"} class="selected"{/if}>Stats</li>
-					<li{if="$subcategory == 'messages'"}  class="selected"{/if}>Messages</li>
-					<li{if="$subcategory == 'bans'"}  class="selected"{/if}>Bans</li>
-					<li{if="$subcategory == 'dummy'"}  class="selected"{/if}>Dummy</li>
+				{loop="$plugins"}
+					<li{if="$subcategory == $value.name"} class="selected"{/if}><a href="/admin/plugin/{$value.name}">{$value.dname}</a></li>
+				{/loop}
 				</ul>
 			{/if}
 		</div>

@@ -295,7 +295,6 @@ class PluginIrc extends Plugin
 	public function RoutineIrcMain()
 	{
 		$donnees = $this->_get();
-		
 		if($donnees) //Si le serveur nous a envoyé quelque chose
 		{
 			$commande = explode(' ',$donnees);

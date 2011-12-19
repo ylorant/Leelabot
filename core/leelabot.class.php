@@ -44,6 +44,7 @@ class Leelabot
 	public $outerAPI; ///< Outer API class
 	public $maxServers; ///< Max servers for the bot
 	public $system; ///< Name of the system where the bot is executed (equivalent to uname -a on UN*X)
+	public $root; ///< Root directory for the bot
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -74,6 +75,9 @@ class Leelabot
 		//Checking CLI argument for root modification, and modification in case
 		if($rootParam = array_intersect(array('r', 'root'), array_keys($CLIArguments)))
 			chdir($CLIArguments[$rootParam[0]]);
+		
+		//Setting root
+		$this->root = getcwd();
 			
 		//Opening default log file (can be modified after, if requested)
 		Leelabot::$_logFile = fopen('leelabot.log', 'w+');
@@ -98,7 +102,7 @@ class Leelabot
 			Leelabot::message("Startup aborted : Can't parse startup config.", array(), E_ERROR);
 			exit();
 		}
-		print_r($this->config);
+		
 		//Checking if the number of servers defined in the config is not greater than the limit defined in the CLI
 		if($this->maxServers > 0 && count($this->config['Server']) > $this->maxServers)
 		{
@@ -204,13 +208,13 @@ class Leelabot
 			{
 				foreach($this->config['Commands']['Levels'] as $key => $value)
 				{
-					if($key[0] = '!')
-						$this->plugins->setCommandLevel($key, $value);
+					if($key[0] = '!') //We check if the param name is a command
+						$this->plugins->setCommandLevel($key, $value, TRUE);
 					elseif(intval($key) == $key) //We check if the param name is a level
 					{
 						$value = explode(',', $value);
 						foreach($value as $command)
-							$this->plugins->setCommandLevel($command, $key);
+							$this->plugins->setCommandLevel($command, $key, TRUE);
 					}
 				}
 			}
@@ -233,7 +237,6 @@ class Leelabot
 			Leelabot::message('Can\'t load Leelabot for any configured server.', array(), E_ERROR);
 			exit();
 		}
-		
 	}
 	
 	/** Leelabot loop.
