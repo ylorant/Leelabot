@@ -41,6 +41,8 @@ class PluginIrc extends Plugin
 	
 	private $_cmdIrc = array(); // Irc cmds for irc clients
 	
+	private $_mapUt4List = array('casa', 'kingdom', 'turnpike', 'abbey', 'prague', 'mandolin', 'uptown', 'algiers', 'austria', 'maya', 'tombs', 'elgin', 'oildepot', 'swim', 'harbortown', 'ramelle', 'toxic', 'sanc', 'riyadh', 'ambush', 'eagle', 'suburbs', 'crossing', 'subway', 'tunis', 'thingley');
+	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
 	 * 
@@ -93,7 +95,7 @@ class PluginIrc extends Plugin
 	
 	private function _connect()
 	{
-		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port']))
+		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10);)
 		{
 			stream_set_blocking($this->_socket, 0);
 			
@@ -129,7 +131,11 @@ class PluginIrc extends Plugin
 			}
 			else
 			{
-				// TODO $this->_connected = false; (timeout, server connection close, etc..)
+				if($return === FALSE)
+				{
+					$this->_connected = false; 
+					$this->_connect();
+				}
 			}
 		}
 		else
@@ -394,6 +400,10 @@ class PluginIrc extends Plugin
 	
 	
 	
+	/////////////////////////////////////////////
+	// Commandes Partie Urt                    //
+	/////////////////////////////////////////////
+	
 	public function CommandIrcco($player, $args)
 	{
 		$this->_send('NAMES '.$this->config['MainChannel']);
@@ -436,6 +446,354 @@ class PluginIrc extends Plugin
 			$message = $this->_rmColor($contents);
 			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
 		}
+	}
+	
+	/////////////////////////////////////////////
+	// Fonctions IRC	                       //
+	/////////////////////////////////////////////
+	private function CmdHelp()
+	{
+		$cmd = $this->cmd;
+		
+		$r = $this->rights(trim($this->pseudo), $this->_mainChannel);
+		
+		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
+		{
+			$list = array();
+			
+			foreach($this->CmdIrc as $cmds)
+			{
+				if($cmds['cmd'] == '!urt')
+				{
+					if($this->_autoSpeak == 0 OR $this->_autoSpeak == 2)
+						$list[] = $cmds['cmd'];
+				}
+				else
+				{
+					if($cmds['r'] == 1)
+						if($r == '+' OR $r == '@') $list[] = $cmds['cmd'];
+					elseif($cmds['r'] == 2)
+						if($r == '@') $list[] = $cmds['cmd'];
+					else
+						$list[] = $cmds['cmd'];
+				}
+			}
+			
+			$this->sendMessage('List : '.join(', ', $list).'.');
+		}
+		else //Sinon on affiche l'aide d'une commande
+		{
+			$cmd[1] = str_replace('!','',$cmd[1]);
+			$cmd[1] = '!'.$cmd[1];
+			
+			if(array_key_exists($cmd[1], $this->CmdIrc))
+			{
+				$this->sendMessage('Usage : '.$this->CmdIrc[$cmd[1]]['use']);
+				$this->sendMessage($this->CmdIrc[$cmd[1]]['text']);
+			}
+			else
+			{
+				$this->sendMessage("This command doesn't exist.");
+			}
+		}
+		
+	}
+	
+	private function CmdStatus()
+	{
+		$serverinfo = Server::getServer()->serverInfo;
+		$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+		$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+	}
+	
+	private function CmdPlayers()
+	{
+		$playerlist = array();
+		$nbplayers = 0;
+		
+		foreach(Server::getPlayerList() as $curPlayer)
+		{
+			//Gestion de la couleur en fonction de l'équipe
+			if(Server::getServer()->serverInfo['g_gametype'] != '0')
+			{
+				if($curPlayer->team == 1)
+					$color = "\00304";
+				elseif($curPlayer->team == 2)
+					$color = "\00302";
+				elseif($curPlayer->team == 3)
+					$color = "\00314";
+			}
+			else
+				$color = "\00308";
+			$playerlist[] = "\002".$color.$curPlayer[2]."\017";
+			++$nbplayers;
+		}
+		
+		if($nbplayers >0) $this->sendMessage('Liste des joueurs : '.join(', ', $playerlist));
+		else $this->sendMessage('No one.');
+	}
+	
+	/*
+	
+	TODO : passer à la nouvelle version
+	
+	private function CmdStats()
+	{
+		$cmd = $this->cmd;
+		if(isset($cmd[1])) //Il faut un paramètre : le joueur
+		{
+			$player = $this->_main->SearchPlayer($cmd[1]);
+			//Gestion du nombre de joueurs trouvés
+			if($player === FALSE)
+				fputs($this->_socket,"$msgPrefix :Pseudo inconnu.\r\n");
+			elseif(count($player) == 1)
+			{
+				if($player[0][10] != 3) //Si ce n'est pas un spectateur, on affiche les stats
+				{
+					if($this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths'] != 0)
+						$ratio = round($this->_plugins->plugins['stats']->stats[$player[0][0]]['kills'] / $this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths'],2);
+					else
+						$ratio = $this->_plugins->plugins['stats']->stats[$player[0][0]]['kills'];
+						
+					if($this->_plugins->plugins['stats']->showHits) //Gestion des hits en fonction de la configuration du plugin de stats
+						$hits = "\037Hits\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['hits']." - ";
+					if($this->_main->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
+						$caps = " - \037Caps\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['caps'];
+						
+					$this->sendMessage("\002Stats de ".$player[0][2]."\002 : ".$hits."\037Kills\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['kills']." - \037Deaths\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['streaks']);
+				}
+				else
+					$this->sendMessage('Joueur spectateur.');
+			}
+			else
+				$this->sendMessage('Trop de joueurs trouvés.');
+		}
+		else
+			$this->sendMessage('Paramètre insuffisant.');
+	}
+	*/
+	
+	private function CmdAwards()
+	{
+		$buffer = array();
+		$_awards = Server::get('awards');
+		
+		foreach($this->_main->config['Plugin']['stats']['ShowAwards'] as $award)
+		{
+			if(in_array($award, $this->_main->config['Plugin']['stats']['ShowAwards']]) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			{
+				if($_awards[$award][0] !== NULL)
+					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
+				else
+					$buffer[] = "\037".ucfirst($award)."\037".' : No one';
+			}
+		}
+		$this->sendMessage("\002Awards :\002 ".join(' - ', $buffer));
+	}
+	
+	private function CmdUrt()
+	{
+		if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 2)
+		{
+			$envoi = explode(' ', $this->message[2], 2);
+			Rcon::say('^4IRC : <$nick> $message', array('nick' => $this->pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
+		}
+	}
+	
+	private function CmdKick()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			$target = Server::searchPlayer(trim($cmd[1]));
+			
+			if(!$target)
+			{
+				$this->sendMessage("Unknown player");
+			}
+			elseif(is_array($target))
+			{
+				$players = array();
+				foreach($target as $p)
+					$players[] = Server::getPlayer($p)->name;
+				$this->sendMessage("Multiple players found : ".join(', ', $players));
+			}
+			else
+			{
+				Rcon::kick($target);
+				$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+			}
+		}
+		else
+		{
+			$this->sendMessage("Player name missing");
+		}
+	}
+	
+	private function CmdKickAll()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			
+			$target = Server::searchPlayer(trim($cmd[1]));
+			
+			if(!$target)
+			{
+				$this->sendMessage("Unknown player");
+			}
+			elseif(is_array($target))
+			{
+				$players = array();
+				foreach($target as $p)
+				{
+					Rcon::kick($p);
+					$players[] = Server::getPlayer($p)->name;
+				}
+				$this->sendMessage(join(', ', $players)." are kicked.");
+			}
+			else
+			{
+				Rcon::kick($target);
+				$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+			}
+		}
+		else
+		{
+			$this->sendMessage("Player name missing");
+		}
+	}
+	
+	private function CmdSlap()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			$target = Server::searchPlayer(trim($cmd[1]));
+			
+			if(!$target)
+			{
+				$this->sendMessage("Unknown player");
+			}
+			elseif(is_array($target))
+			{
+				$players = array();
+				foreach($target as $p)
+					$players[] = Server::getPlayer($p)->name;
+				$this->sendMessage("Multiple players found : ".join(', ', $players));
+			}
+			else
+			{
+				Rcon::slap($target);
+				$this->sendMessage(Server::getPlayer($target)->name." was slapped.");
+			}
+		}
+		else
+		{
+			$this->sendMessage("Player name missing");
+		}
+	}
+	
+	private function CmdMute()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			$target = Server::searchPlayer(trim($cmd[1]));
+			
+			if(!$target)
+			{
+				$this->sendMessage("Unknown player");
+			}
+			elseif(is_array($target))
+			{
+				$players = array();
+				foreach($target as $p)
+					$players[] = Server::getPlayer($p)->name;
+				$this->sendMessage("Multiple players found : ".join(', ', $players));
+			}
+			else
+			{
+				Rcon::mute($target);
+				$this->sendMessage(Server::getPlayer($target)->name." was muted.");
+			}
+		}
+		else
+		{
+			$this->sendMessage("Player name missing");
+		}
+	}
+	
+	private function CmdSay()
+	{
+		$message = $this->message;
+		
+		$envoi = explode(' ',$message[2],2);
+		Rcon::say($this->normaliser(rtrim($envoi[1])));
+	}
+	
+	private function CmdBigtext()
+	{
+		$message = $this->message;
+		
+		$envoi = explode(' ',$message[2],2);
+		Rcon::bigtext($this->normaliser(rtrim($envoi[1])));
+	}
+	
+	private function CmdMap()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			if(in_array($cmd[1], $this->_mapUt4List))
+				Rcon::map('"ut4_'.$cmd[1].'"');
+			else
+				Rcon::map('"'.$cmd[1].'"');
+			$this->sendMessage("Map changed !");
+		}
+		else
+		{
+			$this->sendMessage("What's name of the map ?");
+		}	
+	}
+	
+	private function CmdNextMap()
+	{
+		$cmd = $this->cmd;
+		
+		if(isset($cmd[1]))
+		{
+			if(in_array($cmd[1], $this->_mapUt4List))
+				Rcon::set('g_nextmap "ut4_'.$cmd[1].'"');
+			else
+				Rcon::set('g_nextmap "'.$cmd[1].'"');
+				
+			$this->sendMessage("Next map changed !");
+		}
+		else
+		{
+			$this->sendMessage("What's name of the map ?");
+		}
+	}
+	
+	private function CmdCyclemap()
+	{
+		Rcon::cyclemap();
+	}
+	
+	private function CmdRestart()
+	{
+		Rcon::restart();
+	}
+	
+	private function CmdReload()
+	{
+		Rcon::reload();
 	}
 }
 
