@@ -231,11 +231,11 @@ class PluginIrc extends Plugin
 	
 	public function sendMessage($message)
 	{				
-		if($this->_messageMode == 'privmsg')
+		if($this->config['MessageMode'] == 'privmsg')
 			$this->privmsg($this->_pseudo, $message);
-		elseif($this->_messageMode == 'chanmsg')
+		elseif($this->config['MessageMode'] == 'chanmsg')
 			$this->privmsg($this->_channel, $message);
-		elseif($this->_messageMode == 'notice')
+		elseif($this->config['MessageMode'] == 'notice')
 			$this->notice($this->_pseudo, $message);
 	}
 	
@@ -468,11 +468,11 @@ class PluginIrc extends Plugin
 		{
 			$list = array();
 			
-			foreach($this->CmdIrc as $cmds)
+			foreach($this->_cmdIrc as $cmds)
 			{
 				if($cmds['cmd'] == '!urt')
 				{
-					if($this->_autoSpeak == 0 OR $this->_autoSpeak == 2)
+					if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 2)
 						$list[] = $cmds['cmd'];
 				}
 				else
@@ -493,10 +493,10 @@ class PluginIrc extends Plugin
 			$cmd[1] = str_replace('!','',$cmd[1]);
 			$cmd[1] = '!'.$cmd[1];
 			
-			if(array_key_exists($cmd[1], $this->CmdIrc))
+			if(array_key_exists($cmd[1], $this->_cmdIrc))
 			{
-				$this->sendMessage('Usage : '.$this->CmdIrc[$cmd[1]]['use']);
-				$this->sendMessage($this->CmdIrc[$cmd[1]]['text']);
+				$this->sendMessage('Usage : '.$this->_cmdIrc[$cmd[1]]['use']);
+				$this->sendMessage($this->_cmdIrc[$cmd[1]]['text']);
 			}
 			else
 			{
