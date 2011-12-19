@@ -95,7 +95,7 @@ class PluginIrc extends Plugin
 	
 	private function _connect()
 	{
-		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10);)
+		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10))
 		{
 			stream_set_blocking($this->_socket, 0);
 			
