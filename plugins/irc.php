@@ -462,7 +462,7 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->cmd;
 		
-		$r = $this->rights(trim($this->pseudo), $this->_mainChannel);
+		$r = $this->rights(trim($this->pseudo), $this->config['MainChannel']);
 		
 		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
 		{
@@ -532,7 +532,7 @@ class PluginIrc extends Plugin
 			}
 			else
 				$color = "\00308";
-			$playerlist[] = "\002".$color.$curPlayer[2]."\017";
+			$playerlist[] = "\002".$color.$curPlayer->name."\017";
 			++$nbplayers;
 		}
 		
