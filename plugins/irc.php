@@ -33,6 +33,7 @@ class PluginIrc extends Plugin
 	//Private vars
 	private $_socket; // Socket of bot
 	private $_connected = FALSE; // if bot connected to irc
+	private $_configured = FALSE; 
 	
 	private $_pseudo;
 	private $_channel;
@@ -53,6 +54,8 @@ class PluginIrc extends Plugin
 		//Config
 		if(isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']))
 		{
+			$this->_configured = TRUE;
+			
 			// Autospeak IRC <=> URT
 			if(isset($this->config['AutoSpeak']))
 				$this->config['AutoSpeak'] = $this->config['AutoSpeak'];
@@ -95,21 +98,24 @@ class PluginIrc extends Plugin
 	
 	private function _connect()
 	{
-		if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10))
+		if($this->_configured)
 		{
-			stream_set_blocking($this->_socket, 0);
-			
-			$this->_connected = TRUE;
-			
-			$this->_send("USER".str_repeat(' '.$this->config['User'], 4));
-			$this->_send("NICK ".$this->config['Nick']);
-			
-			Leelabot::message('The bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
-		}
-		else
-		{
-			$this->_connected = TRUE;
-			Leelabot::message('The connection has failed. We will try again in a few seconds.', array());
+			if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10))
+			{
+				stream_set_blocking($this->_socket, 0);
+				
+				$this->_connected = TRUE;
+				
+				$this->_send("USER".str_repeat(' '.$this->config['User'], 4));
+				$this->_send("NICK ".$this->config['Nick']);
+				
+				Leelabot::message('The bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
+			}
+			else
+			{
+				$this->_connected = TRUE;
+				Leelabot::message('The connection has failed. We will try again in a few seconds.', array());
+			}
 		}
 	}
 	
@@ -125,22 +131,21 @@ class PluginIrc extends Plugin
 	{
 		if($this->_connected)
 		{
-			if($return = fgets($this->_socket,1024)) // On lit les données du serveur
+			if($return = fgets($this->_socket, 1024)) // On lit les données du serveur
 			{
 				return $return;
 			}
-			else
+			elseif($return === FALSE && $this->_connected = true)
 			{
-				if($return === FALSE)
+				if(!feof($this->_socket))
 				{
 					$this->_connected = false; 
-					$this->_connect();
-				}
+			    }
 			}
 		}
 		else
 		{
-			return FALSE;
+			$this->_connect();
 		}
 	}
 	
