@@ -28,7 +28,8 @@ class PluginAssault extends Plugin
 	
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'assault',
 'className' => 'PluginAssault',
+'display' => 'Assault Plugin',
 'autoload' => TRUE));

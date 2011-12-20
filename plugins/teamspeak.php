@@ -49,7 +49,8 @@ class PluginTeamspeak extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'teamspeak',
 'className' => 'PluginTeamspeak',
+'display' => 'Teamspeak Plugin',
 'autoload' => TRUE));

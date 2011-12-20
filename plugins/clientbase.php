@@ -276,7 +276,8 @@ class PluginClientBase extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'clientbase',
 'className' => 'PluginClientBase',
+'display' => 'Clienbase Plugin',
 'autoload' => TRUE));

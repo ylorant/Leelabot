@@ -583,7 +583,8 @@ class PluginStats extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'stats',
 'className' => 'PluginStats',
+'display' => 'Stats Plugin',
 'autoload' => TRUE));

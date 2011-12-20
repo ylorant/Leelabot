@@ -61,7 +61,7 @@ class PluginAdminBase extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'adminbase',
 'className' => 'PluginAdminBase',
 'display' => 'Admin base plugin',

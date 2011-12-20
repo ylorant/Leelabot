@@ -68,7 +68,7 @@ class PluginIrc extends Plugin
 			//IRC commands
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
 			$this->_addCmd('!status', 'CmdStatus', '!status', 'Permet d\'avoir les infos sur la partie actuel.', 0);
-			$this->_addCmd('!players', 'CmdPlayers', '!players', 'Permet d\'avoir la liste des joueurs présent sur le serveur.', 0);
+			$this->_addCmd('!players', 'CmdPlayers', '!players', 'Permet d\'avoir la liste des joueurs prÃ©sent sur le serveur.', 0);
 			$this->_addCmd('!stats', 'CmdStats', '!stats <joueur>', 'Permet d\'avoir les stats d\'un joueur.', 1);
 			$this->_addCmd('!awards', 'CmdAwards', '!awards', 'Permet d\'avoir les awards actuel.', 0);
 			$this->_addCmd('!urt', 'CmdUrt', '!urt <message>', 'Permet d\'envoyer un message sur urt.', 1);
@@ -133,7 +133,7 @@ class PluginIrc extends Plugin
 		{
 			$return = fgets($this->_socket, 1024);
 			
-			if($return) // On lit les données du serveur
+			if($return) // On lit les donnÃ©es du serveur
 			{
 				return $return;
 			}
@@ -206,13 +206,17 @@ class PluginIrc extends Plugin
 		while($continue)
 		{
 			$ret = rtrim($this->_get());
-			$data = explode(':',$ret);
-			$cmd = explode(' ',$data[1]);
-			if($cmd[1] == '353')
-				$reponse = $ret;
-			elseif($cmd[1] == '366')
-				$continue = FALSE;
+			if($ret)
+			{
+				$data = explode(':',$ret);
+				$cmd = explode(' ',$data[1]);
+				if($cmd[1] == '353')
+					$reponse = $ret;
+				elseif($cmd[1] == '366')
+					$continue = FALSE;
+			}
 		}
+		
 		$result = explode(' ', $reponse);
 		array_shift($result); 
 		array_shift($result); 
@@ -221,9 +225,11 @@ class PluginIrc extends Plugin
 		array_shift($result); 
 		array_walk($result, 'trim');
 		
-		if(in_array('@'.$name, $result) == TRUE OR in_array(':@'.$name, $result) == TRUE)
+		$result[0] = substr($result[0], 1);
+		
+		if(in_array('@'.$name, $result) == TRUE)
 			return '@';
-		elseif(in_array('+'.$name, $result) == TRUE OR in_array(':+'.$name, $result) == TRUE)
+		elseif(in_array('+'.$name, $result) == TRUE)
 			return '+';
 		else
 			return '';
@@ -240,7 +246,7 @@ class PluginIrc extends Plugin
 	}
 	
 	/////////////////////////////////////////////
-	// Fonctions privés du bot IRC             //
+	// Fonctions privÃ©s du bot IRC             //
 	/////////////////////////////////////////////
 	
 	private function _addCmd($cmd, $fonction, $usage, $text, $droits = 0)
@@ -290,10 +296,10 @@ class PluginIrc extends Plugin
 		return $result;
 	}
 	
-	//Fonction normalisant le texte envoyé (uniquement les accents)
+	//Fonction normalisant le texte envoyÃ© (uniquement les accents)
 	public function normaliser($string)
 	{
-        $a = 'âäàéèëêîïûüç';
+        $a = 'Ã¢Ã¤Ã Ã©Ã¨Ã«ÃªÃ®Ã¯Ã»Ã¼Ã§';
         $b = 'aaaeeeeiiuuc'; 
         $string = utf8_decode($string);     
         $string = strtr($string, utf8_decode($a), $b);
@@ -304,11 +310,11 @@ class PluginIrc extends Plugin
 	// Boucle principale                       //
 	/////////////////////////////////////////////
 	
-	//Exécutions à chaque fin de boucle, qu'il y ait un message transmis par le serveur ou non
+	//ExÃ©cutions Ã  chaque fin de boucle, qu'il y ait un message transmis par le serveur ou non
 	public function RoutineIrcMain()
 	{
 		$donnees = $this->_get();
-		if($donnees) //Si le serveur nous a envoyé quelque chose
+		if($donnees) //Si le serveur nous a envoyÃ© quelque chose
 		{
 			$commande = explode(' ',$donnees);
 			$message = explode(':',$donnees,3);
@@ -318,7 +324,7 @@ class PluginIrc extends Plugin
 			if(rtrim($commande[0]) == 'PING')
 				$this->_send('PONG :'.$message[1]);
 
-			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
+			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au rÃ©seau, on joint les canaux puis on exÃ©cute la liste d'auto-perform
 			{
 				if(isset($this->config['AutoPerform']))
 				{
@@ -361,7 +367,7 @@ class PluginIrc extends Plugin
 							}
 							else
 							{
-								$this->sendMessage('Vous devez être "voice" pour utiliser cette commande.');
+								$this->sendMessage('Vous devez Ãªtre "voice" pour utiliser cette commande.');
 							}
 						}
 						elseif($this->_cmdIrc[$cmd[0]]['r'] == 2)
@@ -372,7 +378,7 @@ class PluginIrc extends Plugin
 							}
 							else
 							{
-								$this->sendMessage('Vous devez être "operateur" pour utiliser cette commande.');
+								$this->sendMessage('Vous devez Ãªtre "operateur" pour utiliser cette commande.');
 							}
 						}
 						else
@@ -464,7 +470,7 @@ class PluginIrc extends Plugin
 		
 		$r = $this->rights(trim($this->_pseudo), $this->config['MainChannel']);
 		
-		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
+		if(!isset($cmd[1])) //Si on ne demande pas une commande prÃ©cise, on affiche la liste
 		{
 			$list = array();
 			
@@ -520,7 +526,7 @@ class PluginIrc extends Plugin
 		
 		foreach(Server::getPlayerList() as $curPlayer)
 		{
-			//Gestion de la couleur en fonction de l'équipe
+			//Gestion de la couleur en fonction de l'Ã©quipe
 			if(Server::getServer()->serverInfo['g_gametype'] != '0')
 			{
 				if($curPlayer->team == 1)
@@ -542,15 +548,15 @@ class PluginIrc extends Plugin
 	
 	/*
 	
-	TODO : passer à la nouvelle version
+	TODO : passer Ã  la nouvelle version
 	
 	private function CmdStats()
 	{
 		$cmd = $this->_cmd;
-		if(isset($cmd[1])) //Il faut un paramètre : le joueur
+		if(isset($cmd[1])) //Il faut un paramÃ¨tre : le joueur
 		{
 			$player = $this->_main->SearchPlayer($cmd[1]);
-			//Gestion du nombre de joueurs trouvés
+			//Gestion du nombre de joueurs trouvÃ©s
 			if($player === FALSE)
 				fputs($this->_socket,"$msgPrefix :Pseudo inconnu.\r\n");
 			elseif(count($player) == 1)
@@ -573,10 +579,10 @@ class PluginIrc extends Plugin
 					$this->sendMessage('Joueur spectateur.');
 			}
 			else
-				$this->sendMessage('Trop de joueurs trouvés.');
+				$this->sendMessage('Trop de joueurs trouvÃ©s.');
 		}
 		else
-			$this->sendMessage('Paramètre insuffisant.');
+			$this->sendMessage('ParamÃ¨tre insuffisant.');
 	}
 	*/
 	
@@ -592,7 +598,7 @@ class PluginIrc extends Plugin
 				if($_awards[$award][0] !== NULL)
 					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
 				else
-					$buffer[] = "\037".ucfirst($award)."\037".' : No one';
+					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
 			}
 		}
 		$this->sendMessage("\002Awards :\002 ".join(' - ', $buffer));
@@ -804,7 +810,8 @@ class PluginIrc extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'irc',
 'className' => 'PluginIrc',
+'display' => 'IRC Plugin',
 'autoload' => TRUE));
