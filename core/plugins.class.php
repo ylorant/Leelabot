@@ -726,8 +726,9 @@ class Plugin
 		
 		$plugin = ucfirst($plugins->getName(get_class($this)));
 		
-		if(!isset($main->config['Plugin']) || !isset($main->config['Plugin'][$plugin]))
-			$main->config['Plugin'] = array($plugin => array());
+		if(isset($main->config['Plugin']))
+			if(!isset($main->config['Plugin'][$plugin]))
+				$main->config['Plugin'] = array($plugin => array());
 			
 		$this->config = $main->config['Plugin'][$plugin];
 	}
