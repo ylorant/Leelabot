@@ -460,9 +460,9 @@ class PluginIrc extends Plugin
 	/////////////////////////////////////////////
 	private function CmdHelp()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
-		$r = $this->rights(trim($this->pseudo), $this->config['MainChannel']);
+		$r = $this->rights(trim($this->_pseudo), $this->config['MainChannel']);
 		
 		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
 		{
@@ -546,7 +546,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdStats()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		if(isset($cmd[1])) //Il faut un paramètre : le joueur
 		{
 			$player = $this->_main->SearchPlayer($cmd[1]);
@@ -603,13 +603,13 @@ class PluginIrc extends Plugin
 		if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 2)
 		{
 			$envoi = explode(' ', $this->message[2], 2);
-			Rcon::say('^4IRC : <$nick> $message', array('nick' => $this->pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
+			Rcon::say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
 		}
 	}
 	
 	private function CmdKick()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
@@ -640,7 +640,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdKickAll()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
@@ -675,7 +675,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdSlap()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
@@ -706,7 +706,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdMute()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
@@ -753,7 +753,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdMap()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
@@ -771,7 +771,7 @@ class PluginIrc extends Plugin
 	
 	private function CmdNextMap()
 	{
-		$cmd = $this->cmd;
+		$cmd = $this->_cmd;
 		
 		if(isset($cmd[1]))
 		{
