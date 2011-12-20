@@ -537,7 +537,7 @@ class Server
 		$matches = array();
 		foreach($self->_server->players as $player)
 		{
-			if(preg_match('/'.str_replace('/', '\\/', $search).'/', $player->name))
+			if(preg_match('/'.str_replace('/', '\\/', $search).'/isU', $player->name))
 				$matches[] = $player->id;
 		}
 		

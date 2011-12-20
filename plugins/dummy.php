@@ -81,7 +81,7 @@ class PluginDummy extends Plugin
 	}
 }
 
-return $this->initPlugin(array(
+$this->addPluginData(array(
 'name' => 'dummy',
 'className' => 'PluginDummy',
 'display' => 'Dummy plugin',

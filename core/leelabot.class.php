@@ -187,8 +187,8 @@ class Leelabot
 		else
 			$this->outerAPI = NULL;
 		
-		//Loading plugins (throws an error if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
-		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']))
+		//Loading plugins (throws a warning if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
+		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']) )
 		{
 			//Getting automatically loaded plugins
 			$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);

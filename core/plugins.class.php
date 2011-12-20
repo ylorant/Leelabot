@@ -113,14 +113,16 @@ class PluginManager
 	}
 	
 	/** Sets a command's right level.
-	 * This functions sets a command's right level directly, without taking care of the default level set.
+	 * This functions sets a command's right level directly. If $force is set to TRUE, the level is changed without any verification. Else it changes the right level
+	 * only if it has not been already set. Level modifications from users should be forced, while automated one should not.
 	 * 
 	 * \param $cmd The command to modify.
 	 * \param $level The new level.
+	 * \param $force Forces the level modification.
 	 * 
 	 * \return TRUE if the level set correctly, FALSE otherwise.
 	 */
-	public function setCommandLevel($cmd, $level)
+	public function setCommandLevel($cmd, $level, $force)
 	{
 		if($level >= 0 && isset($this->_commands[$cmd]))
 			$this->_commandLevels[$cmd] = $level;
@@ -178,6 +180,7 @@ class PluginManager
 	 * is done by PluginManager::initPlugin(), called inside the plugin file.
 	 * 
 	 * \param $plugin Plugin to be loaded.
+	 * 
 	 * \return TRUE if plugin loaded successfully, FALSE otherwise. In fact, this value, beyond the "plugin not found" error, depends of the return value of 
 	 * PluginManager::initPlugin.
 	 */
@@ -201,8 +204,29 @@ class PluginManager
 		
 		if(!isset($this->_pluginCache[$plugin]))
 			include('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
+		
+		return $this->initPlugin($this->_pluginCache[$plugin]); //Else we reload the plugin with the cached data from the first loading
+	}
+	
+	/** Adds plugin data to the bot's cache.
+	 * This function adds plugin's data to the bot's cache, to allow it to reload the plugin multiple times.
+	 * 
+	 * \param $plugin Plugin's name.
+	 * \param $data The data to store.
+	 * 
+	 * \return TRUE if the data stored correctly, FALSE otherwise.
+	 */
+	public function addPluginData($data)
+	{
+		if(isset($data['name']))
+			$this->_pluginCache[$data['name']] = $data;
 		else
-			$this->initPlugin($this->_pluginCache[$plugin]); //Else we reload the plugin with the cached data from the first loading
+		{
+			Leelabot::message('Incomplete plugin data : $0', array(Leelabot::dumpArray($data)), E_WARNING);
+			return FALSE;
+		}
+		
+		return TRUE;
 	}
 	
 	/** Unloads a plugin.
@@ -247,9 +271,6 @@ class PluginManager
 			Leelabot::message('Cannot load plugin with given data : $0', array(Leelabot::dumpArray($params)), E_WARNING);
 			return FALSE;
 		}
-		
-		//Putting plugin data in memory for future use
-		$this->_pluginCache[$params['name']] = $params;
 		
 		//Load dependencies if necessary
 		if(isset($params['dependencies']) && is_array($params['dependencies']))
@@ -726,8 +747,7 @@ class Plugin
 		
 		$plugin = ucfirst($plugins->getName(get_class($this)));
 		
-		if(isset($main->config['Plugin']))
-			if(!isset($main->config['Plugin'][$plugin]))
+		if(isset($main->config['Plugin']) && !isset($main->config['Plugin'][$plugin]))
 				$main->config['Plugin'][$plugin] = array();
 			
 		$this->config = $main->config['Plugin'][$plugin];
