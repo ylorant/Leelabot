@@ -65,11 +65,6 @@ class PluginStats extends Plugin
 	 */
 	public function init()
 	{
-		if(!isset($this->config))
-		{
-			$this->config = array();
-		}
-		
 		// What kind of stats will be displayed
 		if(isset($this->config['ShowStats']))
 			$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
