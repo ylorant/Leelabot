@@ -34,6 +34,7 @@ class Leelabot
 {
 	private $_configDirectory; ///< Config directory. Defaults to ./conf directory.
 	private static $_logFile; ///< Log file, accessed by Leelabot::message() method.
+	private static $_lastError = NULL; ///< Last error put in the log, according to Leelabot::message().
 	public static $verbose; ///< Verbose mode (boolean, defaults to FALSE).
 	public static $instance; ///< Current instance of Leelabot (for accessing dynamic properties from static functions)
 	public $intl; ///< Locale management object
@@ -188,7 +189,7 @@ class Leelabot
 			$this->outerAPI = NULL;
 		
 		//Loading plugins (throws a warning if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
-		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']) )
+		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']) && $this->config['Plugins']['AutoLoad'])
 		{
 			//Getting automatically loaded plugins
 			$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
@@ -201,7 +202,7 @@ class Leelabot
 				$this->plugins->setDefaultRightLevel(0);
 			
 			//We load plugins
-			$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad']);
+			$this->plugins->loadPlugins($this->config['Plugins']['AutoLoad'], TRUE);
 			
 			//Setting user-defined levels for commands
 			if(isset($this->config['Commands']['Levels']))
@@ -736,6 +737,9 @@ class Leelabot
 		foreach($args as $id => $value)
 			$message = str_replace('$'.$id, $value, $message);
 		
+		if(in_array($type, array(E_USER_ERROR, E_ERROR, E_WARNING, E_USER_WARNING)))
+			Leelabot::$_lastError = $message;
+		
 		//Put it in log, if is opened
 		if(Leelabot::$_logFile)
 			fputs(Leelabot::$_logFile, date(($translate ? Leelabot::$instance->intl->getDateTimeFormat() : "m/d/Y h:i:s A")).' -- '.$prefix.' -- '.$message.PHP_EOL);
@@ -746,6 +750,16 @@ class Leelabot
 			if(PHP_OS == 'Linux')
 				echo "\033[0m";
 		}
+	}
+	
+	/** Returns the last error put in the log.
+	 * This method returns the last error put in the log, useful for returning error descriptors directly to user, avoiding him to go look in the log.
+	 * 
+	 * \return The last error message, or NULL if there is still no error.
+	 */
+	public static function lastError()
+	{
+		return self::$_lastError;
 	}
 	
 	/** Error handler for Leelabot

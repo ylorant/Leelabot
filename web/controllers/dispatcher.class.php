@@ -9,6 +9,7 @@ class LeelabotAdmin
 	private $_pages = array();
 	private $_corePages;
 	private $_design = TRUE;
+	private $_noCache = FALSE;
 	private $_main;
 	
 	public $parser;
@@ -72,7 +73,7 @@ class LeelabotAdmin
 	
 	public function disableCache()
 	{
-		$this->_main->BufferAddHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+		$this->_noCache = TRUE;
 	}
 	
 	public function process($id, $data)
@@ -81,13 +82,28 @@ class LeelabotAdmin
 		{
 			if(preg_match('#^'.$regex.'$#', strtolower($data['matches'][1]), $matches))
 			{
-				
+				//Setting initial environment for page process
 				$page = strtolower($data['matches'][1]);
 				$data['matches'] = $matches;
+				$this->_design = TRUE;
+				$this->_noCache = FALSE;
 				RainTPL::$tpl_dir = 'views/'.Leelabot::$instance->intl->getLocale().'/';
+				
+				//Calling the page controller
 				$fctrep = $call[0]->$call[1]($data);
+				
+				//Adding the design
+				if($this->_design)
+					$content = $this->addDesign($page, $fctrep);
+				else
+					$content = $fctrep;
+				
+				//Sending the final page
 				$this->_main->BufferSetReplyCode($id, 200);
-				$content = $this->addDesign($page, $fctrep);
+				
+				if($this->_noCache)
+					$this->_main->BufferAddHeader($id, 'Cache-Control', 'no-store, no-cache, must-revalidate');
+				
 				$this->_main->BufferAppendData($id, $content);
 				$this->_main->sendBuffer($id);
 				

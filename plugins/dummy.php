@@ -54,7 +54,6 @@ class PluginDummy extends Plugin
 		if(isset($command[0]))
 		{
 			$target = Server::getPlayer(Server::searchPlayer($command[0]));
-			print_r($target);
 			if($target === FALSE)
 				$target = 'nobody';
 			if(is_array($target))
@@ -85,4 +84,5 @@ $this->addPluginData(array(
 'name' => 'dummy',
 'className' => 'PluginDummy',
 'display' => 'Dummy plugin',
+'dependencies' => array('adminbase'),
 'autoload' => TRUE));

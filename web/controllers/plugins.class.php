@@ -28,11 +28,14 @@ class LeelabotAdminPlugins
 		$cwd = getcwd();
 		chdir(Leelabot::$instance->root);
 		
+		//Saving the loaded plugins before loading, so we can get the loaded plugins during operation
+		$pluginsBefore = Leelabot::$instance->plugins->getLoadedPlugins();
+		
 		//Loading the plugin, and processing the result
-		if(Leelabot::$instance->plugins->loadPlugin($data['matches'][1]) == FALSE)
-			$ret = 'fail';
+		if(Leelabot::$instance->plugins->loadPlugin($data['matches'][1], TRUE))
+			$ret = 'success:'.join('/',array_diff(Leelabot::$instance->plugins->getLoadedPlugins(), $pluginsBefore));
 		else
-			$ret = 'ok';
+			$ret = 'error:'.Leelabot::lastError();
 		
 		chdir($cwd); //Returning to the webadmin root.
 		
@@ -48,11 +51,14 @@ class LeelabotAdminPlugins
 		$cwd = getcwd();
 		chdir(Leelabot::$instance->root);
 		
+		//Saving the loaded plugins before loading, so we can get the loaded plugins during operation
+		$pluginsBefore = Leelabot::$instance->plugins->getLoadedPlugins();
+		
 		//Loading the plugin, and processing the result
-		if(Leelabot::$instance->plugins->unloadPlugin($data['matches'][1]) == FALSE)
-			$ret = 'fail';
+		if(Leelabot::$instance->plugins->unloadPlugin($data['matches'][1]))
+			$ret = 'success:'.join('/',array_diff(Leelabot::$instance->plugins->getLoadedPlugins(), $pluginsBefore));
 		else
-			$ret = 'ok';
+			$ret = 'error:'.Leelabot::lastError();
 		
 		chdir($cwd); //Returning to the webadmin root.
 		

@@ -32,7 +32,7 @@ class PluginAdminBase extends Plugin
 	 */
 	public function init()
 	{
-		
+		$this->setCommandLevel('!kick', 10);
 	}
 	
 	/** Kick command. Kicks a player from the server.

@@ -118,13 +118,13 @@ class PluginManager
 	 * 
 	 * \param $cmd The command to modify.
 	 * \param $level The new level.
-	 * \param $force Forces the level modification.
+	 * \param $force Forces the level modification. Defaults to FALSE.
 	 * 
 	 * \return TRUE if the level set correctly, FALSE otherwise.
 	 */
-	public function setCommandLevel($cmd, $level, $force)
+	public function setCommandLevel($cmd, $level, $force = FALSE)
 	{
-		if($level >= 0 && isset($this->_commands[$cmd]))
+		if(isset($this->_commands[$cmd]) && ($force || !isset($this->_commandLevels[$cmd])))
 			$this->_commandLevels[$cmd] = $level;
 		else
 			return FALSE;
@@ -156,7 +156,7 @@ class PluginManager
 	 * \param $list Plugin list to be loaded.
 	 * \return TRUE if all plugins loaded successfully, FALSE otherwise.
 	 */
-	public function loadPlugins($list)
+	public function loadPlugins($list, $manual = FALSE)
 	{
 		if(!is_array($list))
 			return FALSE;
@@ -165,11 +165,14 @@ class PluginManager
 		$loadedPlugins = array();
 		foreach($list as $plugin)
 		{
-			$return = $this->loadPlugin($plugin);
-			if($return !== FALSE)
-				$loadedPlugins[] = $plugin;
-			else
-				return FALSE;
+			if(!in_array($plugin, $this->getLoadedPlugins()))
+			{
+				$return = $this->loadPlugin($plugin, $manual);
+				if($return !== FALSE)
+					$loadedPlugins[] = $plugin;
+				else
+					return FALSE;
+			}
 		}
 		
 		return TRUE;
@@ -180,11 +183,12 @@ class PluginManager
 	 * is done by PluginManager::initPlugin(), called inside the plugin file.
 	 * 
 	 * \param $plugin Plugin to be loaded.
+	 * \param $manual Manual loading indicator. It permits the bot to know if a plugin has been loaded manually or automatically, by dependence.
 	 * 
 	 * \return TRUE if plugin loaded successfully, FALSE otherwise. In fact, this value, beyond the "plugin not found" error, depends of the return value of 
 	 * PluginManager::initPlugin.
 	 */
-	public function loadPlugin($plugin)
+	public function loadPlugin($plugin, $manual = FALSE)
 	{
 		Leelabot::message('Loading plugin $0', array($plugin));
 		
@@ -205,7 +209,7 @@ class PluginManager
 		if(!isset($this->_pluginCache[$plugin]))
 			include('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
 		
-		return $this->initPlugin($this->_pluginCache[$plugin]); //Else we reload the plugin with the cached data from the first loading
+		return $this->initPlugin($this->_pluginCache[$plugin], $manual); //Else we reload the plugin with the cached data from the first loading
 	}
 	
 	/** Adds plugin data to the bot's cache.
@@ -238,6 +242,8 @@ class PluginManager
 	 */
 	public function unloadPlugin($plugin)
 	{
+		Leelabot::message('Unloading plugin $0', array($plugin));
+		
 		//We check that the plugin is not already loaded
 		if(!in_array($plugin, $this->getLoadedPlugins()))
 		{
@@ -245,9 +251,44 @@ class PluginManager
 			return FALSE;
 		}
 		
+		//Searching plugins that depends on the one we want to unload
+		foreach($this->_plugins as $pluginName => &$pluginData)
+		{
+			if(in_array($plugin, $pluginData['dependencies']))
+			{
+				Leelabot::message('Plugin $0 depends on plugin $1. Cannot unload plugin $1.', array($pluginName, $plugin), E_WARNING);
+				return FALSE;
+			}
+		}
+		
+		//Cleaning automatically loaded dependencies
+		
+		//Deleting routines
+		if(isset($this->_routines[$this->_plugins[$plugin]['className']]))
+		{
+			foreach($this->_routines[$this->_plugins[$plugin]['className']] as $eventName => $event)
+				$this->deleteRoutine($this->_plugins[$plugin]['obj'], $eventName);
+		}
+		
+		//Deleting server events
+		foreach($this->_serverEvents as $eventName => $eventList)
+		{
+			if(isset($eventList[$this->_plugins[$plugin]['className']]))
+				$this->deleteServerEvent($eventName, $this->_plugins[$plugin]['obj']);
+		}
+		
+		//Deleting commands
+		foreach($this->_commands as $eventName => $eventList)
+		{
+			if(isset($eventList[$this->_plugins[$plugin]['className']]))
+				$this->deleteCommand($eventName, $this->_plugins[$plugin]['obj']);
+		}
+		
 		$this->_plugins[$plugin]['obj']->destroy();
 		unset($this->_plugins[$plugin]['obj']);
 		unset($this->_plugins[$plugin]);
+		
+		Leelabot::message('Plugin $0 unloaded successfully', array($plugin));
 		
 		return TRUE;
 	}
@@ -261,9 +302,10 @@ class PluginManager
 	 * 			\li \b className : The main class to be instancied for the plugin. String.
 	 * 			\li \b dependencies : The dependencies the plugin needs for functionning. Array.
 	 * 			\li \b autoload : To let know if the function has also to do automatic binding of events. Boolean.
+	 * \param $manual Manual loading indicator. It permits the bot to know if a plugin has been loaded manually or automatically, by dependence.
 	 * \return TRUE if plugin initialized successfully, FALSE otherwise (and throws many warnings).
 	 */
-	public function initPlugin($params)
+	public function initPlugin($params, $manual)
 	{
 		//Checking that we have everything needed to load the plugin
 		if(!is_array($params) || !isset($params['name']) || !isset($params['className']))
@@ -292,7 +334,8 @@ class PluginManager
 		'name' => $params['name'],
 		'display' => (isset($params['display']) ? $params['display'] : $params['name']),
 		'dependencies' => (isset($params['dependencies']) ? $params['dependencies'] : array()),
-		'className' => $params['className']);
+		'className' => $params['className'],
+		'manual' => $manual);
 		$this->_plugins[$params['name']]['obj'] = new $params['className']($this, $this->_main);
 		
 		//Autoloading !!1!
@@ -835,5 +878,13 @@ class Plugin
 	public function changeRoutineTimeInterval($method, $time)
 	{
 		return $this->_plugins->changeRoutineTimeInterval($this, $method, $time);
+	}
+	
+	/** Shortcut to PluginManager::setCommandLevel.
+	 * \see PluginManager::setCommandLevel
+	 */
+	public function setCommandLevel($cmd, $level)
+	{
+		return $this->_plugins->setCommandLevel($cmd, $level);
 	}
 }
