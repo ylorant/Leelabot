@@ -638,22 +638,22 @@ class PluginIrc extends Plugin
 		$serverlist = ServerList::getList();
 		$actual = Server::getName();
 		
-		function printServerInfo($server)
+		if(in_array($cmd[1], $serverlist))
 		{
-			Server::setServer($this->_main->servers[$server]);
+			Server::setServer($this->_main->servers[$cmd[1]]);
 			$serverinfo = Server::getServer()->serverInfo;
 			$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
 			$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
 		}
-		
-		if(in_array($cmd[1], $serverlist))
-		{
-			printServerInfo($cmd[1]);
-		}
 		else
 		{
 			foreach($serverlist as $server)
-				printServerInfo($server);
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$serverinfo = Server::getServer()->serverInfo;
+				$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+				$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+			}
 		}
 		
 		Server::setServer($this->_main->servers[$actual]);
@@ -1025,7 +1025,7 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$server = $this->_nameOfServer(1);
+		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
 		{
@@ -1038,7 +1038,7 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$server = $this->_nameOfServer(1);
+		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
 		{
@@ -1051,7 +1051,7 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$server = $this->_nameOfServer(1);
+		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
 		{
@@ -1066,25 +1066,47 @@ class PluginIrc extends Plugin
 		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 	
-	private function _nameOfServer($cmdkey)
+	private function _nameOfServer($cmdkey, $otherargs = true)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
 		$server = false;
 		
-		if(!isset($cmd[$cmdkey]))
+		if(isset($cmd[$cmdkey]))
 		{
-			if(count($serverlist) > 1)
-				$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
+			if(in_array($cmd[$cmdkey], ServerList::getList()))
+			{
+				$server = $cmd[$cmdkey];
+			}
 			else
-				$server = Server::getName();
+			{
+				if($otherargs)
+				{
+					if(count($serverlist) == 1)
+					{
+						$server = Server::getName();
+					}
+					else
+					{
+						$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
+					}
+				}
+				else
+				{
+					$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+				}
+			}
 		}
 		else
 		{
-			if(in_array($server, ServerList::getList()))
-				$server = $cmd[$cmdkey];
+			if(count($serverlist) == 1)
+			{
+				$server = Server::getName();
+			}
 			else
-				$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+			{
+				$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
+			}
 		}
 		
 		return $server;
