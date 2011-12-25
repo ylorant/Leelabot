@@ -107,20 +107,22 @@ class PluginIrc extends Plugin
 				{
 					if(is_array($server) and count($server))
 					{
-						foreach($server as $channel => $mode)
+						foreach($server as &$channel => $mode)
 						{
-							if(in_array('#'.$channel, $this->config['Channels']))
+							$channel = '#'.$channel;
+							
+							if(in_array($channel, $this->config['Channels']))
 							{
 								if(!(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3))))
 								{
 									Leelabot::message('The Autospeak.$0 configuration for #$1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
-									$server[$channel] = 0;
+									$channel = 0;
 								}
 							}
 							else
 							{
 								Leelabot::message('In Autospeak.$0 configuration, #$1 was not recognized.', array($name, $channel), E_WARNING);
-								unset($server[$channel]);
+								unset($channel);
 							}
 						}
 					}
@@ -452,7 +454,7 @@ class PluginIrc extends Plugin
 					$pseudo = $pseudo[0];
 							
 					$serverlist = ServerList::getList();
-					$channel = substr($this->_channel, 1);
+					$channel = $this->_channel;
 					
 					if(is_array($this->config['AutoSpeak']))
 					{
@@ -538,7 +540,7 @@ class PluginIrc extends Plugin
 				{
 					if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(1, 2)))
 					{
-						$this->privmsg('#'.$channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 					}
 				}
 			}
@@ -548,7 +550,7 @@ class PluginIrc extends Plugin
 				{
 					foreach($this->config['Channels'] as $channel)
 					{
-						$this->privmsg('#'.$channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 					}
 				}
 			}
