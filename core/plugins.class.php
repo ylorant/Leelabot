@@ -580,7 +580,7 @@ class PluginManager
 	 */
 	public function deleteServerEvent($event, &$plugin)
 	{
-		Leelabot::message('Deleting routine $0', array(get_class($plugin).'/'.$event));
+		Leelabot::message('Deleting server event $0', array(get_class($plugin).'::'.$event), E_DEBUG);
 		
 		if(!isset($this->_serverEvents[$event]))
 		{
@@ -611,7 +611,7 @@ class PluginManager
 	 */
 	public function deleteCommand($event, &$plugin)
 	{
-		Leelabot::message('Deleting routine $0', array(get_class($plugin).'/'.$event));
+		Leelabot::message('Deleting command $0', array(get_class($plugin).'::'.$event), E_DEBUG);
 		
 		if(!isset($this->_commands[$event]))
 		{
