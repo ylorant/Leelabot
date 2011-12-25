@@ -96,7 +96,6 @@ class PluginIrc extends Plugin
 	
 	private function configureAutospeak()
 	{
-		var_dump($this->config['AutoSpeak']);
 		// Autospeak IRC <=> URT
 		if(isset($this->config['AutoSpeak']))
 		{
@@ -156,8 +155,6 @@ class PluginIrc extends Plugin
 				Leelabot::message('The Autospeak configuration was not recognized !', array(), E_WARNING);
 				$this->config['AutoSpeak'] = 0;
 			}
-			
-			var_dump($this->config['AutoSpeak']);
 		}
 		else
 		{
@@ -971,12 +968,17 @@ class PluginIrc extends Plugin
 	private function CmdMap()
 	{
 		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
 		$server = $this->_nameOfServer(1);
 		
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
-			$map = $cmd[2];
+			
+			if(in_array($cmd[1], $serverlist))
+				$map = $cmd[2];
+			else
+				$map = $cmd[1];
 			
 			if(isset($map))
 			{
@@ -1003,7 +1005,11 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
-			$map = $cmd[2];
+			
+			if(in_array($cmd[1], $serverlist))
+				$map = $cmd[2];
+			else
+				$map = $cmd[1];
 			
 			if(isset($map))
 			{
@@ -1024,7 +1030,6 @@ class PluginIrc extends Plugin
 	private function CmdCyclemap()
 	{
 		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
 		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
@@ -1037,7 +1042,6 @@ class PluginIrc extends Plugin
 	private function CmdRestart()
 	{
 		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
 		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
@@ -1050,7 +1054,6 @@ class PluginIrc extends Plugin
 	private function CmdReload()
 	{
 		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
 		$server = $this->_nameOfServer(1, false);
 		
 		if($server !== false)
@@ -1066,7 +1069,7 @@ class PluginIrc extends Plugin
 		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 	
-	private function _nameOfServer($cmdkey, $otherargs = true)
+	private function _nameOfServer($cmdkey)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
