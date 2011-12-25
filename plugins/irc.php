@@ -57,7 +57,7 @@ class PluginIrc extends Plugin
 			$this->_configured = TRUE;
 			
 			
-			$this->config['Channels'] = exlpdoe(',', $this->config['Channels']);
+			$this->config['Channels'] = explode(',', $this->config['Channels']);
 			
 			// Autospeak IRC <=> URT
 			if(isset($this->config['AutoSpeak']))
