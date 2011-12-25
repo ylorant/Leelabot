@@ -856,7 +856,15 @@ class Plugin
 	 */
 	public function addWSMethod($method, $callback)
 	{
-		return $this->_plugins->addOuterAPIMethod($method, $this, $callback);
+		return $this->_plugins->addWSMethod($method, $this, $callback);
+	}
+	
+	/** Shortcut to PluginManager::addWAPage
+	 * \see PluginManager::addWAPage
+	 */
+	public function addWAPage($method, $callback)
+	{
+		return $this->_plugins->addWAPage($method, $this, $callback);
 	}
 	
 	/** Shortcut to PluginManager::deleteServerEvent.
