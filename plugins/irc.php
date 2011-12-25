@@ -641,31 +641,23 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		
-		if(isset($cmd[1]))
+		$actual = Server::getName();
+	
+		if(in_array($cmd[1], $serverlist))
 		{
-			$actual = Server::getName();
-		
-			if(in_array($cmd[1], $serverlist))
-			{
-				Server::setServer($this->_main->servers[$cmd[1]]);
-				$this->_printServerInfo($cmd[1]);
-			}
-			else
-			{
-				foreach($serverlist as $server)
-				{
-					Server::setServer($this->_main->servers[$server]);
-					$this->_printServerInfo($server);
-				}
-			}
-		
-			Server::setServer($this->_main->servers[$actual]);
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printServerInfo($cmd[1]);
 		}
 		else
 		{
-			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printServerInfo($server);
+			}
 		}
+	
+		Server::setServer($this->_main->servers[$actual]);
 	}
 	
 	private function _printServerInfo($server)
@@ -680,30 +672,23 @@ class PluginIrc extends Plugin
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
 		
-		if(isset($cmd[1]))
+		$actual = Server::getName();
+	
+		if(in_array($cmd[1], $serverlist))
 		{
-			$actual = Server::getName();
-		
-			if(in_array($cmd[1], $serverlist))
-			{
-				Server::setServer($this->_main->servers[$cmd[1]]);
-				$this->_printPlayers($cmd[1]);
-			}
-			else
-			{
-				foreach($serverlist as $server)
-				{
-					Server::setServer($this->_main->servers[$server]);
-					$this->_printPlayers($server);
-				}
-			}
-		
-			Server::setServer($this->_main->servers[$actual]);
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printPlayers($cmd[1]);
 		}
 		else
 		{
-			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printPlayers($server);
+			}
 		}
+	
+		Server::setServer($this->_main->servers[$actual]);
 	}
 	
 	private function _printPlayers($server)
@@ -731,6 +716,47 @@ class PluginIrc extends Plugin
 		
 		if($nbplayers >0) $this->sendMessage('List of players : '.join(', ', $playerlist));
 		else $this->sendMessage('No one.');
+	}
+	
+	private function CmdAwards()
+	{
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$actual = Server::getName();
+	
+		if(in_array($cmd[1], $serverlist))
+		{
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printAwards($cmd[1]);
+		}
+		else
+		{
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printAwards($server);
+			}
+		}
+	
+		Server::setServer($this->_main->servers[$actual]);
+	}
+	
+	private function _printAwards($server)
+	{
+		$buffer = array();
+		$_awards = Server::get('awards');
+		
+		foreach($this->_main->config['Plugin']['Stats']['ShowAwards'] as $award)
+		{
+			if(in_array($award, $this->_main->config['Plugin']['Stats']['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			{
+				if($_awards[$award][0] !== NULL)
+					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
+				else
+					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
+			}
+		}
+		$this->sendMessage("\002Awards :\002 ".join(' - ', $buffer));
 	}
 	
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
@@ -788,55 +814,6 @@ class PluginIrc extends Plugin
 		{
 			$this->sendMessage("Player name missing");
 		}
-	}
-	
-	private function CmdAwards()
-	{
-		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
-		
-		if(isset($cmd[1]))
-		{
-			$actual = Server::getName();
-		
-			if(in_array($cmd[1], $serverlist))
-			{
-				Server::setServer($this->_main->servers[$cmd[1]]);
-				$this->_printAwards($cmd[1]);
-			}
-			else
-			{
-				foreach($serverlist as $server)
-				{
-					Server::setServer($this->_main->servers[$server]);
-					$this->_printAwards($server);
-				}
-			}
-		
-			Server::setServer($this->_main->servers[$actual]);
-		}
-		else
-		{
-			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
-		}
-	}
-	
-	private function _printAwards($server)
-	{
-		$buffer = array();
-		$_awards = Server::get('awards');
-		
-		foreach($this->_main->config['Plugin']['Stats']['ShowAwards'] as $award)
-		{
-			if(in_array($award, $this->_main->config['Plugin']['Stats']['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
-			{
-				if($_awards[$award][0] !== NULL)
-					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
-				else
-					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
-			}
-		}
-		$this->sendMessage("\002Awards :\002 ".join(' - ', $buffer));
 	}
 	
 	private function CmdUrt()
@@ -1044,7 +1021,7 @@ class PluginIrc extends Plugin
 	private function CmdSay()
 	{
 		$cmd = $this->_cmd;
-		$message = $this->message;
+		$message = $this->_message;
 		$server = $this->_nameOfServer(1);
 		
 		if($server !== false)
@@ -1071,7 +1048,7 @@ class PluginIrc extends Plugin
 	private function CmdBigtext()
 	{
 		$cmd = $this->_cmd;
-		$message = $this->message;
+		$message = $this->_message;
 		$server = $this->_nameOfServer(1);
 		
 		if($server !== false)
