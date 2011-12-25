@@ -107,22 +107,26 @@ class PluginIrc extends Plugin
 				{
 					if(is_array($server) and count($server))
 					{
-						foreach($server as &$channel => $mode)
+						foreach($server as $channel => $mode)
 						{
 							$channel = '#'.$channel;
 							
 							if(in_array($channel, $this->config['Channels']))
 							{
-								if(!(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3))))
+								if(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3)))
+								{
+									$server[$channel] = $mode;
+								}
+								else
 								{
 									Leelabot::message('The Autospeak.$0 configuration for #$1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
-									$channel = 0;
+									$server[$channel] = 0;
 								}
 							}
 							else
 							{
 								Leelabot::message('In Autospeak.$0 configuration, #$1 was not recognized.', array($name, $channel), E_WARNING);
-								unset($channel);
+								unset($server[$channel]);
 							}
 						}
 					}
