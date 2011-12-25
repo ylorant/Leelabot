@@ -1069,7 +1069,7 @@ class PluginIrc extends Plugin
 		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 	
-	private function _nameOfServer($cmdkey)
+	private function _nameOfServer($cmdkey, $otherargs = true)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
