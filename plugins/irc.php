@@ -375,7 +375,7 @@ class PluginIrc extends Plugin
 						$this->_send($command);
 				}
 				
-				$this->join(implode(',', $this->config['Channels']);
+				$this->join(implode(',', $this->config['Channels']));
 					
 				Leelabot::message('The bot has join $0', array($this->config['Channels']));
 			}
