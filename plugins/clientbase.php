@@ -109,16 +109,8 @@ class PluginClientBase extends Plugin
 		{
 			$cmdHelp = strtolower(str_replace('!', '', $command[0]));
 			
-			if(isset($this->_main->config['Commands']['Help']))
-			{
-				if(isset($this->_main->config['Commands']['Help'][$cmdHelp]))
-				{
-					Rcon::tell($player->id, '$cmd : $help', array('cmd' => '!'.$cmdHelp, 'help' => $this->_main->config['Commands']['Help'][$cmdHelp]));
-					return true;
-				}
-			}
-			
-			Rcon::tell($player->id, 'Command $cmd have not description.', array('cmd' => '!'.$cmdHelp));
+			//need into translate files for example : #id help_nextmap #to Return next map.
+			Rcon::tell($player->id, '$cmd : help_'.$cmdHelp, array('cmd' => '!'.$cmdHelp));
 		}
 	}
 	

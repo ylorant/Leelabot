@@ -69,7 +69,7 @@ class PluginIrc extends Plugin
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
 			$this->_addCmd('!status', 'CmdStatus', '!status [<server>]', 'Permet d\'avoir les infos sur la partie actuel.', 0);
 			$this->_addCmd('!players', 'CmdPlayers', '!players [<server>]', 'Permet d\'avoir la liste des joueurs présent sur le serveur.', 0);
-			$this->_addCmd('!stats', 'CmdStats', '!stats <joueur> [<server>]', 'Permet d\'avoir les stats d\'un joueur.', 1);
+			$this->_addCmd('!stats', 'CmdStats', '!stats <joueur> <server>', 'Permet d\'avoir les stats d\'un joueur.', 1);
 			$this->_addCmd('!awards', 'CmdAwards', '!awards [<server>]', 'Permet d\'avoir les awards actuel.', 0);
 			$this->_addCmd('!urt', 'CmdUrt', '!urt [<server>] <message>', 'Permet d\'envoyer un message sur urt.', 1);
 			$this->_addCmd('!kick', 'CmdKick', '!kick [<server>] <joueur>', 'Permet d\'avoir de kicker un joueur.', 2);
@@ -602,11 +602,19 @@ class PluginIrc extends Plugin
 			foreach($this->_cmdIrc as $cmds)
 			{
 				if($cmds['r'] == 1)
-					if($r == '+' OR $r == '@') $list[] = $cmds['cmd'];
+				{
+					if($r == '+' OR $r == '@')
+						$list[] = $cmds['cmd'];
+				}
 				elseif($cmds['r'] == 2)
-					if($r == '@') $list[] = $cmds['cmd'];
+				{
+					if($r == '@')
+						$list[] = $cmds['cmd'];
+				}
 				else
+				{
 					$list[] = $cmds['cmd'];
+				}
 			}
 			
 			$this->sendMessage('List : '.join(', ', $list).'.');
@@ -633,30 +641,72 @@ class PluginIrc extends Plugin
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$actual = Server::getName();
 		
-		if(in_array($cmd[1], $serverlist))
+		if(isset($cmd[1]))
 		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$serverinfo = Server::getServer()->serverInfo;
-			$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
-			$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+			$actual = Server::getName();
+		
+			if(in_array($cmd[1], $serverlist))
+			{
+				Server::setServer($this->_main->servers[$cmd[1]]);
+				$this->_printServerInfo($cmd[1]);
+			}
+			else
+			{
+				foreach($serverlist as $server)
+				{
+					Server::setServer($this->_main->servers[$server]);
+					$this->_printServerInfo($server);
+				}
+			}
+		
+			Server::setServer($this->_main->servers[$actual]);
 		}
 		else
 		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$serverinfo = Server::getServer()->serverInfo;
-				$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
-				$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
-			}
+			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
 		}
-		
-		Server::setServer($this->_main->servers[$actual]);
+	}
+	
+	private function _printServerInfo($server)
+	{
+		$serverinfo = Server::getServer()->serverInfo;
+		$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+		$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
 	}
 	
 	private function CmdPlayers()
+	{
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		
+		if(isset($cmd[1]))
+		{
+			$actual = Server::getName();
+		
+			if(in_array($cmd[1], $serverlist))
+			{
+				Server::setServer($this->_main->servers[$cmd[1]]);
+				$this->_printPlayers($cmd[1]);
+			}
+			else
+			{
+				foreach($serverlist as $server)
+				{
+					Server::setServer($this->_main->servers[$server]);
+					$this->_printPlayers($server);
+				}
+			}
+		
+			Server::setServer($this->_main->servers[$actual]);
+		}
+		else
+		{
+			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+		}
+	}
+	
+	private function _printPlayers($server)
 	{
 		$playerlist = array();
 		$nbplayers = 0;
@@ -683,42 +733,95 @@ class PluginIrc extends Plugin
 		else $this->sendMessage('No one.');
 	}
 	
+	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
 	private function CmdStats()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(2, FALSE);
+		$actual = Server::getName();
+		
 		if(isset($cmd[1])) //Il faut un paramètre : le joueur
 		{
-			$player = $this->_main->SearchPlayer($cmd[1]);
-			//Gestion du nombre de joueurs trouvés
-			if($player === FALSE)
-				fputs($this->_socket,"$msgPrefix :Pseudo inconnu.\r\n");
-			elseif(count($player) == 1)
+			if($server !== false)
 			{
-				if($player[0][10] != 3) //Si ce n'est pas un spectateur, on affiche les stats
+				Server::setServer($this->_main->servers[$server]);
+				
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
 				{
-					if($this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths'] != 0)
-						$ratio = round($this->_plugins->plugins['stats']->stats[$player[0][0]]['kills'] / $this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths'],2);
-					else
-						$ratio = $this->_plugins->plugins['stats']->stats[$player[0][0]]['kills'];
-						
-					if($this->_plugins->plugins['stats']->showHits) //Gestion des hits en fonction de la configuration du plugin de stats
-						$hits = "\037Hits\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['hits']." - ";
-					if($this->_main->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
-						$caps = " - \037Caps\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['caps'];
-						
-					$this->sendMessage("\002Stats de ".$player[0][2]."\002 : ".$hits."\037Kills\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['kills']." - \037Deaths\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$this->_plugins->plugins['stats']->stats[$player[0][0]]['streaks']);
+					$this->sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					$this->sendMessage("Multiple players found : ".join(', ', $players));
 				}
 				else
-					$this->sendMessage('Joueur spectateur.');
+				{
+					$buffer = array();
+					
+					$_stats = Server::get('stats');
+					$_awards = Server::get('awards');
+					$player = Server::getPlayer($target);
+					
+					if($_stats[$player->id]['deaths'] != 0)
+						$ratio = $_stats[$user]['kills'] / $_stats[$user]['deaths'];
+					else
+						$ratio = $_stats[$user]['kills'];
+						
+					if(in_array('hits', $this->config['ShowStats'])) //Gestion des hits en fonction de la configuration du plugin de stats
+						$hits = "\037Hits\037 : ".$_stats[$player->id]['hits']." - ";
+					if(Server::getServer()->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
+						$caps = " - \037Caps\037 : ".$_stats[$player->id]['caps'];
+						
+					$this->sendMessage("\002Stats de ".$player->name."\002 : ".$hits."\037Kills\037 : ".$_stats[$player->id]['kills']." - \037Deaths\037 : ".$_stats[$player->id]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$_stats[$player->id]['streaks']);
+
+				}
+				
+				Server::setServer($this->_main->servers[$actual]);
 			}
-			else
-				$this->sendMessage('Trop de joueurs trouvés.');
 		}
 		else
-			$this->sendMessage('Paramètre insuffisant.');
+		{
+			$this->sendMessage("Player name missing");
+		}
 	}
 	
 	private function CmdAwards()
+	{
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		
+		if(isset($cmd[1]))
+		{
+			$actual = Server::getName();
+		
+			if(in_array($cmd[1], $serverlist))
+			{
+				Server::setServer($this->_main->servers[$cmd[1]]);
+				$this->_printAwards($cmd[1]);
+			}
+			else
+			{
+				foreach($serverlist as $server)
+				{
+					Server::setServer($this->_main->servers[$server]);
+					$this->_printAwards($server);
+				}
+			}
+		
+			Server::setServer($this->_main->servers[$actual]);
+		}
+		else
+		{
+			$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+		}
+	}
+	
+	private function _printAwards($server)
 	{
 		$buffer = array();
 		$_awards = Server::get('awards');
@@ -750,15 +853,16 @@ class PluginIrc extends Plugin
 			if(in_array($cmd[1], $serverlist))
 			{
 				$envoi = explode(' ', $message[2], 3);
-				$bigtext = $envoi[2];
+				$i = 2;
 			}
 			else
 			{
 				$envoi = explode(' ', $message[2], 2);
-				$bigtext = $envoi[1];
+				$i = 1;
 			}
 			
-			$rcon->say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
+			if(isset($envoi[$i]))
+				$rcon->say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[$i]))));
 		}
 	}
 	
@@ -770,10 +874,16 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$kick = $cmd[2];
+			else
+				$kick = $cmd[1];
 		
-			if(isset($cmd[1]))
+			if(isset($kick))
 			{
-				$target = Server::searchPlayer(trim($cmd[1]));
+				$target = Server::searchPlayer(trim($kick));
 				
 				if(!$target)
 				{
@@ -807,10 +917,16 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$kick = $cmd[2];
+			else
+				$kick = $cmd[1];
 		
-			if(isset($cmd[1]))
+			if(isset($kick))
 			{
-				$target = Server::searchPlayer(trim($cmd[1]));
+				$target = Server::searchPlayer(trim($kick));
 				
 				if(!$target)
 				{
@@ -847,10 +963,16 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$slap = $cmd[2];
+			else
+				$slap = $cmd[1];
 		
-			if(isset($cmd[1]))
+			if(isset($slap))
 			{
-				$target = Server::searchPlayer(trim($cmd[1]));
+				$target = Server::searchPlayer(trim($slap));
 				
 				if(!$target)
 				{
@@ -884,10 +1006,16 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$mute = $cmd[2];
+			else
+				$mute = $cmd[1];
 		
-			if(isset($cmd[1]))
+			if(isset($mute))
 			{
-				$target = Server::searchPlayer(trim($cmd[1]));
+				$target = Server::searchPlayer(trim($mute));
 				
 				if(!$target)
 				{
@@ -927,15 +1055,16 @@ class PluginIrc extends Plugin
 			if(in_array($cmd[1], $serverlist))
 			{
 				$envoi = explode(' ', $message[2], 3);
-				$bigtext = $envoi[2];
+				$i = 2;
 			}
 			else
 			{
 				$envoi = explode(' ', $message[2], 2);
-				$bigtext = $envoi[1];
+				$i = 1;
 			}
 			
-			$rcon->say($this->normaliser(rtrim($bigtext)));
+			if(isset($envoi[$i]))
+				$rcon->say($this->normaliser(rtrim($envoi[$i])));
 		}
 	}
 	
@@ -953,15 +1082,16 @@ class PluginIrc extends Plugin
 			if(in_array($cmd[1], $serverlist))
 			{
 				$envoi = explode(' ', $message[2], 3);
-				$bigtext = $envoi[2];
+				$i = 2;
 			}
 			else
 			{
 				$envoi = explode(' ', $message[2], 2);
-				$bigtext = $envoi[1];
+				$i = 1;
 			}
 			
-			$rcon->bigtext($this->normaliser(rtrim($bigtext)));
+			if(isset($envoi[$i]))
+				$rcon->bigtext($this->normaliser(rtrim($envoi[$i])));
 		}
 	}
 	
@@ -974,6 +1104,7 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
 			
 			if(in_array($cmd[1], $serverlist))
 				$map = $cmd[2];
@@ -1005,6 +1136,7 @@ class PluginIrc extends Plugin
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
 			
 			if(in_array($cmd[1], $serverlist))
 				$map = $cmd[2];
@@ -1030,7 +1162,7 @@ class PluginIrc extends Plugin
 	private function CmdCyclemap()
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, false);
+		$server = $this->_nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
@@ -1042,7 +1174,7 @@ class PluginIrc extends Plugin
 	private function CmdRestart()
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, false);
+		$server = $this->_nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
@@ -1054,7 +1186,7 @@ class PluginIrc extends Plugin
 	private function CmdReload()
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, false);
+		$server = $this->_nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
@@ -1069,7 +1201,7 @@ class PluginIrc extends Plugin
 		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 	
-	private function _nameOfServer($cmdkey, $otherargs = true)
+	private function _nameOfServer($cmdkey, $otherargs = TRUE)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
