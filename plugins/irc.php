@@ -103,10 +103,15 @@ class PluginIrc extends Plugin
 			if(is_array($this->config['AutoSpeak']))
 			{
 				$serverlist = ServerList::getList();
-				foreach($this->config['AutoSpeak'] as $name => &$server)
+				
+				$autospeak = array();
+				
+				foreach($this->config['AutoSpeak'] as $name => $server)
 				{
 					if(is_array($server) and count($server))
 					{
+						$autospeak[$name] = array();
+						
 						foreach($server as $channel => $mode)
 						{
 							$channel = '#'.$channel;
@@ -115,27 +120,32 @@ class PluginIrc extends Plugin
 							{
 								if(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3)))
 								{
-									$server[$channel] = $mode;
+									$autospeak[$name][$channel] = $mode;
 								}
 								else
 								{
-									Leelabot::message('The Autospeak.$0 configuration for #$1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
-									$server[$channel] = 0;
+									$autospeak[$name][$channel] = 0;
+									Leelabot::message('The Autospeak.$0 configuration for $1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
 								}
 							}
 							else
 							{
-								Leelabot::message('In Autospeak.$0 configuration, #$1 was not recognized.', array($name, $channel), E_WARNING);
-								unset($server[$channel]);
+								Leelabot::message('In Autospeak.$0 configuration, $1 was not recognized.', array($name, $channel), E_WARNING);
 							}
 						}
 					}
 					else
 					{
-						Leelabot::message('The Autospeak.$0 configuration is invalid. Default values was set (0).', array($name), E_WARNING);
-						$server = array('all' => 0);
+						foreach($this->config['Channels'] as $channel)
+						{
+							$autospeak[$name][$channel] = 0;
+						}
+						
+						Leelabot::message('The Autospeak.$0 configuration is invalid. Default values was set (0 for all chans).', array($name), E_WARNING);
 					}
 				}
+				
+				$this->config['AutoSpeak'] = $autospeak;
 			}
 			elseif(is_numeric($this->config['AutoSpeak']) && in_array($this->config['AutoSpeak'], array(0, 1, 2, 3)))
 			{
