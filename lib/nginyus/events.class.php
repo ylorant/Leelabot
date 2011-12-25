@@ -53,7 +53,6 @@ class NginyUS_Events
 		{
 			if(preg_match('#^'.$signal.'$#', $page, $matches))
 			{
-				echo $page;
 				$data['page'] = preg_replace('#^'.$signal.'$#', $fpage, $page);
 				return $this->callFilePage($id, $data);
 			}

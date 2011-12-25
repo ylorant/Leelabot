@@ -36,6 +36,7 @@
 				<strong>Author :</strong> {$value.author}<br />
 				<strong>Version :</strong> {$value.version}<br />
 				<strong>File :</strong> {$value.file}<br />
+				<strong>Dependencies :</strong> {$value.dependencies}<br />
 				<strong>Description :</strong> {$value.description}
 			</p>
 				

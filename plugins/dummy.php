@@ -5,6 +5,7 @@
  * \author Yohann Lorant <linkboss@gmail.com>
  * \version 0.5
  * \brief Dummy plugin for leelabot. It is not very useful.
+ * \depends adminbase
  *
  * \section LICENSE
  *

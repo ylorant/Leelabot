@@ -11,6 +11,8 @@ class LeelabotAdmin
 	private $_design = TRUE;
 	private $_noCache = FALSE;
 	private $_main;
+	private $_authentication = FALSE;
+	private $_authfile;
 	
 	public $parser;
 	
@@ -76,8 +78,39 @@ class LeelabotAdmin
 		$this->_noCache = TRUE;
 	}
 	
+	public function setAuthentication($a, $f)
+	{
+		$this->_authentication = $a;
+		$this->_authfile = $f;
+	}
+	
+	public function userCheck($user, $passwd)
+	{
+		//Returning the the bot's root, since we're in the webadmin root
+		$cwd = getcwd();
+		chdir(Leelabot::$instance->root);
+		
+		//Parsing password file
+		$userFile = parse_ini_file($this->_authfile);
+		
+		chdir($cwd); //Returning to the webadmin root.
+		
+		if(!isset($userFile[$user]) || $userFile[$user] != $passwd)
+			return FALSE;
+		
+		return TRUE;
+	}
+	
 	public function process($id, $data)
 	{
+		//Before processing anything, we check if the user has been authenticated
+		if($this->_authentication)
+		{
+			//If the user has not been authenticated, we return a blank page (the request has been return by authenticate())
+			if(!$this->_main->authenticate($id, $data, array($this, 'userCheck')))
+				return TRUE;
+		}
+		
 		foreach($this->_pages as $regex => $call)
 		{
 			if(preg_match('#^'.$regex.'$#', strtolower($data['matches'][1]), $matches))

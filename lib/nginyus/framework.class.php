@@ -3,6 +3,11 @@
 class NginyUS_Framework
 {
 	protected $buffers = array();
+	protected $replyStr = array(
+		'200' => 'OK',
+		'401' => 'Authorization Required',
+		'403' => 'Forbidden',
+		'404' => 'File not found');
 	
 	//Append data to a buffer
 	public function BufferAppendData($id, $data)
@@ -95,7 +100,7 @@ class NginyUS_Framework
 			
 			NginyUS::message('Reply code : $0', array($this->buffers[$id]['code']), E_DEBUG);
 			
-			$text = 'HTTP/1.1 '.$this->buffers[$id]['code']." OK\n";
+			$text = 'HTTP/1.1 '.$this->buffers[$id]['code']." ".$this->replyStr[$this->buffers[$id]['code']]."\n";
 			foreach($this->buffers[$id]['headers'] as $ref => $header)
 				$text .= $ref.': '.$header."\r\n";
 			
@@ -107,6 +112,31 @@ class NginyUS_Framework
 		$this->sendData($id, $text);
 		unset($this->buffers[$id]);
 		//$this->closeConnection($id);
+	}
+	
+	//Authenticate client
+	public function authenticate($id, $data, $callback, $type = NginyUS::AUTH_BASIC)
+	{
+		if($type == NginyUS::AUTH_BASIC)
+			return $this->authBasic($id, $data, $callback);
+		
+	}
+	
+	public function authBasic($id, $data, $callback)
+	{
+		if(isset($data['Authorization'])) //Checking authorization if there is one
+		{
+			$secret = explode(' ', $data['Authorization']);
+			$couple = explode(':', base64_decode($secret[1]));
+			if(call_user_func($callback, $couple[0], $couple[1]))
+				return TRUE;
+		}
+		
+		$this->BufferSetReplyCode($id, 401);
+		$this->BufferAddHeader($id, 'WWW-Authenticate', 'Basic realm="'.$data['host'].'"');
+		$this->sendBuffer($id);
+		
+		return FALSE;
 	}
 	
 	public function downloadFile($id, $file)

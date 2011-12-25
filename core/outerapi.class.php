@@ -35,8 +35,12 @@ class OuterAPI
 	private $_manager; ///< Site manager class
 	private $_WSEnabled = FALSE; ///< Indicator for webservice activation
 	private $_WSObject; ///< Object queried by the webserver for the Webservice.
+	private $_WSAuth = FALSE; ///< Indicator of authentication security for Webservice
+	private $_WSAuthFile = ''; ///< Webservice authorized users file
 	private $_WAEnabled = FALSE; ///< Indicator for Webadmin activation
 	private $_WAObject; ///< Object queried by the webserver for the Webadmin.
+	private $_WAAuth = FALSE; ///< Indicator of authentication security for Webadmin
+	private $_WAAuthFile = ''; ///< Webadmin authorized users file
 	
 	/** Loads the webserver and configures it.
 	 * This function loads the webserver and configures it from the data given in argument.
@@ -95,9 +99,14 @@ class OuterAPI
 				'DocumentRoot' => 'core',
 				'ProcessFiles' => 'webservice.class.php'));
 			
-			//TODO : Add some password protection
-			if(!isset($WSConfig['Password']))
-				Leelabot::message('Using Webservice without a password is not secure !', array(), E_WARNING, TRUE);
+			$WSConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile'];
+			if(isset($WSConfig['Authentication']) && Leelabot::parseBool($WSConfig['Authentication']) == TRUE && isset($WSConfig['AuthFile']) && is_file($WSConfig['AuthFile']))
+			{
+				$this->_WSAuth = TRUE;
+				$this->_WSAuthFile = $WSConfig['AuthFile'];
+			}
+			else
+				Leelabot::message('Using Webservice without authentication is not secure !', array(), E_WARNING, TRUE);
 		}
 		
 		//Loading the webadmin
@@ -128,16 +137,20 @@ class OuterAPI
 				'DocumentRoot' => 'web',
 				'ProcessFiles' => 'controllers/dispatcher.class.php'));
 			
-			//TODO : Add some password protection
-			if(!(isset($WAConfig['Password']) && Leelabot::parseBool($WAConfig['Password']) == TRUE))
-				Leelabot::message('Using Webadmin without a password is not secure !', array(), E_WARNING, TRUE);
-			else
+			$WAConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WAConfig['AuthFile'];
+			if(isset($WAConfig['Authentication']) && Leelabot::parseBool($WAConfig['Authentication']) == TRUE && isset($WAConfig['AuthFile']) && is_file($WAConfig['AuthFile']))
 			{
-				
+				$this->_WAAuth = TRUE;
+				$this->_WAAuthFile = $WAConfig['AuthFile'];
 			}
+			else
+				Leelabot::message('Using Webadmin without authentication is not secure !', array(), E_WARNING, TRUE);
 		}
 		
 		$this->_server->connect();
+		
+		$this->_manager->getSite('webadmin')->classes['LeelabotAdmin']->setAuthentication($this->_WAAuth, $this->_WAAuthFile);
+		$this->_manager->getSite('webservice')->classes['LeelabotWebservice']->setAuthentication($this->_WSAuth, $this->_WSAuthFile);
 	}
 	
 	/** Returns if the webservice is active.

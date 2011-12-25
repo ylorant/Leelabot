@@ -560,7 +560,6 @@ class Leelabot
 		return TRUE;
 	}
 	
-	
 	/** Returns the configuration directory.
 	 * This function simply returns the path to the current configuration directory, as specified by setConfigLocation,
 	 * or the default one if it has not been overwrited yet.

@@ -18,6 +18,9 @@ class NginyUS extends NginyUS_Framework
 	const NAME = NginyUS;
 	const VERSION = "0.0.1";
 	
+	const AUTH_BASIC = 1;
+	const AUTH_DIGEST = 2;
+	
 	public function __construct()
 	{
 		$this->siteManager = new NginyUS_SiteManager($this);

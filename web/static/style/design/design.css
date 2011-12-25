@@ -193,11 +193,13 @@ h1
 .content
 {
 	width:81%;
-	float:right;
+	position:absolute;
+	right:0px;
+	bottom:0px;
+	top:0px;
 	text-align:left;
 	padding:15px;
 	padding-left:0px;
-	height:95%;
 	overflow:auto;
 }
 

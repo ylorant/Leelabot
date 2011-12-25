@@ -261,8 +261,6 @@ class PluginManager
 			}
 		}
 		
-		//Cleaning automatically loaded dependencies
-		
 		//Deleting routines
 		if(isset($this->_routines[$this->_plugins[$plugin]['className']]))
 		{
@@ -284,9 +282,21 @@ class PluginManager
 				$this->deleteCommand($eventName, $this->_plugins[$plugin]['obj']);
 		}
 		
+		$dependencies = $this->_plugins[$plugin]['dependencies'];
+		
 		$this->_plugins[$plugin]['obj']->destroy();
 		unset($this->_plugins[$plugin]['obj']);
 		unset($this->_plugins[$plugin]);
+		
+		//Cleaning automatically loaded dependencies
+		foreach($dependencies as $dep)
+		{
+			if($this->_plugins[$dep]['manual'] == FALSE)
+			{
+				Leelabot::message('Unloading automatically loaded dependency $0.', array($dep));
+				$this->unloadPlugin($dep);
+			}
+		}
 		
 		Leelabot::message('Plugin $0 unloaded successfully', array($plugin));
 		
@@ -317,13 +327,14 @@ class PluginManager
 		//Load dependencies if necessary
 		if(isset($params['dependencies']) && is_array($params['dependencies']))
 		{
-			Leelabot::message('Loading plugin dependencies.');
+			Leelabot::message('Loading plugin dependencies for $0.', array($params['name'])	);
 			$ret = $this->loadPlugins($params['dependencies']);
 			if(!$ret)
 			{
 				Leelabot::message('Cannot load plugin dependencies, loading aborted.', array(), E_WARNING);
 				return FALSE;
 			}
+			Leelabot::message('Loaded plugin dependencies for $0.', array($params['name']));
 		}
 		elseif(isset($params['dependencies']))
 			Leelabot::message('Dependencies list is not an array.', array(), E_WARNING);

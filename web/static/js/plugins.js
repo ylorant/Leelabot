@@ -74,26 +74,28 @@ function unloadPlugin(plugin)
 			$('#status_'+plugin).text('Loaded');
 			$('#status_'+plugin).append(image);
 			$('#loadbox_'+plugin).fadeOut(300);
+			$('#status_'+plugin).attr('onmouseover', "$('#loadbox_"+plugin+"').fadeIn(300);");
 			if(ret[0] == 'success')
 			{
 				data = ret[1].split('/');
 				
 				for(var i in data)
 				{
-					$('#status_'+plugin).attr('onmouseover', "$('#loadbox_"+plugin+"').fadeIn(300);");
-					var image = $('#status_'+plugin+' img');
-					image.attr('src', '/admin/images/cross.png');
-					$('#status_'+plugin).removeClass('yellow');
-					$('#status_'+plugin).addClass('red');
-					$('#status_'+plugin).text('Not loaded');
-					$('#status_'+plugin).append(image);
+					var curPlug = data[i];
 					
-					image = $('#loadbox_'+plugin+' img');
-					$('#loadbox_'+plugin).removeClass('orange');
-					$('#loadbox_'+plugin).addClass('rgreen');
-					$('#loadbox_'+plugin).text('Load');
-					$('#loadbox_'+plugin).attr('onclick', 'loadPlugin("'+plugin+'");')
-					$('#loadbox_'+plugin).append(image);
+					var image = $('#status_'+curPlug+' img');
+					image.attr('src', '/admin/images/cross.png');
+					$('#status_'+curPlug).removeClass('yellow');
+					$('#status_'+curPlug).addClass('red');
+					$('#status_'+curPlug).text('Not loaded');
+					$('#status_'+curPlug).append(image);
+					
+					image = $('#loadbox_'+curPlug+' img');
+					$('#loadbox_'+curPlug).removeClass('orange');
+					$('#loadbox_'+curPlug).addClass('rgreen');
+					$('#loadbox_'+curPlug).text('Load');
+					$('#loadbox_'+curPlug).attr('onclick', 'loadPlugin("'+curPlug+'");')
+					$('#loadbox_'+curPlug).append(image);
 				}
 			}
 			else

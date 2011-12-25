@@ -56,7 +56,7 @@ class LeelabotAdminPlugins
 		
 		//Loading the plugin, and processing the result
 		if(Leelabot::$instance->plugins->unloadPlugin($data['matches'][1]))
-			$ret = 'success:'.join('/',array_diff(Leelabot::$instance->plugins->getLoadedPlugins(), $pluginsBefore));
+			$ret = 'success:'.join('/',array_diff($pluginsBefore, Leelabot::$instance->plugins->getLoadedPlugins()));
 		else
 			$ret = 'error:'.Leelabot::lastError();
 		
@@ -120,7 +120,7 @@ class LeelabotAdminPlugins
 				
 			$name = pathinfo($f, PATHINFO_FILENAME);
 			
-			$this->pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Leelabot::$instance->intl->translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name));
+			$this->pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Leelabot::$instance->intl->translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name), 'dependencies' => Leelabot::$instance->intl->translate('None'));
 			$content = file_get_contents('../plugins/'.$f);
 			
 			if(preg_match('#\\\\version (.+)\r?\n#isU', $content, $version))
@@ -131,6 +131,9 @@ class LeelabotAdminPlugins
 				$this->pluginsInfo[$f]['author'] = $author[1];
 			if(preg_match('#\\\\brief (.+)\r?\n#isU', $content, $description))
 				$this->pluginsInfo[$f]['description'] = $description[1];
+			if(preg_match('#\\\\depends (.+)\r?\n#isU', $content, $dependencies))
+				$this->pluginsInfo[$f]['dependencies'] = $dependencies[1];
+			
 		}
 		
 		$this->_files = $files;
