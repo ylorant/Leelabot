@@ -531,11 +531,29 @@ class PluginIrc extends Plugin
 	
 	public function CommandIrc($player, $args)
 	{
-		if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 3)
+		$server = Server::getName();
+		$nick = $this->_rmColor(Server::getPlayer($player)->name);
+		$message = $this->_rmColor(impode(' ', $args));
+		
+		if(is_array($this->config['AutoSpeak']))
 		{
-			$nick = $this->_rmColor(Server::getPlayer($player)->name);
-			$message = $this->_rmColor(impode(' ', $args));
-			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
+			foreach($this->config['Channels'] as $channel)
+			{
+				if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(0, 3)))
+				{
+					$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+				}
+			}
+		}
+		elseif(is_numeric($this->config['AutoSpeak']))
+		{
+			if(in_array($this->config['AutoSpeak'], array(0, 3)))
+			{
+				foreach($this->config['Channels'] as $channel)
+				{
+					$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+				}
+			}
 		}
 	}
 	
@@ -586,20 +604,12 @@ class PluginIrc extends Plugin
 			
 			foreach($this->_cmdIrc as $cmds)
 			{
-				if($cmds['cmd'] == '!urt')
-				{
-					if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 2)
-						$list[] = $cmds['cmd'];
-				}
+				if($cmds['r'] == 1)
+					if($r == '+' OR $r == '@') $list[] = $cmds['cmd'];
+				elseif($cmds['r'] == 2)
+					if($r == '@') $list[] = $cmds['cmd'];
 				else
-				{
-					if($cmds['r'] == 1)
-						if($r == '+' OR $r == '@') $list[] = $cmds['cmd'];
-					elseif($cmds['r'] == 2)
-						if($r == '@') $list[] = $cmds['cmd'];
-					else
-						$list[] = $cmds['cmd'];
-				}
+					$list[] = $cmds['cmd'];
 			}
 			
 			$this->sendMessage('List : '.join(', ', $list).'.');
@@ -624,9 +634,29 @@ class PluginIrc extends Plugin
 	
 	private function CmdStatus()
 	{
-		$serverinfo = Server::getServer()->serverInfo;
-		$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
-		$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$actual = Server::getName();
+		
+		function printServerInfo($server)
+		{
+			Server::setServer($this->_main->servers[$server]);
+			$serverinfo = Server::getServer()->serverInfo;
+			$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+			$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+		}
+		
+		if(in_array($cmd[1], $serverlist))
+		{
+			printServerInfo($cmd[1]);
+		}
+		else
+		{
+			foreach($serverlist as $server)
+				printServerInfo($server);
+		}
+		
+		Server::setServer($this->_main->servers[$actual]);
 	}
 	
 	private function CmdPlayers()
@@ -655,10 +685,6 @@ class PluginIrc extends Plugin
 		if($nbplayers >0) $this->sendMessage('List of players : '.join(', ', $playerlist));
 		else $this->sendMessage('No one.');
 	}
-	
-	/*
-	
-	TODO : passer à la nouvelle version
 	
 	private function CmdStats()
 	{
@@ -694,7 +720,6 @@ class PluginIrc extends Plugin
 		else
 			$this->sendMessage('Paramètre insuffisant.');
 	}
-	*/
 	
 	private function CmdAwards()
 	{
@@ -716,210 +741,338 @@ class PluginIrc extends Plugin
 	
 	private function CmdUrt()
 	{
-		if($this->config['AutoSpeak'] == 0 OR $this->config['AutoSpeak'] == 2)
+		$cmd = $this->_cmd;
+		$message = $this->message;
+		$server = $this->_nameOfServer(1);
+		
+		if($server !== false)
 		{
-			$envoi = explode(' ', $this->message[2], 2);
-			Rcon::say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$bigtext = $envoi[2];
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$bigtext = $envoi[1];
+			}
+			
+			$rcon->say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[1]))));
 		}
 	}
 	
 	private function CmdKick()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			$target = Server::searchPlayer(trim($cmd[1]));
-			
-			if(!$target)
+			$rcon = ServerList::getServerRCon($server);
+		
+			if(isset($cmd[1]))
 			{
-				$this->sendMessage("Unknown player");
-			}
-			elseif(is_array($target))
-			{
-				$players = array();
-				foreach($target as $p)
-					$players[] = Server::getPlayer($p)->name;
-				$this->sendMessage("Multiple players found : ".join(', ', $players));
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
+				{
+					$this->sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					$this->sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->kick($target);
+					$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+				}
 			}
 			else
 			{
-				Rcon::kick($target);
-				$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+				$this->sendMessage("Player name missing");
 			}
-		}
-		else
-		{
-			$this->sendMessage("Player name missing");
 		}
 	}
 	
 	private function CmdKickAll()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			
-			$target = Server::searchPlayer(trim($cmd[1]));
-			
-			if(!$target)
+			$rcon = ServerList::getServerRCon($server);
+		
+			if(isset($cmd[1]))
 			{
-				$this->sendMessage("Unknown player");
-			}
-			elseif(is_array($target))
-			{
-				$players = array();
-				foreach($target as $p)
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
 				{
-					Rcon::kick($p);
-					$players[] = Server::getPlayer($p)->name;
+					$this->sendMessage("Unknown player");
 				}
-				$this->sendMessage(join(', ', $players)." are kicked.");
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+					{
+						$rcon->kick($p);
+						$players[] = Server::getPlayer($p)->name;
+					}
+					$this->sendMessage(join(', ', $players)." are kicked.");
+				}
+				else
+				{
+					$rcon->kick($target);
+					$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+				}
 			}
 			else
 			{
-				Rcon::kick($target);
-				$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+				$this->sendMessage("Player name missing");
 			}
-		}
-		else
-		{
-			$this->sendMessage("Player name missing");
 		}
 	}
 	
 	private function CmdSlap()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			$target = Server::searchPlayer(trim($cmd[1]));
-			
-			if(!$target)
+			$rcon = ServerList::getServerRCon($server);
+		
+			if(isset($cmd[1]))
 			{
-				$this->sendMessage("Unknown player");
-			}
-			elseif(is_array($target))
-			{
-				$players = array();
-				foreach($target as $p)
-					$players[] = Server::getPlayer($p)->name;
-				$this->sendMessage("Multiple players found : ".join(', ', $players));
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
+				{
+					$this->sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					$this->sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->slap($target);
+					$this->sendMessage(Server::getPlayer($target)->name." was slapped.");
+				}
 			}
 			else
 			{
-				Rcon::slap($target);
-				$this->sendMessage(Server::getPlayer($target)->name." was slapped.");
+				$this->sendMessage("Player name missing");
 			}
-		}
-		else
-		{
-			$this->sendMessage("Player name missing");
 		}
 	}
 	
 	private function CmdMute()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			$target = Server::searchPlayer(trim($cmd[1]));
-			
-			if(!$target)
+			$rcon = ServerList::getServerRCon($server);
+		
+			if(isset($cmd[1]))
 			{
-				$this->sendMessage("Unknown player");
-			}
-			elseif(is_array($target))
-			{
-				$players = array();
-				foreach($target as $p)
-					$players[] = Server::getPlayer($p)->name;
-				$this->sendMessage("Multiple players found : ".join(', ', $players));
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
+				{
+					$this->sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					$this->sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->mute($target);
+					$this->sendMessage(Server::getPlayer($target)->name." was muted.");
+				}
 			}
 			else
 			{
-				Rcon::mute($target);
-				$this->sendMessage(Server::getPlayer($target)->name." was muted.");
+				$this->sendMessage("Player name missing");
 			}
-		}
-		else
-		{
-			$this->sendMessage("Player name missing");
 		}
 	}
 	
 	private function CmdSay()
 	{
+		$cmd = $this->_cmd;
 		$message = $this->message;
+		$server = $this->_nameOfServer(1);
 		
-		$envoi = explode(' ',$message[2],2);
-		Rcon::say($this->normaliser(rtrim($envoi[1])));
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$bigtext = $envoi[2];
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$bigtext = $envoi[1];
+			}
+			
+			$rcon->say($this->normaliser(rtrim($bigtext)));
+		}
 	}
 	
 	private function CmdBigtext()
 	{
+		$cmd = $this->_cmd;
 		$message = $this->message;
+		$server = $this->_nameOfServer(1);
 		
-		$envoi = explode(' ',$message[2],2);
-		Rcon::bigtext($this->normaliser(rtrim($envoi[1])));
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$bigtext = $envoi[2];
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$bigtext = $envoi[1];
+			}
+			
+			$rcon->bigtext($this->normaliser(rtrim($bigtext)));
+		}
 	}
 	
 	private function CmdMap()
 	{
 		$cmd = $this->_cmd;
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			if(in_array($cmd[1], $this->_mapUt4List))
-				Rcon::map('"ut4_'.$cmd[1].'"');
+			$rcon = ServerList::getServerRCon($server);
+			$map = $cmd[2];
+			
+			if(isset($map))
+			{
+				if(in_array($map, $this->_mapUt4List))
+					$rcon->map('"ut4_'.$map.'"');
+				else
+					$rcon->map('"'.$map.'"');
+				
+				$this->sendMessage("Map changed !");
+			}
 			else
-				Rcon::map('"'.$cmd[1].'"');
-			$this->sendMessage("Map changed !");
+			{
+				$this->sendMessage("What's name of the map ?");
+			}
 		}
-		else
-		{
-			$this->sendMessage("What's name of the map ?");
-		}	
 	}
 	
 	private function CmdNextMap()
 	{
 		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$server = $this->_nameOfServer(1);
 		
-		if(isset($cmd[1]))
+		if($server !== false)
 		{
-			if(in_array($cmd[1], $this->_mapUt4List))
-				Rcon::set('g_nextmap "ut4_'.$cmd[1].'"');
+			$rcon = ServerList::getServerRCon($server);
+			$map = $cmd[2];
+			
+			if(isset($map))
+			{
+				if(in_array($map, $this->_mapUt4List))
+					$rcon->set('g_nextmap "ut4_'.$map.'"');
+				else
+					$rcon->set('g_nextmap "'.$map.'"');
+					
+				$this->sendMessage("Next map changed !");
+			}
 			else
-				Rcon::set('g_nextmap "'.$cmd[1].'"');
-				
-			$this->sendMessage("Next map changed !");
-		}
-		else
-		{
-			$this->sendMessage("What's name of the map ?");
+			{
+				$this->sendMessage("What's name of the map ?");
+			}
 		}
 	}
 	
 	private function CmdCyclemap()
 	{
-		Rcon::cyclemap();
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$server = $this->_nameOfServer(1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->cyclemap();
+		}
 	}
 	
 	private function CmdRestart()
 	{
-		Rcon::restart();
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$server = $this->_nameOfServer(1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->restart();
+		}
 	}
 	
 	private function CmdReload()
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
+		$server = $this->_nameOfServer(1);
 		
-		if(!isset($cmd[1]))
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->reload();
+		}
+	}
+	
+	private function CmdServerList()
+	{
+		$serverlist = ServerList::getList();
+		$this->sendMessage("Servers : ".join(', ', $serverlist));
+	}
+	
+	private function _nameOfServer($cmdkey)
+	{
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		$server = false;
+		
+		if(!isset($cmd[$cmdkey]))
 		{
 			if(count($serverlist) > 1)
 				$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
@@ -929,19 +1082,12 @@ class PluginIrc extends Plugin
 		else
 		{
 			if(in_array($server, ServerList::getList()))
-				$server = $cmd[1];
+				$server = $cmd[$cmdkey];
 			else
-				$this->sendMessage("This server doesn't exist. Available Servers  : ".join(', ', $serverlist));
+				$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
 		}
 		
-		$rcon = ServerList::getServerRCon($server);
-		$rcon->reload();
-	}
-	
-	private function CmdServerList()
-	{
-		$serverlist = ServerList::getList();
-		$this->sendMessage("Servers : ".join(', ', $serverlist));
+		return $server;
 	}
 }
 
