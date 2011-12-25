@@ -56,33 +56,76 @@ class PluginIrc extends Plugin
 		{
 			$this->_configured = TRUE;
 			
+			
+			$this->config['Channels'] = exlpdoe(',', $this->config['Channels']);
+			
 			// Autospeak IRC <=> URT
 			if(isset($this->config['AutoSpeak']))
-				$this->config['AutoSpeak'] = $this->config['AutoSpeak'];
-			else
-				$this->config['AutoSpeak'] = 0;
+			{
+				if(is_array($this->config['AutoSpeak']))
+				{
+					$serverlist = ServerList::getList();
+					foreach($this->config['AutoSpeak'] as $name => &$server)
+					{
+						if(is_array($server) and count($server))
+						{
+							foreach($server as $channel => $mode)
+							{
+								if(in_array($channel, $this->config['Channels']))
+								{
+									if(!(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3))))
+									{
+										Leelabot::message('The Autospeak.$0 configuration for #$1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
+										$server[$channel] = 0;
+									}
+								}
+								else
+								{
+									Leelabot::message('In Autospeak.$0 configuration, #$1 was not recognized.', array($name, $channel), E_WARNING);
+									unset($server[$channel]);
+								}
+							}
+						}
+						else
+						{
+							Leelabot::message('The Autospeak.$0 configuration is invalid. Default values was set (0).', array($name), E_WARNING);
+							$server = array('all' => 0);
+						}
+					}
+				}
+				elseif(is_numeric($this->config['AutoSpeak']) && in_array($this->config['AutoSpeak'], array(0, 1, 2, 3)))
+				{
+					$this->config['AutoSpeak'] = $this->config['AutoSpeak'];
+				}
+				else
+				{
+					$this->config['AutoSpeak'] = 0;
+					Leelabot::message('The Autospeak configuration was not recognized !', array(), E_WARNING);
+				}
+			}
 			
 			//Connection
 			$this->_connect();
 			
 			//IRC commands
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
-			$this->_addCmd('!status', 'CmdStatus', '!status', 'Permet d\'avoir les infos sur la partie actuel.', 0);
-			$this->_addCmd('!players', 'CmdPlayers', '!players', 'Permet d\'avoir la liste des joueurs présent sur le serveur.', 0);
-			$this->_addCmd('!stats', 'CmdStats', '!stats <joueur>', 'Permet d\'avoir les stats d\'un joueur.', 1);
-			$this->_addCmd('!awards', 'CmdAwards', '!awards', 'Permet d\'avoir les awards actuel.', 0);
-			$this->_addCmd('!urt', 'CmdUrt', '!urt <message>', 'Permet d\'envoyer un message sur urt.', 1);
-			$this->_addCmd('!kick', 'CmdKick', '!kick <joueur>', 'Permet d\'avoir de kicker un joueur.', 2);
-			$this->_addCmd('!kickall', 'CmdKickAll', '!kickall <lettres>', 'Permet d\'avoir de kicker plusieurs joueurs contenant l\'ensemble des lettres.', 2);
-			$this->_addCmd('!slap', 'CmdSlap', '!slap <joueur>', 'Permet d\'avoir de slapper un joueur.', 2);
-			$this->_addCmd('!mute', 'CmdMute', '!mute <joueur>', 'Permet d\'avoir de muter un joueur.', 2);
-			$this->_addCmd('!say', 'CmdSay', '!say <message>', 'Permet de faire parler le bot sur urt.', 2);
-			$this->_addCmd('!bigtext', 'CmdBigtext', '!bigtext <message>', 'Permet d\'envoyer un message en bigtext.', 2);
-			$this->_addCmd('!map', 'CmdMap', '!map <mapname>', 'Permet de changer la map courante.', 2);
-			$this->_addCmd('!nextmap', 'CmdNextMap', '!nextmap <mapname>', 'Permet de changer la map suivante.', 2);
-			$this->_addCmd('!cyclemap', 'CmdCyclemap', '!cyclemap', 'Permet de faire un cyclemap.', 2);
-			$this->_addCmd('!restart', 'CmdRestart', '!restart', 'Permet de faire un restart.', 2);
-			$this->_addCmd('!reload', 'CmdReload', '!reload', 'Permet de faire un reload.', 2);
+			$this->_addCmd('!status', 'CmdStatus', '!status [<server>]', 'Permet d\'avoir les infos sur la partie actuel.', 0);
+			$this->_addCmd('!players', 'CmdPlayers', '!players [<server>]', 'Permet d\'avoir la liste des joueurs présent sur le serveur.', 0);
+			$this->_addCmd('!stats', 'CmdStats', '!stats <joueur> [<server>]', 'Permet d\'avoir les stats d\'un joueur.', 1);
+			$this->_addCmd('!awards', 'CmdAwards', '!awards [<server>]', 'Permet d\'avoir les awards actuel.', 0);
+			$this->_addCmd('!urt', 'CmdUrt', '!urt [<server>] <message>', 'Permet d\'envoyer un message sur urt.', 1);
+			$this->_addCmd('!kick', 'CmdKick', '!kick [<server>] <joueur>', 'Permet d\'avoir de kicker un joueur.', 2);
+			$this->_addCmd('!kickall', 'CmdKickAll', '!kickall [<server>] <letters>', 'Permet d\'avoir de kicker plusieurs joueurs contenant l\'ensemble des lettres.', 2);
+			$this->_addCmd('!slap', 'CmdSlap', '!slap [<server>] <joueur>', 'Permet d\'avoir de slapper un joueur.', 2);
+			$this->_addCmd('!mute', 'CmdMute', '!mute [<server>] <joueur>', 'Permet d\'avoir de muter un joueur.', 2);
+			$this->_addCmd('!say', 'CmdSay', '!say [<server>] <message>', 'Permet de faire parler le bot sur urt.', 2);
+			$this->_addCmd('!bigtext', 'CmdBigtext', '!bigtext [<server>] <message>', 'Permet d\'envoyer un message en bigtext.', 2);
+			$this->_addCmd('!map', 'CmdMap', '!map [<server>] <mapname>', 'Permet de changer la map courante.', 2);
+			$this->_addCmd('!nextmap', 'CmdNextMap', '!nextmap [<server>] <mapname>', 'Permet de changer la map suivante.', 2);
+			$this->_addCmd('!cyclemap', 'CmdCyclemap', '!cyclemap [<server>]', 'Permet de faire un cyclemap.', 2);
+			$this->_addCmd('!restart', 'CmdRestart', '!restart [<server>]', 'Permet de faire un restart.', 2);
+			$this->_addCmd('!reload', 'CmdReload', '!reload [<server>]', 'Permet de faire un reload.', 2);
+			$this->_addCmd('!serverlist', 'CmdServerList', '!serverlist', 'Permet d\'obtenir la liste des servers.', 2);
 			
 			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
 		}
@@ -332,7 +375,7 @@ class PluginIrc extends Plugin
 						$this->_send($command);
 				}
 				
-				$this->join($this->config['Channels']);
+				$this->join(implode(',', $this->config['Channels']);
 					
 				Leelabot::message('The bot has join $0', array($this->config['Channels']));
 			}
@@ -389,19 +432,34 @@ class PluginIrc extends Plugin
 				}
 				else
 				{
-					if(($this->config['AutoSpeak'] == 1 OR $this->config['AutoSpeak'] == 3) AND $this->_channel == $this->config['MainChannel'])
+					$irc2urt = $this->normaliser(rtrim($message[2]));
+					$pseudo = explode(' ',$message[1]);
+					$pseudo = explode('!',$pseudo[0]);
+					$pseudo = $pseudo[0];
+							
+					$serverlist = ServerList::getList();
+					
+					if(is_array($this->config['AutoSpeak']))
 					{
-						$irc2urt = $this->normaliser(rtrim($message[2]));
-						$pseudo = explode(' ',$message[1]);
-						$pseudo = explode('!',$pseudo[0]);
-						$pseudo = $pseudo[0];
-						
-						$servers = ServerList::getList();
-						
-						foreach($servers as $server)
+						foreach($serverlist as $server)
 						{
-							$rcon = ServerList::getServerRCon($server);
-							$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+							if(isset($this->config['AutoSpeak'][$server][$this->_channel]) && in_array($this->config['AutoSpeak'][$server][$this->_channel], array(1, 3)))
+							{
+								$rcon = ServerList::getServerRCon($server);
+								$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+							}
+						}
+					}
+					elseif(is_numeric($this->config['AutoSpeak']))
+					{
+						if(in_array($this->config['AutoSpeak'], array(1, 3)))
+						{
+							
+							foreach($serverlist as $server)
+							{
+								$rcon = ServerList::getServerRCon($server);
+								$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+							}
 						}
 					}
 				}
@@ -453,11 +511,32 @@ class PluginIrc extends Plugin
 	//Event serveur : IRC (envoie sur IRC tout ce qui se dit)
 	public function SrvEventSay($id, $contents)
 	{
-		if($contents[0] != '!' && (isset($this->config['AutoSpeak']) OR in_array($this->config['AutoSpeak'], array(1, 2))))
+		if($contents[0] != '!')
 		{
 			$nick = $this->_rmColor(Server::getPlayer($id)->name);
 			$message = $this->_rmColor($contents);
-			$this->privmsg($this->config['MainChannel'], "\002[".Server::getName()."] <".$nick."> :\002 ".$message);
+			$server = Server::getName();
+				
+			if(is_array($this->config['AutoSpeak']))
+			{
+				foreach($this->config['Channels'] as $channel)
+				{
+					if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(1, 2)))
+					{
+						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+					}
+				}
+			}
+			elseif(is_numeric($this->config['AutoSpeak']))
+			{
+				if(in_array($this->config['AutoSpeak'], array(1, 2)))
+				{
+					foreach($this->config['Channels'] as $channel)
+					{
+						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+					}
+				}
+			}
 		}
 	}
 	
@@ -806,7 +885,32 @@ class PluginIrc extends Plugin
 	
 	private function CmdReload()
 	{
-		Rcon::reload();
+		$cmd = $this->_cmd;
+		$serverlist = ServerList::getList();
+		
+		if(!isset($cmd[1]))
+		{
+			if(count($serverlist) > 1)
+				$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
+			else
+				$server = Server::getName();
+		}
+		else
+		{
+			if(in_array($server, ServerList::getList()))
+				$server = $cmd[1];
+			else
+				$this->sendMessage("This server doesn't exist. Available Servers  : ".join(', ', $serverlist));
+		}
+		
+		$rcon = ServerList::getServerRCon($server);
+		$rcon->reload();
+	}
+	
+	private function CmdServerList()
+	{
+		$serverlist = ServerList::getList();
+		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 }
 
@@ -814,4 +918,5 @@ $this->addPluginData(array(
 'name' => 'irc',
 'className' => 'PluginIrc',
 'display' => 'IRC Plugin',
+'dependencies' => array('stats'),
 'autoload' => TRUE));
