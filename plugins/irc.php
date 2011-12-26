@@ -2,7 +2,7 @@
 /**
  * \file plugins/stats.php
  * \author Deniz Eser <srwiez@gmail.com>
- * \version 0.1
+ * \version 1
  * \brief IRC plugin for Leelabot. It allows to have an IRC bot.
  *
  * \section LICENSE
@@ -25,7 +25,7 @@
  */
 
 /**
- * \brief Plugin stats class.
+ * \brief Plugin irc class.
  * This class contains the methods and properties needed by the IRC plugin. It contains the IRC Bot.
  */
 class PluginIrc extends Plugin
@@ -794,11 +794,11 @@ class PluginIrc extends Plugin
 					$player = Server::getPlayer($target);
 					
 					if($_stats[$player->id]['deaths'] != 0)
-						$ratio = $_stats[$user]['kills'] / $_stats[$user]['deaths'];
+						$ratio = $_stats[$player->id]['kills'] / $_stats[$player->id]['deaths'];
 					else
-						$ratio = $_stats[$user]['kills'];
+						$ratio = $_stats[$player->id]['kills'];
 						
-					if(in_array('hits', $this->config['ShowStats'])) //Gestion des hits en fonction de la configuration du plugin de stats
+					if(in_array('hits', $this->_main->config['Plugin']['Stats']['ShowStats'])) //Gestion des hits en fonction de la configuration du plugin de stats
 						$hits = "\037Hits\037 : ".$_stats[$player->id]['hits']." - ";
 					if(Server::getServer()->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
 						$caps = " - \037Caps\037 : ".$_stats[$player->id]['caps'];
