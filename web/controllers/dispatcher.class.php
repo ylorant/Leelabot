@@ -153,11 +153,12 @@ class LeelabotAdmin
 		$page = explode('/', $page, 3);
 		
 		$this->parser->assign('plugins', $this->_corePages['plugins']->pluginsInfo);
+		$this->parser->assign('loaded', Leelabot::$instance->plugins->getLoadedPlugins());
 		$this->parser->assign('category', $page[0]);
 		if(isset($page[1]))
 			$this->parser->assign('subcategory', $page[1]);
 		else
-			$this->parser->assign('subcategory', ''	);
+			$this->parser->assign('subcategory', '');
 		
 		$data = $this->parser->draw('design/top');
 		$data .= $content;

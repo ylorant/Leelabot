@@ -97,6 +97,9 @@ function unloadPlugin(plugin)
 					$('#loadbox_'+curPlug).attr('onclick', 'loadPlugin("'+curPlug+'");')
 					$('#loadbox_'+curPlug).append(image);
 				}
+				
+				if(data.length > 1)
+					alert('Unloaded automatically loaded dependencies : '+ data.join(', '));
 			}
 			else
 			{

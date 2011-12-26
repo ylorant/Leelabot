@@ -384,7 +384,7 @@ class ServerInstance
 		RCon::setServer($this);
 		
 		Leelabot::message('Sending ClientDisconnect events to plugins', array(), E_DEBUG);
-		foreach($this->clients as $id => $client)
+		foreach($this->players as $id => $client)
 		{
 			$this->_leelabot->plugins->callServerEvent('ClientDisconnect', $id);
 			unset($this->players[$id]);
@@ -394,7 +394,8 @@ class ServerInstance
 		$this->_leelabot->plugins->callServerEvent('ShutdownGame');
 		
 		//Finally, we close the links to the server and we ask to the main class to delete the instance
-		ftp_close($this->_logfile['ftp']);
+		if(isset($this->_logfile['ftp']))
+			ftp_close($this->_logfile['ftp']);
 		fclose($this->_logfile['fp']);
 		$this->_leelabot->unloadServer($this->_name);
 	}

@@ -75,7 +75,7 @@ class PluginDummy extends Plugin
 		return ServerList::getServerRCon($server)->kick($id);
 	}
 	
-	public function WAPageHello()
+	public function WAPageIndex()
 	{
 		return "Hello, world !";
 	}

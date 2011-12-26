@@ -59,7 +59,9 @@
 				<hr />
 				<ul>
 				{loop="$plugins"}
-					<li{if="$subcategory == $value.name"} class="selected"{/if}><a href="/admin/plugin/{$value.name}">{$value.dname}</a></li>
+					{if="in_array($value.name, $loaded)"}
+						<li{if="$subcategory == $value.name"} class="selected"{/if}><a href="/admin/plugin/{$value.name}/index">{$value.dname}</a></li>
+					{/if}
 				{/loop}
 				</ul>
 			{/if}

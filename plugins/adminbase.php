@@ -42,7 +42,7 @@ class PluginAdminBase extends Plugin
 	}
 	
 	/** Bigtext command. Send a message for all.
-	 * This function is bound to the !bigtext command. He send a message for all, displayed on the center of screen like flag captures.
+	 * This function is bound to the !bigtext command. It sends a message for all, displayed on the center of screen, like flag captures.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -84,7 +84,7 @@ class PluginAdminBase extends Plugin
 	}
 	
 	/** Cyclemap command. Go to nextmap.
-	 * This function is bound to the !cyclemap command. It changes the map, usually the following file cyclemap.txt.
+	 * This function is bound to the !cyclemap command. It changes the map, usually following the cyclemap file.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -97,7 +97,7 @@ class PluginAdminBase extends Plugin
 	}
 	
 	/** Kill the bot
-	 * This function is bound to the !die command. Kill the bot
+	 * This function is bound to the !die command. Kills the bot.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -106,9 +106,8 @@ class PluginAdminBase extends Plugin
 	 */
 	public function CommandDie($id, $command)
 	{
-		Rcon::bigtext('Shutting Down... By !');
-		sleep(2);
-		die();
+		Rcon::bigtext('Shutting Down...');
+		$this->_main->stop();
 	}
 	
 	/** Forceteam command. Force a player on the other team.

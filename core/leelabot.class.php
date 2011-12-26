@@ -33,6 +33,7 @@
 class Leelabot
 {
 	private $_configDirectory; ///< Config directory. Defaults to ./conf directory.
+	private $_run; ///< Running toggle. Setting it to FALSE stops the bot.
 	private static $_logFile; ///< Log file, accessed by Leelabot::message() method.
 	private static $_lastError = NULL; ///< Last error put in the log, according to Leelabot::message().
 	public static $verbose; ///< Verbose mode (boolean, defaults to FALSE).
@@ -247,7 +248,9 @@ class Leelabot
 	*/
 	public function run()
 	{
-		while(true)
+		$this->_run = TRUE;
+		
+		while($this->_run)
 		{
 			foreach($this->servers as $name => $server)
 			{
@@ -261,9 +264,26 @@ class Leelabot
 			if($this->outerAPI !== NULL)
 				$this->outerAPI->process();
 		}
+		
+		foreach($this->servers as $name => $server)
+			$server->disconnect();
+		
+		foreach($this->plugins->getLoadedPlugins() as $plugin)
+			$this->plugins->unloadPlugin($plugin);
+			
+		return TRUE;
 	}
 	
-	//Todo : Allow using of an entry in [Server] to make a default configuration for all servers (to reduce config size by filling only different parameters) 
+	/** Stop toggle for the bot.
+	 * This function simply stops the main loop of the bot.
+	 * 
+	 * \return Nothing.
+	 */
+	public function stop()
+	{
+		$this->_run = FALSE;
+	}
+	
 	/** Loads all the server instances and defining their parameters
 	 * This function loads all the server instances found in Leelabot::$config, and initializes them with their config.
 	 * 
@@ -494,7 +514,7 @@ class Leelabot
 	{
 		if(!($dirContent = scandir($dir)))
 			return FALSE;
-		
+			
 		$finalConfig = array();
 		
 		$cfgdata = '';
@@ -514,8 +534,17 @@ class Leelabot
 			}
 		}
 		
+		$finalConfig = $this->parseINIStringRecursive($cfgdata);
+		
+		return $finalConfig;
+	}
+	
+	public function parseINIStringRecursive($str)
+	{
+		$config = array();
+		
 		//Parsing string and determining recursive array
-		$inidata = parse_ini_string($cfgdata, TRUE, INI_SCANNER_RAW);
+		$inidata = parse_ini_string($str, TRUE, INI_SCANNER_RAW);
 		if(!$inidata)
 			return FALSE;
 		foreach($inidata as $section => $content)
@@ -524,7 +553,7 @@ class Leelabot
 			{
 				$section = explode('.', $section);
 				//Getting reference on the config category pointed
-				$edit = &$finalConfig;
+				$edit = &$config;
 				foreach($section as $el) 
 					$edit = &$edit[$el];
 				
@@ -534,7 +563,33 @@ class Leelabot
 				Leelabot::message('Orphan config parameter : $0', array($section), E_WARNING);
 		}
 		
-		return $finalConfig;
+		return $config;
+	}
+	
+	/** Generates INI config string for recursive data.
+	 * This function takes configuration array passed in parameter and generates an INI configuration string with recursive sections.
+	 * 
+	 * \param $data The data to be transformed.
+	 * \param $root The root section. Normally, this parameter is used by the function to recursively parse data by calling itself.
+	 * 
+	 * \return The INI config data.
+	 */
+	public function generateINIStringRecursive($data, $root = "")
+	{
+		$out = "";
+		
+		if($root)
+			$out = '['.$root.']';
+		
+		foreach($data as $name => $value)
+		{
+			if(is_array($value))
+				$out .= "\n".$this->generateINIStringRecursive($value, $root.'.'.$name)."\n";
+			else
+				$out .= $name.'='.$value;	
+		}
+		
+		return $out;
 	}
 	
 	/** Changes the configuration directory.
