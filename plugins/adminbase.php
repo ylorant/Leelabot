@@ -228,7 +228,6 @@ class PluginAdminBase extends Plugin
 		
 		foreach($players as $p)
 		{
-			$p = Server::getPlayer($p);
 			$list .= '['.$p->id.'] '.$p->name.', '; 
 		}
 		
@@ -511,23 +510,22 @@ class PluginAdminBase extends Plugin
 	public function CommandShuffle($id, $command)
 	{
 		$players = Server::getPlayerList();
-		
-		$lastTeam = rand(Server::TEAM_BLUE,Server::TEAM_RED);
+		$lastTeam = rand(Server::TEAM_BLUE, Server::TEAM_RED);
 		
 		shuffle($players);
 		
 		foreach($players as $player)
 		{
-			if(Server::getPlayer($player)->team != Server::TEAM_SPEC)
+			if($player->team != Server::TEAM_SPEC)
 			{
 				if($lastTeam == Server::TEAM_RED)
 				{
-					RCon::forceteam($player.' red');
+					RCon::forceteam($player->id.' red');
 					$lastTeam = Server::TEAM_BLUE;
 				}
 				elseif($lastTeam == Server::TEAM_BLUE)
 				{
-					RCon::forceteam($player.' blue');
+					RCon::forceteam($player->id.' blue');
 					$lastTeam = Server::TEAM_RED;
 				}
 			}

@@ -712,7 +712,7 @@ class Server
 			foreach($server->_server->players as &$player)
 			{
 				if($player->team == $team)
-					$list[] = $player;
+					$list[$player->id] = $player;
 			}
 		}
 		
