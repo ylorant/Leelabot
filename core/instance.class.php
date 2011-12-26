@@ -556,6 +556,7 @@ class ServerInstance
 						break;
 					//Player message
 					case 'say':
+					case 'sayteam':
 						$message = explode(' ', $line[1], 2);
 						$id = intval($message[0]);
 						$contents = explode(':', $message[1], 2);
