@@ -803,7 +803,7 @@ class Plugin
 		
 		if(isset($main->config['Plugin']) && !isset($main->config['Plugin'][$plugin]))
 				$main->config['Plugin'][$plugin] = array();
-			
+		
 		$this->config = &$main->config['Plugin'][$plugin];
 	}
 	

@@ -534,7 +534,7 @@ class Leelabot
 			}
 		}
 		
-		$finalConfig = $this->parseINIStringRecursive($cfgdata);
+		$finalConfig = array_merge($finalConfig, $this->parseINIStringRecursive($cfgdata));
 		
 		return $finalConfig;
 	}
