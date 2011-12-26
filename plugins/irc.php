@@ -530,7 +530,7 @@ class PluginIrc extends Plugin
 	{
 		$server = Server::getName();
 		$nick = $this->_rmColor(Server::getPlayer($player)->name);
-		$message = $this->_rmColor(impode(' ', $args));
+		$message = $this->_rmColor(implode(' ', $args));
 		
 		if(is_array($this->config['AutoSpeak']))
 		{
