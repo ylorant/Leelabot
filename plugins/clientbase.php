@@ -264,7 +264,7 @@ class PluginClientBase extends Plugin
 	 */
 	public function WSMethodBalanceTeams($server)
 	{
-		// TODO
+		$this->_balance();
 	}
 }
 
