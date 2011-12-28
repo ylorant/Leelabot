@@ -65,9 +65,23 @@ class PluginDummy extends Plugin
 			$rcon->say('Hello '.$player->name.' !');
 	}
 	
+	public function CommandSavePlayers($id, $command)
+	{
+		$players = array();
+		foreach(Server::getPlayerList() as $pid => $player)
+		{
+			if(!isset($players[$player->name]))
+				$players[$player->name] = $player;
+			else
+				$players[$player->name.'_'.$pid] = $player;
+		}
+		
+		file_put_contents('playerdump.ini', $this->_main->generateINIStringRecursive($players));
+	}
+	
 	public function WSMethodPlayer($id)
 	{
-		return serialize(Storage::toArray(Server::getPlayer($id)));
+		return serialize(Server::getPlayer($id)->toArray());
 	}
 	
 	public function WSMethodKick($server, $id)

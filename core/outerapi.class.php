@@ -99,10 +99,10 @@ class OuterAPI
 				'DocumentRoot' => 'core',
 				'ProcessFiles' => 'webservice.class.php'));
 			
-			$WSConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile'];
-			if(isset($WSConfig['Authentication']) && Leelabot::parseBool($WSConfig['Authentication']) == TRUE && isset($WSConfig['AuthFile']) && is_file($WSConfig['AuthFile']))
+			if(isset($WSConfig['Authentication']) && Leelabot::parseBool($WSConfig['Authentication']) == TRUE && isset($WSConfig['AuthFile']) && is_file(Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile']))
 			{
 				$this->_WSAuth = TRUE;
+				$WSConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile'];
 				$this->_WSAuthFile = $WSConfig['AuthFile'];
 			}
 			else
@@ -137,10 +137,11 @@ class OuterAPI
 				'DocumentRoot' => 'web',
 				'ProcessFiles' => 'controllers/dispatcher.class.php'));
 			
-			$WAConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WAConfig['AuthFile'];
-			if(isset($WAConfig['Authentication']) && Leelabot::parseBool($WAConfig['Authentication']) == TRUE && isset($WAConfig['AuthFile']) && is_file($WAConfig['AuthFile']))
+			
+			if(isset($WAConfig['Authentication']) && Leelabot::parseBool($WAConfig['Authentication']) == TRUE && isset($WAConfig['AuthFile']) && is_file(Leelabot::$instance->getConfigLocation().'/'.$WAConfig['AuthFile']))
 			{
 				$this->_WAAuth = TRUE;
+				$WAConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WAConfig['AuthFile'];
 				$this->_WAAuthFile = $WAConfig['AuthFile'];
 			}
 			else

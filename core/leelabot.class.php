@@ -82,7 +82,9 @@ class Leelabot
 		$this->root = getcwd();
 			
 		//Opening default log file (can be modified after, if requested)
-		Leelabot::$_logFile = fopen('leelabot.log', 'w+');
+		Leelabot::$_logFile = fopen('leelabot.log', 'a+');
+		fseek(Leelabot::$_logFile, 0, SEEK_END);
+		$initPos = ftell(Leelabot::$_logFile);
 		
 		//Loading Intl class (if it is not loadable, load a dummy substitute)
 		$this->intl = new Intl(Leelabot::DEFAULT_LOCALE);
@@ -135,10 +137,22 @@ class Leelabot
 							//Save log content for later parameters (like when using --nolog -log file.log)
 							if(Leelabot::$_logFile)
 							{
-								$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
-								$logContent = file_get_contents($logFileInfo['uri']);
-								fclose(Leelabot::$_logFile);
-								unlink($logFileInfo['uri']);
+								$logContent = '';
+								fseek(Leelabot::$_logFile, $initPos);
+								
+								while(!feof(Leelabot::$_logFile))
+									$logContent .= fgets(Leelabot::$_logFile);
+									
+								//If the file was empty before logging into it, delete it
+								if($initPos == 0)
+								{
+									$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+									fclose(Leelabot::$_logFile);
+									unlink($logFileInfo['uri']);
+								}
+								else
+									fclose(Leelabot::$_logFile);
+								
 								Leelabot::$_logFile = FALSE;
 							}
 						}
@@ -148,19 +162,37 @@ class Leelabot
 						//Save log content for later parameters (like when using --nolog -log file.log)
 						if(Leelabot::$_logFile)
 						{
-							$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
-							$logContent = file_get_contents($logFileInfo['uri']);
-							fclose(Leelabot::$_logFile);
-							Leelabot::$_logFile = FALSE;
+							$logContent = '';
+								fseek(Leelabot::$_logFile, $initPos);
+								
+								while(!feof(Leelabot::$_logFile))
+									$logContent .= fgets(Leelabot::$_logFile);
+								
+								//If the file was empty before logging into it, delete it
+								if($initPos == 0)
+								{
+									$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+									fclose(Leelabot::$_logFile);
+									unlink($logFileInfo['uri']);
+								}
+								else
+									fclose(Leelabot::$_logFile);
+								
+								Leelabot::$_logFile = FALSE;
 						}
 						
 						//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
-						if(!(Leelabot::$_logFile = fopen($value, 'w+')))
+						if(!(Leelabot::$_logFile = fopen($value, 'a+')))
 						{
-							Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+							Leelabot::$_logFile = fopen($logFileInfo['uri'], 'a+');
 							Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
 						}
-						fputs(Leelabot::$_logFile, $logContent);
+						else
+						{
+							fseek(Leelabot::$_logFile, 0, SEEK_END);
+							$initPos = ftell(Leelabot::$_logFile);
+							fputs(Leelabot::$_logFile, $logContent);
+						}
 						break;
 				}
 			}
@@ -168,7 +200,7 @@ class Leelabot
 		}	
 		
 		//Post-parsing CLI arguments (after loading the config because they override file configuration)
-		$this->processCLIPostparsingArguments($CLIArguments);
+		$this->processCLIPostparsingArguments($CLIArguments, $initPos);
 		
 		//Creating RCon class and binding it to the InnerAPI
 		$this->_RCon = new Quake3RCon();
@@ -425,7 +457,7 @@ class Leelabot
 	 * 
 	 * \returns TRUE if everything gone fine, FALSE if an error occured.
 	 */
-	public function processCLIPostparsingArguments($CLIArguments)
+	public function processCLIPostparsingArguments($CLIArguments, $logPos)
 	{
 		$logContent = '';
 		foreach($CLIArguments as $name => $value)
@@ -444,24 +476,55 @@ class Leelabot
 				case 'no-log': //Don't use a log file
 					Leelabot::message('Disabling log (by CLI).');
 				case 'log': //Define the log file in another place than the default
+					if($name == 'log')
+						Leelabot::message('Changing log file to $0 (By CLI)', array($value));
 					//Save log content for later parameters (like --nolog -log file.log)
 					if(Leelabot::$_logFile)
 					{
+						$logContent = '';
+						fseek(Leelabot::$_logFile, $logPos);
+						
+						while(!feof(Leelabot::$_logFile))
+							$logContent .= fgets(Leelabot::$_logFile);
+						
 						$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
-						$logContent = file_get_contents($logFileInfo['uri']);
 						fclose(Leelabot::$_logFile);
+						
+						//If the file was empty before logging into it, delete it
+						if($logPos == 0)
+							unlink($logFileInfo['uri']);
+						
 						Leelabot::$_logFile = FALSE;
 					}
+					
 					if($name == 'no-log')
 						break;
-					Leelabot::message('Changing log file to $0 (By CLI)', array($value));
 					//Load new file, and put the old log content into it (if opening has not failed, else we re-open the old log file)
-					if(!(Leelabot::$_logFile = fopen($value, 'w+')))
+					if(!(Leelabot::$_logFile = fopen($value, 'a+')))
 					{
-						Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+						Leelabot::$_logFile = fopen($logFileInfo['uri'], 'a+');
 						Leelabot::message('Cannot open new log file ($0), reverting to old.', array($value), E_WARNING);
+						break;
 					}
+					fseek(Leelabot::$_logFile, 0, SEEK_END);
+					$logPos = ftell(Leelabot::$_logFile);
 					fputs(Leelabot::$_logFile, $logContent);
+					break;
+				case 'erase-log':
+					$logFileInfo = stream_get_meta_data(Leelabot::$_logFile);
+					Leelabot::message('Erasing all previous log in $0...',array($logFileInfo['uri']));
+					//Rewinding log file to start of current session log
+					fseek(Leelabot::$_logFile, $logPos);
+					
+					//Dumping new log data before wiping old log
+					$log = '';
+					while(!feof(Leelabot::$_logFile))
+							$log .= fgets(Leelabot::$_logFile);
+					
+					//Closing file and reopening it in w+ mode, ensures that previous data is wiped, then write current log in the now-empty file
+					fclose(Leelabot::$_logFile);
+					Leelabot::$_logFile = fopen($logFileInfo['uri'], 'w+');
+					fputs(Leelabot::$_logFile, $log);
 					break;
 			}
 		}
@@ -579,17 +642,29 @@ class Leelabot
 		$out = "";
 		
 		if($root)
-			$out = '['.$root.']';
+			$out = '['.$root.']'."\n";
 		
+		$arrays = array();
+		
+		//Process data, saving sub-arrays, putting direct values in config.
 		foreach($data as $name => $value)
 		{
-			if(is_array($value))
-				$out .= "\n".$this->generateINIStringRecursive($value, $root.'.'.$name)."\n";
+			if(is_array($value) || is_object($value))
+				$arrays[$name] = $value;
+			elseif(is_bool($value))
+				$out .= $name.'='.($value ? 'yes' : 'no')."\n";
 			else
-				$out .= $name.'='.$value;	
+				$out .= $name.'='.$value."\n";	
 		}
 		
-		return $out;
+		if($out)
+			$out .= "\n";
+		
+		//Processing sub-sections
+		foreach($arrays as $name => $value)
+			$out .= $this->generateINIStringRecursive($value, $root.($root ? '.' : '').$name)."\n\n";
+		
+		return trim($out);
 	}
 	
 	/** Changes the configuration directory.
@@ -856,11 +931,8 @@ class Storage
 	 * 
 	 * \return An associative array containing all properties using the shape : propname => value
 	 */
-	public static function toArray($object)
+	public function toArray()
 	{
-		if(!is_object($object) || get_class($object) != 'Storage')
-			return FALSE;
-		
 		$return = array();
 		foreach($object as $var => $val)
 			$return[$var] = $val;
@@ -871,23 +943,16 @@ class Storage
 	/** Merges a Storage object with another, or with an array.
 	 * This functions merges the properties of the Storage object $from with the available properties (or elements if it is an array) of $to, and returns the result.
 	 * 
-	 * \param $from The Storage object to merge.
-	 * \param $to The Storage object or the array to be merged on $from.
+	 * \param $to The Storage object or the array to be merged on the object.
 	 * 
 	 * \returns the merged Storage object if it merged successfully, or FALSE otherwise.
 	 */
-	public static function merge($from, $to)
+	public function merge($to)
 	{
-		if(!is_object($from) || get_class($from) != 'Storage')
-			return FALSE;
+		foreach($to as $key => &$el)
+			$this->$key = $el;
 		
-		foreach($from as $key => &$el)
-		{
-			if(isset($to[$key]))
-				$el = $to[$key];
-		}
-		
-		return $from;
+		return $this;
 	}
 }
 
