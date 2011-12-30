@@ -93,6 +93,11 @@ class PluginDummy extends Plugin
 	{
 		return "Hello, world !";
 	}
+	
+	public function RightsAuthenticate($id, $auth)
+	{
+		RCon::tell($id, 'Hey, you\'re authed as $0 !', $auth);
+	}
 }
 
 $this->addPluginData(array(

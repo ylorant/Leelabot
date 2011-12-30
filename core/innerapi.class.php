@@ -204,6 +204,9 @@ class RCon
 	 */
 	public static function tell($player, $message, $args = array(), $translate = TRUE)
 	{
+		if(!is_array($args) && !is_object($args))
+			$args = array($args);
+		
 		//Parsing message vars
 		foreach($args as $id => $value)
 			$message = str_replace('$'.$id, $value, $message);

@@ -37,7 +37,7 @@
  * \warning For server events and commands, the manager will only handle 1 callback by event at a time. It is done for simplicity purposes, both at plugin's side
  * and at manager's side (I've noticed that it is not necessary to have multiple callbacks for an unique event, unless you can think about getting your code clear)
  */
-class PluginManager
+class PluginManager extends Events
 {
 	private $_main; ///<  Reference to main class
 	private $_plugins; ///< Plugins list
@@ -373,6 +373,13 @@ class PluginManager
 				//Checks for Webadmin pages
 				if(preg_match('#^WAPage#', $method))
 					$this->addWAPage(strtolower(preg_replace('#WAPage(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
+				
+				//Checks for plugin-defined events
+				foreach($this->_autoMethods as $listener => $prefix)
+				{
+					if(preg_match('#^'.$prefix.'#', $method))
+						$this->addEvent($listener, $params['className'], strtolower(preg_replace('#'.$prefix.'(.+)#', '$1', $method)), array($this->_plugins[$params['name']]['obj'], $method));
+				}
 			}
 		}
 		

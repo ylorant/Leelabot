@@ -314,7 +314,7 @@ class ServerInstance
 			$data = array_merge($dump, $player);
 			
 			$this->_leelabot->plugins->callServerEvent('ClientConnect', $id);
-			$this->_leelabot->plugins->callServerEvent('ClientUserinfo', $data);
+			$this->_leelabot->plugins->callServerEvent('ClientUserinfo', array($id, $data));
 		}
 		
 		//Getting team repartition for players
