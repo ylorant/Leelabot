@@ -56,6 +56,13 @@ class PluginBasicRights extends Plugin
 		$this->_plugins->addEventListener('rights', 'Rights');
 	}
 	
+	public function destroy()
+	{
+		$this->_plugins->deleteEventListener('rights');
+		
+		return TRUE;
+	}
+	
 	public function SrvEventClientConnect($id)
 	{
 		$player = Server::getPlayer($id);
@@ -66,20 +73,25 @@ class PluginBasicRights extends Plugin
 	{
 		$player = Server::getPlayer($id);
 		
-		if(!$player->auth)
+		//We first wait for the client to begin playing at least one time before going further
+		if(!$player->begin)
 			return;
+		
+		//We check that the player is authed
+		if(!$player->auth)
+		{
+			$this->SrvEventClientBegin($id);
+			if(!$player->auth)
+				return;
+		}
 		
 		if(!in_array($userinfo['n'], $this->rights[$player->auth]['aliases']))
 		{
+			$this->rights[$player->auth]['aliases'][] = $player->name;
+			$this->saveRights($this->config['RightsFile']);
 			if($this->config['Verbose'])
 				RCon::tell($id, 'Added new alias \'$0\' for your auth ($1)', array($userinfo['n'], $player->auth));
 		}
-	}
-	
-	public function SrvEventClientUserinfo($id, $userinfo)
-	{
-		$userinfo['n'] = $userinfo['name'];
-		$this->SrvEventClientUserinfoChanged($id, $userinfo);
 	}
 	
 	public function SrvEventClientBegin($id)
@@ -88,10 +100,28 @@ class PluginBasicRights extends Plugin
 		
 		foreach($this->rights as $authname => $auth)
 		{
-			if(in_array($player->name, $auth['aliases']) && $player->ip == $auth['IP'])
+			if((in_array($player->name, $auth['aliases']) && $player->ip == $auth['IP'])
+				|| (in_array($player->name, $auth['aliases']) && (isset($auth['GUID'][Server::getName()]) && $auth['GUID'][Server::getName()] == $player->guid))
+				|| ($player->ip == $auth['IP'] && $player->guid == (isset($auth['GUID'][Server::getName()]) && $auth['GUID'][Server::getName()] == $player->guid)))
 			{
 				if($this->config['Verbose'])
 					RCon::tell($id, 'You\'re now authed as $0', $authname);
+					
+				//Auth the player
+				$player->auth = $authname;
+				$player->level = $auth['level'];
+				
+				//Save player data modification
+				if(!in_array($player->name, $auth['aliases']))
+					$this->rights[$authname]['aliases'][] = $player->name;
+				elseif($player->ip != $auth['IP'])
+					$this->rights[$authname]['IP'] = $player->ip;
+				elseif(!isset($auth['GUID'][Server::getName()]) || $auth['GUID'][Server::getName()] != $player->guid)
+					$this->rights[$authname]['GUID'][Server::getName()] = $player->guid;
+				else
+					break;
+				
+				$this->saveRights($this->config['RightsFile']);
 				break;
 			}
 		}
