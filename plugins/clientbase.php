@@ -65,8 +65,29 @@ class PluginClientBase extends Plugin
 	{
 		if($this->_autoteams)
 		{
-			Server::getPlayer($id)->team = $data['t'];
-			$this->_balance();
+			$player = Server::getPlayer($id);
+			
+			if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC)
+			{
+				$teams_count = Server::getTeamCount();
+				
+				if($player->team == Server::TEAM_BLUE)
+					$otherteam = Server::TEAM_RED;
+				elseif($player->team == Server::TEAM_RED)
+					$otherteam = Server::TEAM_BLUE;
+				
+				if($teams_count[$player->team] > $teams_count[$otherteam])
+				{
+					// No balance and force player in his team
+					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
+					Rcon::forceteam($player->id, $teams[$player->team]);
+					return TRUE; 			
+				}
+				else
+				{
+					$this->_balance();
+				}
+			}
 		}
 	}
 	
