@@ -208,6 +208,7 @@ class PluginBasicRights extends Plugin
 			{
 				RCon::tell($id, 'Created auth user $0', $player->name);
 				RCon::tell($player->id, 'You\'re now authed as $0', $player->name);
+			}
 		}
 		else
 			$this->rights[$player->auth] = $level;
