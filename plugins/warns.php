@@ -149,7 +149,7 @@ class PluginWarns extends Plugin
 		return $_warns[$warned]['num'];
 	}
 	
-	private function _forgive($player, $warned)
+	private function _forgive($player)
 	{
 		$_warns = Server::get('warns');
 		$_forgive = Server::get('forgive');
@@ -191,30 +191,10 @@ class PluginWarns extends Plugin
 	
 	public function CommandFp($id, $cmd)
 	{
-		if(!empty($cmd[0]))
-		{
-			$target = Server::searchPlayer($cmd[0]);
-			if(!$target)
-				RCon::tell($id, "No player found.");
-			elseif(is_array($target))
-			{
-				$players = array();
-				foreach($target as $p)
-					$players[] = Server::getPlayer($p)->name;
-				RCon::tell($id, 'Multiple players found : $0', array(join(', ', $players)));
-			}
-			else
-			{
-				if($this->_forgive($id, $target))
-					Rcon::say($id, '$player has forgiven $target.', array('player' => Server::getPlayer($id)->name, 'target' => Server::getPlayer($target)->name));
-				else
-					RCon::tell($id, 'No one to forgive.');
-			}
-		}
+		if($this->_forgive($id))
+			Rcon::say($id, '$player has forgiven $target.', array('player' => Server::getPlayer($id)->name, 'target' => Server::getPlayer($target)->name));
 		else
-		{
-			Rcon::tell($id, 'Missing parameters.');
-		}
+			RCon::tell($id, 'No one to forgive.');
 	}
 	
 	public function CommandClearWarns($id, $cmd)
@@ -263,10 +243,10 @@ class PluginWarns extends Plugin
 		$killer = Server::getPlayer($killer);
 		$killed = Server::getPlayer($killed);
 		
-		if($killer->team != $killed->team && !in_array($type, array('1', '3', '6', '7', '9', '10', '31', '32', '34')))
+		if($killer->team == $killed->team && !in_array($type, array('1', '3', '6', '7', '9', '10', '31', '32', '34')))
 		{
 			$warns = $this->_addWarn($killer->id, $killed->id);
-			Rcon::say('Warning : $killer was team killed $killed ! (He has $warns warnings)', array('killer' => $killer->id, 'killed' => $killed->id, 'warns' => $warns));
+			Rcon::say('Warning : $killer was team killed $killed ! (He has $warns warnings)', array('killer' => $killer->name, 'killed' => $killed->name, 'warns' => $warns));
 			Rcon::tell($killed->id, 'Please type !fp if you want to forgive him.');
 		}
 	}
@@ -276,10 +256,10 @@ class PluginWarns extends Plugin
 		$shooter = Server::getPlayer($shooter);
 		$player = Server::getPlayer($player);
 		
-		if($shooter->team != $player->team)
+		if($shooter->team == $player->team)
 		{
 			$warns = $this->_addWarn($shooter->id, $player->id);
-			Rcon::say('Warning : $shooter has team hit $player ! (He has $warns warnings)', array('shooter' => $shooter->id, 'player' => $player->id, 'warns' => $warns));
+			Rcon::say('Warning : $shooter has team hit $player ! (He has $warns warnings)', array('shooter' => $shooter->name, 'player' => $player->name, 'warns' => $warns));
 			Rcon::tell($player->id, 'Please type !fp if you want to forgive him.');
 		}
 	}
