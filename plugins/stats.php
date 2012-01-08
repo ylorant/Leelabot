@@ -315,6 +315,7 @@ class PluginStats extends Plugin
 			case '32':
 			case '34':
 				$_stats[$killed->id]['deaths']++;
+				Server::set('stats', $_stats);
 				break;
 			//Au changement d'équipe, on ne fait rien
 			case '10':
@@ -336,6 +337,8 @@ class PluginStats extends Plugin
 					
 					$_stats[$killed->id]['deaths']++;
 					$_stats[$killed->id]['curstreak'] = 0;
+					
+					Server::set('stats', $_stats);
 					
 					//Gestion des awards
 					if($_stats[$killer->id]['kills'] > $_awards['kills'][1])
@@ -373,6 +376,7 @@ class PluginStats extends Plugin
 						$dratio = $_stats[$killed->id]['kills'];
 					else
 						$dratio = $_stats[$killed->id]['kills'] / $_stats[$killed->id]['deaths'];
+						
 					
 					$_ratioList[$killer->id] = $ratio;
 					$_ratioList[$killed->id] = $dratio;
@@ -396,7 +400,6 @@ class PluginStats extends Plugin
 			break;
 		}
 		
-		Server::set('stats', $_stats);
 	}
 	
 	//Event serveur : Flag (si il capture, on ajoute 1 au compteur de capture du joueur)

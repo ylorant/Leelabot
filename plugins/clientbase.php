@@ -24,7 +24,7 @@
  * And optionally, it allows to have an automatic balancing of teams.
  * !teams = balance teams
  * !time = date & time
- * !nextmap = return next map
+ * !next = return next map
  * !help = list of commands
  */
 
@@ -115,14 +115,14 @@ class PluginClientBase extends Plugin
 	}
 	
 	/** !nextmap command. Return next map.
-	 * This function is the command !nextmap. Return next map.
+	 * This function is the command !next. Return next map.
 	 * 
 	 * \param $player The player who send the command.
 	 * \param $command The command's parameters.
 	 * 
 	 * \return Nothing.
 	 */
-	public function CommandNextmap($player, $command)
+	public function CommandNext($player, $command)
 	{
 		$nextmap = Rcon::g_nextmap();
 		$nextmap = explode('"', $nextmap);
