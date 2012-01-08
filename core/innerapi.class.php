@@ -722,6 +722,42 @@ class Server
 		return $list;
 	}
 	
+	/** Returns the players' names.
+	 * This function returns the names of the players, according to its parameters.
+	 * 
+	 * \param $id player ID, alone or batched with other IDs in an array. You can repeat this parameter as much as you want.
+	 * 
+	 * \return An array of all queried players' names.
+	 */
+	public static function getPlayerNames($id = NULL)
+	{
+		$players = self::getPlayerList();
+		$return = array();
+			
+		if($id == NULL)
+		{
+			
+			foreach($players as $player)
+				$return[$player->id] = $player->name;
+		}
+		else
+		{
+			$args = func_get_args();
+			foreach($args as $arg)
+			{
+				if(is_array($arg))
+				{
+					foreach($arg as $id)
+						$return[$id] = $players[$id]->name;
+				}
+				else
+					$return[$id] = $players[$id]->name;
+			}
+		}
+		
+		return $return;
+	}
+	
 	/** Returns the scores of teams.
 	 * This function returns the scores data list for the server, or for only a team.
 	 * 

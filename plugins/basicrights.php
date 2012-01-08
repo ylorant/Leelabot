@@ -186,7 +186,7 @@ class PluginBasicRights extends Plugin
 		}
 		elseif(is_array($player))
 		{
-			RCon::tell($id, 'Multiple players found : $0', array(join(', ', $player)));
+			RCon::tell($id, 'Multiple players found : $0', array(join(', ', Server::getPlayerNames($player))));
 			return TRUE;
 		}
 		
