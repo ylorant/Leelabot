@@ -207,7 +207,7 @@ class PluginIrc extends Plugin
 				fclose($this->_socket);
 				$this->_connected = FALSE;
 				
-				Leelabot::message('The IRC bot is disconnect.'));
+				Leelabot::message('The IRC bot is disconnect.');
 			}
 		}
 	}
