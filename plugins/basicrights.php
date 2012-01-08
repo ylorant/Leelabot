@@ -54,6 +54,9 @@ class PluginBasicRights extends Plugin
 		
 		//Adding event listener
 		$this->_plugins->addEventListener('rights', 'Rights');
+		
+		//Setting command !giverights level
+		$this->setCommandLevel('giverights', 100);
 	}
 	
 	public function destroy()
@@ -164,6 +167,56 @@ class PluginBasicRights extends Plugin
 		
 		RCon::tell($id, 'You\'re now a super-user on this server. Your pair IP/aliases will be used to authenticate you on other servers.');
 		RCon::tell($id, 'The !setadmin command is deactived for the current session. Make sure to remove the password from config.');
+	}
+	
+	public function CommandGiveRights($id, $command)
+	{
+		if(!isset($command[1]))
+		{
+			RCon::tell($id, 'Not enough parameters');
+			return TRUE;
+		}
+		
+		$player = Server::searchPlayer($command[0]);
+		
+		if(!$player)
+		{
+			RCon::tell($id, 'Unknown player');
+			return TRUE;
+		}
+		elseif(is_array($player))
+		{
+			RCon::tell($id, 'Multiple players found : $0', array(join(', ', $player)));
+			return TRUE;
+		}
+		
+		$level = intval($command[1]);
+		
+		//If the player is not authed, we create an entry for him in the rights file
+		if(!$player->auth)
+		{
+			$this->rights[$player->name] = array();
+			$this->rights[$player->name]['aliases'] = array($player->name);
+			$this->rights[$player->name]['GUID'] = array(Server::getName() => $player->guid);
+			$this->rights[$player->name]['IP'] = $player->ip;
+			$this->rights[$player->name]['level'] = $level;
+			$this->saveRights($this->config['RightsFile']);
+			
+			$player->auth = $player->name;
+			
+			if($this->config['Verbose'])
+			{
+				RCon::tell($id, 'Created auth user $0', $player->name);
+				RCon::tell($player->id, 'You\'re now authed as $0', $player->name);
+		}
+		else
+			$this->rights[$player->auth] = $level;
+		
+		$player->level = $level;
+		
+		RCon::tell($id, 'User $0 level set to $1', array($player->auth, $player->level));
+		
+		return TRUE;
 	}
 	
 	public function loadRights($filename)
