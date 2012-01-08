@@ -1,8 +1,8 @@
 <?php
 /**
  * \file plugins/clientbase.php
- * \author Deniz Eser <srwiez@gmail.com>
- * \version 0.9
+ * \author Eser Deniz <srwiez@gmail.com>
+ * \version 1.1
  * \brief Client base plugin for Leelabot. It allows to send !teams, !time, !nextmap, !help.
  *
  * \section LICENSE
@@ -265,6 +265,14 @@ class PluginClientBase extends Plugin
 	public function WSMethodBalanceTeams($server)
 	{
 		$this->_balance();
+	}
+	
+	public function WAPageIndex()
+	{
+		return "
+		<h1>Clientbase plugin</h1>
+		
+		";
 	}
 }
 

@@ -1,7 +1,7 @@
 <?php
 /**
- * \file plugins/stats.php
- * \author Deniz Eser <srwiez@gmail.com>
+ * \file plugins/teamspeak.php
+ * \author Eser Deniz <srwiez@gmail.com>
  * \version 0.1
  * \brief Teamspeak plugin for Leelabot. It allows to look who is on teamspeak.
  *
@@ -27,12 +27,12 @@
  */
 
 /**
- * \brief Plugin stats class.
+ * \brief Plugin teamspeak class.
  * This class contains the methods and properties needed by the teamspeak plugin. 
  */
 class PluginTeamspeak extends Plugin
 {
-	private $_channelId = NULL; // Awards toggle.
+	private $_channelId = NULL;
 	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).

@@ -1,8 +1,8 @@
 <?php
 /**
  * \file plugins/stats.php
- * \author Deniz Eser <srwiez@gmail.com>
- * \version 1
+ * \author Eser Deniz <srwiez@gmail.com>
+ * \version 1.0
  * \brief IRC plugin for Leelabot. It allows to have an IRC bot.
  *
  * \section LICENSE
@@ -162,6 +162,13 @@ class PluginIrc extends Plugin
 		}
 	}
 	
+	public function destroy()
+	{
+		$this->_disconnect('Plugin Unload');
+		
+		return TRUE;
+	}
+	
 	/////////////////////////////////////////////
 	// Private functions for IRC connection    //
 	/////////////////////////////////////////////
@@ -179,12 +186,28 @@ class PluginIrc extends Plugin
 				$this->_send("USER".str_repeat(' '.$this->config['User'], 4));
 				$this->_send("NICK ".$this->config['Nick']);
 				
-				Leelabot::message('The bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
+				Leelabot::message('The IRC bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
 			}
 			else
 			{
 				$this->_connected = TRUE;
-				Leelabot::message('The connection has failed. We will try again in a few seconds.', array());
+				Leelabot::message('The IRC connection has failed. We will try again in a few seconds.', array());
+			}
+		}
+	}
+	
+	private function _disconnect($reason = '')
+	{
+		if($this->_configured)
+		{
+			if($this->_connected)
+			{
+				$this->_send("QUIT : bye ! ".$reason);
+				usleep(500000);
+				fclose($this->_socket);
+				$this->_connected = FALSE;
+				
+				Leelabot::message('The IRC bot is disconnect.'));
 			}
 		}
 	}
@@ -391,110 +414,112 @@ class PluginIrc extends Plugin
 			$pseudo = explode('!',$message[1]);
 			$pseudo = $pseudo[0];
 			
-			if(rtrim($commande[0]) == 'PING')
-				$this->_send('PONG :'.$message[1]);
-
-			if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
+			if(isset($commande[1]) && rtrim($commande[0]) == 'PING')
+					$this->_send('PONG :'.$message[1]);
+			
+			// For crazy IRC server
+			if(isset($commande[1]))
 			{
-				if(isset($this->config['AutoPerform']))
+				if($commande[1] == '001') //Si le serveur nous envoie qu'on vient de se connecter au réseau, on joint les canaux puis on exécute la liste d'auto-perform
 				{
-					foreach($this->config['AutoPerform'] as $command)
-						$this->_send($command);
+					if(isset($this->config['AutoPerform']))
+					{
+						foreach($this->config['AutoPerform'] as $command)
+							$this->_send($command);
+					}
+					
+					$this->join(implode(',', $this->config['Channels']));
+						
+					Leelabot::message('The bot has join $0', array(implode(',', $this->config['Channels'])));
 				}
 				
-				$this->join(implode(',', $this->config['Channels']));
-					
-				Leelabot::message('The bot has join $0', array(implode(',', $this->config['Channels'])));
-			}
-			
-			if($commande[1] == '433')
-			{
-				$this->config['Nick'] = $this->config['Nick'].'_';
-				$this->_send("NICK ".$this->config['Nick']);
-				
-				Leelabot::message('The nickname has changed for $0', array($this->config['Nick']));
-			}
-			
-			if($commande[1] == 'PRIVMSG') //Si c'est un message
-			{
-				$this->_pseudo = $pseudo;
-				$this->_channel = $commande[2];
-				
-				if($message[2][0] == '!') //Si c'est une commande
+				if($commande[1] == '433')
 				{
-					$cmd = explode(' ',trim($message[2]));
-					$cmd[0] = trim($cmd[0]);
-					$this->_cmd = $cmd;
-					$this->_message = $message;
+					$this->config['Nick'] = $this->config['Nick'].'_';
+					$this->_send("NICK ".$this->config['Nick']);
 					
-					if(array_key_exists($cmd[0], $this->_cmdIrc))
+					Leelabot::message('The nickname has changed for $0', array($this->config['Nick']));
+				}
+				
+				if($commande[1] == 'PRIVMSG') //Si c'est un message
+				{
+					$this->_pseudo = $pseudo;
+					$this->_channel = $commande[2];
+					
+					if($message[2][0] == '!') //Si c'est une commande
 					{
-						if($this->_cmdIrc[$cmd[0]]['r'] == 1)
+						$cmd = explode(' ',trim($message[2]));
+						$cmd[0] = trim($cmd[0]);
+						$this->_cmd = $cmd;
+						$this->_message = $message;
+						
+						if(array_key_exists($cmd[0], $this->_cmdIrc))
 						{
-							if($this->isRights(trim($pseudo), $this->config['MainChannel'], '+'))
+							if($this->_cmdIrc[$cmd[0]]['r'] == 1)
 							{
-								$this->{$this->_cmdIrc[$cmd[0]]['func']}();
+								if($this->isRights(trim($pseudo), $this->config['MainChannel'], '+'))
+								{
+									$this->{$this->_cmdIrc[$cmd[0]]['func']}();
+								}
+								else
+								{
+									$this->sendMessage('Vous devez être "voice" pour utiliser cette commande.');
+								}
+							}
+							elseif($this->_cmdIrc[$cmd[0]]['r'] == 2)
+							{
+								if($this->isRights(trim($pseudo), $this->config['MainChannel'], '@'))
+								{
+									$this->{$this->_cmdIrc[$cmd[0]]['func']}();
+								}
+								else
+								{
+									$this->sendMessage('Vous devez être "operateur" pour utiliser cette commande.');
+								}
 							}
 							else
 							{
-								$this->sendMessage('Vous devez être "voice" pour utiliser cette commande.');
-							}
-						}
-						elseif($this->_cmdIrc[$cmd[0]]['r'] == 2)
-						{
-							if($this->isRights(trim($pseudo), $this->config['MainChannel'], '@'))
-							{
 								$this->{$this->_cmdIrc[$cmd[0]]['func']}();
 							}
-							else
-							{
-								$this->sendMessage('Vous devez être "operateur" pour utiliser cette commande.');
-							}
-						}
-						else
-						{
-							$this->{$this->_cmdIrc[$cmd[0]]['func']}();
 						}
 					}
-				}
-				else
-				{
-					$irc2urt = $this->normaliser(rtrim($message[2]));
-					$pseudo = explode(' ',$message[1]);
-					$pseudo = explode('!',$pseudo[0]);
-					$pseudo = $pseudo[0];
-							
-					$serverlist = ServerList::getList();
-					$channel = $this->_channel;
-					
-					if(is_array($this->config['AutoSpeak']))
+					else
 					{
-						foreach($serverlist as $server)
+						$irc2urt = $this->normaliser(rtrim($message[2]));
+						$pseudo = explode(' ',$message[1]);
+						$pseudo = explode('!',$pseudo[0]);
+						$pseudo = $pseudo[0];
+								
+						$serverlist = ServerList::getList();
+						$channel = $this->_channel;
+						
+						if(is_array($this->config['AutoSpeak']))
 						{
-							if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(1, 3)))
-							{
-								$rcon = ServerList::getServerRCon($server);
-								$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
-							}
-						}
-					}
-					elseif(is_numeric($this->config['AutoSpeak']))
-					{
-						if(in_array($this->config['AutoSpeak'], array(1, 3)))
-						{
-							
 							foreach($serverlist as $server)
 							{
-								$rcon = ServerList::getServerRCon($server);
-								$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+								if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(1, 3)))
+								{
+									$rcon = ServerList::getServerRCon($server);
+									$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+								}
+							}
+						}
+						elseif(is_numeric($this->config['AutoSpeak']))
+						{
+							if(in_array($this->config['AutoSpeak'], array(1, 3)))
+							{
+								
+								foreach($serverlist as $server)
+								{
+									$rcon = ServerList::getServerRCon($server);
+									$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
+								}
 							}
 						}
 					}
 				}
 			}
 		}
-			
-		return TRUE;
 	}
 	
 	
@@ -819,7 +844,7 @@ class PluginIrc extends Plugin
 	private function CmdUrt()
 	{
 		$cmd = $this->_cmd;
-		$message = $this->message;
+		$message = $this->_message;
 		$server = $this->_nameOfServer(1);
 		
 		if($server !== false)

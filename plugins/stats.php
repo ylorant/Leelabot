@@ -1,7 +1,7 @@
 <?php
 /**
  * \file plugins/stats.php
- * \author Deniz Eser <srwiez@gmail.com>
+ * \author Eser Deniz <srwiez@gmail.com>
  * \version 0.9
  * \brief Statistics plugin for Leelabot. It allows to have game stats for each player.
  *
@@ -106,19 +106,22 @@ class PluginStats extends Plugin
 			$this->config['AllowPlayerVerbosity'] = Leelabot::parseBool($this->config['AllowPlayerVerbosity']);
 		else
 			$this->config['AllowPlayerVerbosity'] = FALSE;
+			
+		$this->_initVars();
 	}
 	
-	public function disableStatsReset()
+	public function destroy()
 	{
-		$this->_disableStatsReset++;
+		Rcon::say("Stats : stopped.");
+		
+		Server::set('stats', NULL);
+		Server::set('statsConfig', NULL);
+		Server::set('awards', NULL);
+		Server::set('ratioList', NULL);
+		Server::set('disableStatsReset', NULL);
 	}
 	
-	public function enableStatsReset()
-	{
-		$this->_disableStatsReset--;
-	}
-	
-	public function SrvEventStartupGame()
+	private function _initVars()
 	{
 		//Stats of players
 		Server::set('stats', array());
@@ -134,6 +137,21 @@ class PluginStats extends Plugin
 		
 		//If other plugin want to disable stats reset
 		Server::set('disableStatsReset', 0);
+	}
+	
+	public function disableStatsReset()
+	{
+		$this->_disableStatsReset++;
+	}
+	
+	public function enableStatsReset()
+	{
+		$this->_disableStatsReset--;
+	}
+	
+	public function SrvEventStartupGame()
+	{
+		$this->_initVars();
 	}
 	
 	public function SrvEventInitGame($serverinfo)

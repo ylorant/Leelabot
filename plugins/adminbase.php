@@ -1,9 +1,9 @@
 <?php
 /**
- * \file plugins/clientbase.php
- * \author Deniz Eser <srwiez@gmail.com>
+ * \file plugins/adminbase.php
+ * \author Eser Deniz <srwiez@gmail.com>
  * \author Yohann Lorant <linkboss@gmail.com>
- * \version 1
+ * \version 1.0
  * \brief Admin base plugin for Leelabot. It allows to send most of the admin commands.
  *
  * \section LICENSE
