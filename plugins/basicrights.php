@@ -191,6 +191,7 @@ class PluginBasicRights extends Plugin
 		}
 		
 		$level = intval($command[1]);
+		$player = Server::getPlayer($player);
 		
 		//If the player is not authed, we create an entry for him in the rights file
 		if(!$player->auth)
