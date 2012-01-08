@@ -52,7 +52,7 @@ class PluginIrc extends Plugin
 	public function init()
 	{
 		//Config
-		if(isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']))
+		if(isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']) && in_array($this->config['MessageMode'], array('notice', 'chanmsg', 'privmsg')))
 		{
 			$this->config['Channels'] = explode(',', $this->config['Channels']);
 			
