@@ -76,7 +76,7 @@ class PluginClientBase extends Plugin
 				elseif($player->team == Server::TEAM_RED)
 					$otherteam = Server::TEAM_BLUE;
 				
-				if($teams_count[$player->team] > $teams_count[$otherteam])
+				if($teams_count[$player->team] <= $teams_count[$otherteam])
 				{
 					// No balance and force player in his team
 					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
