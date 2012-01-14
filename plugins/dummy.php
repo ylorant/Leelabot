@@ -79,6 +79,15 @@ class PluginDummy extends Plugin
 		file_put_contents('playerdump.ini', $this->_main->generateINIStringRecursive($players));
 	}
 	
+	public function CommandBroadcast($id, $command)
+	{
+		$servers = ServerList::getList();
+		$message = join(" ", $command);
+		
+		foreach($servers as $server)
+			ServerList::getServerRCon($server)->say($message, array(), FALSE);
+	}
+	
 	public function WSMethodPlayer($id)
 	{
 		return serialize(Server::getPlayer($id)->toArray());

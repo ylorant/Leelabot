@@ -34,12 +34,13 @@ class ServerInstance
 {
 	private $_addr; ///< Server address.
 	private $_port; ///< Server port.
-	private $_rcon; ///< Server RCon password.
+	private $_rconpassword; ///< Server RCon password.
 	private $_name; ///< Server name, for easier recognition in commands or log.
-	private $_logfile; ///< Log file info (address, logins for FTP/SSH, and other info)
+	private $_logfile; ///< Log file info (address, logins for FTP/SSH, and other info).
 	private $_plugins; ///< List of plugins used by the server, may differ from global list.
 	private $_leelabot; ///< Reference to main Leelabot class.
-	private $_defaultLevel; ///< Default level for joining players
+	private $_defaultLevel; ///< Default level for joining players.
+	private $_rcon; ///< RCon class for this server.
 	
 	public $serverInfo; ///< Holds server info.
 	public $players; ///< Holds players data.
@@ -56,6 +57,8 @@ class ServerInstance
 		$this->_leelabot = $main;
 		$this->_plugins = array();
 		$this->_defaultLevel = 0;
+		$this->_rcon = new Quake3RCon();
+		
 		return TRUE;
 	}
 	
@@ -102,6 +105,16 @@ class ServerInstance
 	public function getRConPassword()
 	{
 		return $this->_rconpassword;
+	}
+	
+	/** Gets the Quake3RCon object for the current server.
+	 * This function returns the Quake3RCon object set for the current server.
+	 * 
+	 * \return The current Quake3RCon object set for the server.
+	 */
+	public function getRCon()
+	{
+		return $this->_rcon;
 	}
 	
 	/** Get the active plugins for this server.
@@ -253,6 +266,9 @@ class ServerInstance
 	{
 		//First, we test connectivity to the server
 		Leelabot::message('Connecting to server...');
+		$this->_rcon->setServer($this->_addr, $this->_port);
+		$this->_rcon->setRConPassword($this->_rconpassword);
+		
 		if(!RCon::test())
 		{
 			Leelabot::message('Can\'t connect : $0', array(RCon::getErrorString(RCon::lastError())), E_WARNING);
@@ -571,7 +587,7 @@ class ServerInstance
 						$id = intval($message[0]);
 						$contents = explode(':', $message[1], 2);
 						$contents = substr($contents[1], 1);
-						Leelabot::message('$0 sended a message: $1',array(Server::getPlayer($id)->name, $contents), E_DEBUG);
+						Leelabot::message('$0 sended a message: $1',array($this->players[$id]->name, $contents), E_DEBUG);
 						$this->_leelabot->plugins->callServerEvent('Say',array($id, $contents));
 						
 						//We check if it's a command

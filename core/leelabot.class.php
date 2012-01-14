@@ -42,7 +42,6 @@ class Leelabot
 	public $config; ///< Configuration data (for all objects : servers, plugins...)
 	public $servers; ///< Server instances objects
 	public $plugins; ///< Plugin manager
-	public $RCon; ///< RCon query class
 	public $outerAPI; ///< Outer API class
 	public $maxServers; ///< Max servers for the bot
 	public $system; ///< Name of the system where the bot is executed (equivalent to uname -a on UN*X)
@@ -201,10 +200,6 @@ class Leelabot
 		
 		//Post-parsing CLI arguments (after loading the config because they override file configuration)
 		$this->processCLIPostparsingArguments($CLIArguments, $initPos);
-		
-		//Creating RCon class and binding it to the InnerAPI
-		$this->_RCon = new Quake3RCon();
-		RCon::setQueryClass($this->_RCon);
 		
 		//Loading ServerList InnerAPI class
 		ServerList::setLeelabotClass($this);

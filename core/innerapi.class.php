@@ -67,10 +67,7 @@ class RCon
 		$self = self::getInstance();
 		$self->_server = $server;
 		
-		list($addr, $port) = $self->_server->getAddress();
-		$rcon = $self->_server->getRConPassword();
-		$self->_rcon->setServer($addr, $port);
-		$self->_rcon->setRConPassword($rcon);
+		$self->_rcon = $server->getRCon();
 	}
 	
 	/** Gets the current server to query.
@@ -83,19 +80,6 @@ class RCon
 	{
 		$self = self::getInstance();
 		return $self->_server;
-	}
-	
-	/** Sets the Quake3RCon object.
-	 * This function sets the Quake3RCon object which will be used by the class to query the game server.
-	 * 
-	 * \param $object The object to use.
-	 * 
-	 * \return Nothing.
-	 */
-	public static function setQueryClass(&$object)
-	{
-		$self = self::getInstance();
-		$self->_rcon = $object;
 	}
 	
 	/** Sends a RCon query to the game server.
@@ -188,13 +172,13 @@ class RCon
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
 		//Splitting message to fit in the space allowed by the game to chat
-		if(strlen($message) >= 148)
+		if(strlen($message) >= 135)
 		{
-			$message = wordwrap($message, 147, "\n", true);
+			$message = wordwrap($message, 134, "\n", true);
 			$message = explode("\n", $message);
 			$rep = true;
 			foreach($message as $chunk)
-				$rep = $rep & self::send('say "^3'.$message.'"');
+				$rep = $rep & self::send('say "^3'.$chunk.'"');
 		}
 		else
 			return self::send('say "^3'.$message.'"');
@@ -227,13 +211,13 @@ class RCon
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
 		//Splitting message to fit in the space allowed by the game to chat
-		if(strlen($message) >= 148)
+		if(strlen($message) >= 135)
 		{
-			$message = wordwrap($message, 147, "\n", true);
+			$message = wordwrap($message, 134, "\n", true);
 			$message = explode("\n", $message);
 			$rep = true;
 			foreach($message as $chunk)
-				$rep = $rep & self::send('tell '.$player.' "^3'.$message.'"');
+				$rep = $rep & self::send('tell '.$player.' "^3'.$chunk.'"');
 		}
 		else
 			return self::send('tell '.$player.' "^3'.$message.'"');
@@ -262,13 +246,13 @@ class RCon
 		Leelabot::message('Message on top : $0', array($message), E_DEBUG);
 		
 		//Splitting message to fit in the space allowed by the game to chat
-		if(strlen($message) >= 150)
+		if(strlen($message) >= 137)
 		{
-			$message = wordwrap($message, 149, "\n", true);
+			$message = wordwrap($message, 136, "\n", true);
 			$message = explode("\n", $message);
 			$rep = true;
 			foreach($message as $chunk)
-				$rep = $rep & self::send($message);
+				$rep = $rep & self::send($chunk);
 		}
 		else
 			return self::send($message);
@@ -916,8 +900,6 @@ class ServerList
 			return FALSE;
 		
 		$rcon = new RCon();
-		$Q3RCon = new Quake3RCon();
-		$rcon->setQueryClass($Q3RCon);
 		$rcon->setServer($self->_leelabot->servers[$server]);
 		
 		return $rcon;
