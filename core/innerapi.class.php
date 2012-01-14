@@ -187,7 +187,17 @@ class RCon
 		
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
-		return self::send('say "^3'.$message.'"');
+		//Splitting message to fit in the space allowed by the game to chat
+		if(strlen($message) >= 148)
+		{
+			$message = wordwrap($message, 147, "\n", true);
+			$message = explode("\n", $message);
+			$rep = true;
+			foreach($message as $chunk)
+				$rep = $rep & self::send('say "^3'.$message.'"');
+		}
+		else
+			return self::send('say "^3'.$message.'"');
 	}
 	
 	/** Sends a "tell" message to the server.
@@ -216,7 +226,17 @@ class RCon
 		
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
-		return self::send('tell '.$player.' "^3'.$message.'"');
+		//Splitting message to fit in the space allowed by the game to chat
+		if(strlen($message) >= 148)
+		{
+			$message = wordwrap($message, 147, "\n", true);
+			$message = explode("\n", $message);
+			$rep = true;
+			foreach($message as $chunk)
+				$rep = $rep & self::send('tell '.$player.' "^3'.$message.'"');
+		}
+		else
+			return self::send('tell '.$player.' "^3'.$message.'"');
 	}
 	
 	/** Sends a command with translate on top
@@ -241,7 +261,17 @@ class RCon
 		
 		Leelabot::message('Message on top : $0', array($message), E_DEBUG);
 		
-		return self::send($message);
+		//Splitting message to fit in the space allowed by the game to chat
+		if(strlen($message) >= 150)
+		{
+			$message = wordwrap($message, 149, "\n", true);
+			$message = explode("\n", $message);
+			$rep = true;
+			foreach($message as $chunk)
+				$rep = $rep & self::send($message);
+		}
+		else
+			return self::send($message);
 	}
 	
 	/** Shortcut to all RCon commands.
