@@ -31,15 +31,7 @@ class NginyUS extends NginyUS_Framework
 		$this->port = 80;
 		
 		//Gathering server system info
-		$uname = php_uname('s');
-		
-		if($uname == 'Linux')
-		{
-			$this->serverInfo['os'] = explode(':', shell_exec('lsb_release -i'), 2);
-			$this->serverInfo['os'] = trim($this->serverInfo['os'][1]);
-		}
-		else
-			$this->serverInfo['os'] = $uname;
+		$this->serverInfo['os'] = php_uname('s');
 	}
 	
 	//Parse string data to return boolean

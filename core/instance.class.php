@@ -124,6 +124,8 @@ class ServerInstance
 	 */
 	public function getPlugins()
 	{
+		if(empty($this->_plugins))
+			return $this->_leelabot->plugins->getLoadedPlugins();
 		return $this->_plugins;
 	}
 	
@@ -243,9 +245,6 @@ class ServerInstance
 					break;
 			}
 		}
-		
-		if(empty($this->_plugins))
-			$this->_plugins = $this->_leelabot->plugins->getLoadedPlugins();
 		
 		if($addr || $port)
 		{

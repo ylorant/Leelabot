@@ -171,6 +171,10 @@ class RCon
 		
 		Leelabot::message('Reply message (say) : $0', array($message), E_DEBUG);
 		
+		//Adding bot's name if defined
+		if(!empty(Leelabot::$instance->botName))
+			$message = '('.Leelabot::$instance->botName.'): '.$message;
+		
 		//Splitting message to fit in the space allowed by the game to chat
 		if(strlen($message) >= 135)
 		{
@@ -210,6 +214,10 @@ class RCon
 		
 		Leelabot::message('Reply message (tell) : $0', array($message), E_DEBUG);
 		
+		//Adding bot's name if defined
+		if(!empty(Leelabot::$instance->botName))
+			$message = '('.Leelabot::$instance->botName.'): '.$message;
+		
 		//Splitting message to fit in the space allowed by the game to chat
 		if(strlen($message) >= 135)
 		{
@@ -244,6 +252,10 @@ class RCon
 			$message = Leelabot::$instance->intl->translate($message);
 		
 		Leelabot::message('Message on top : $0', array($message), E_DEBUG);
+		
+		//Adding bot's name if defined
+		if(!empty(Leelabot::$instance->botName))
+			$message = '('.Leelabot::$instance->botName.'): '.$message;
 		
 		//Splitting message to fit in the space allowed by the game to chat
 		if(strlen($message) >= 137)

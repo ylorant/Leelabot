@@ -46,6 +46,7 @@ class Leelabot
 	public $maxServers; ///< Max servers for the bot
 	public $system; ///< Name of the system where the bot is executed (equivalent to uname -a on UN*X)
 	public $root; ///< Root directory for the bot
+	public $botName; ///< Bot name.
 	
 	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
@@ -155,6 +156,9 @@ class Leelabot
 								Leelabot::$_logFile = FALSE;
 							}
 						}
+						break;
+					case 'BotName':
+						$this->botName = $value;
 						break;
 					case 'LogFile':
 						Leelabot::message('Changing log file to $0 (by Config)', array($value));

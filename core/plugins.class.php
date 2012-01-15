@@ -768,7 +768,6 @@ class PluginManager extends Events
 			{
 				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
 				{
-					var_dump($player);
 					Leelabot::message('Level matching : $0/$1', array(Server::getPlayer($player)->level,  $this->_commandLevels[$event]), E_DEBUG);
 					if(Server::getPlayer($player)->level >= $this->_commandLevels[$event])
 						$class[0]->$class[1]($player, $params);
