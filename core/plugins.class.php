@@ -28,10 +28,11 @@
 /**
  * \brief PluginManager class for leelabot.
  * 
- * This class manages all the plugins for leelabot, loading them, unloading them and reloading them. It handles also event managing on three levels :
+ * This class manages all the plugins for leelabot, loading them, unloading them and reloading them. It handles also event managing on three levels by default :
  * 		\li Routines : executed independently from what the gamerserver sends, on a timed base, configurable.
  * 		\li Server events : They are executed when the gameserver sends the appropriate command.
  * 		\li Commands (also called client events) : They are executed when a client sends a command (beginning with a !)
+ * Others plugins 
  * It handles plugins dependency (semi-automatic) and automatic event loading.
  * 
  * \warning For server events and commands, the manager will only handle 1 callback by event at a time. It is done for simplicity purposes, both at plugin's side

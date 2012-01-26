@@ -23,17 +23,16 @@ class LeelabotAdmin
 		$this->_corePages = array();
 		
 		//Initializing template parser
-		$this->parser = new RainTPL();
-		RainTPL::$cache_dir = 'views/tmp/';
+		RainTPL::$cache_dir = 'web/views/tmp/';
 		RainTPL::$tpl_ext = 'tpl';
 		
 		//We set the webadmin class into the OuterAPI class, for adding properly methods
 		Leelabot::$instance->outerAPI->setWAObject($this);
 		
-		$site->addFilePage('/favicon.ico', 'static/images/favicon.ico');
-		$site->addFilePage('/style/(.+)', 'static/style/$1');
-		$site->addFilePage('/js/(.+)', 'static/js/$1');
-		$site->addFilePage('/images/(.+)', 'static/images/$1');
+		$site->addFilePage('/favicon.ico', 'web/static/images/favicon.ico');
+		$site->addFilePage('/style/(.+)', 'web/static/style/$1');
+		$site->addFilePage('/js/(.+)', 'web/static/js/$1');
+		$site->addFilePage('/images/(.+)', 'web/static/images/$1');
 		$site->addPage('/(.*)', $this, 'process');
 		$site->addErrorPage(404, $this, 'error404');
 		
@@ -43,7 +42,9 @@ class LeelabotAdmin
 	
 	public function error404($id, $data)
 	{
-		RainTPL::$tpl_dir = 'views/'.Leelabot::$instance->intl->getLocale().'/';
+		RainTPL::$tpl_dir = 'web/views/'.Leelabot::$instance->intl->getLocale().'/';
+		$this->parser = new RainTPL();
+		
 		$this->_main->BufferSetReplyCode($id, 404);
 		if(isset($data['matches']))
 			$content = $this->addDesign(strtolower($data['matches'][1]), '<h1>404 Error</h1><p>Sorry, the page you requested cannot be found.</p>');
@@ -86,14 +87,14 @@ class LeelabotAdmin
 	
 	public function userCheck($user, $passwd)
 	{
-		//Returning the the bot's root, since we're in the webadmin root
-		$cwd = getcwd();
-		chdir(Leelabot::$instance->root);
-		
+		//~ //Returning the the bot's root, since we're in the webadmin root
+		//~ $cwd = getcwd();
+		//~ chdir(Leelabot::$instance->root);
+		//~ 
 		//Parsing password file
 		$userFile = parse_ini_file($this->_authfile);
 		
-		chdir($cwd); //Returning to the webadmin root.
+		//~ chdir($cwd); //Returning to the webadmin root.
 		
 		if(!isset($userFile[$user]) || $userFile[$user] != $passwd)
 			return FALSE;
@@ -120,7 +121,10 @@ class LeelabotAdmin
 				$data['matches'] = $matches;
 				$this->_design = TRUE;
 				$this->_noCache = FALSE;
-				RainTPL::$tpl_dir = 'views/'.Leelabot::$instance->intl->getLocale().'/';
+				$this->parser = new RainTPL();
+				RainTPL::$tpl_dir = 'web/views/'.Leelabot::$instance->intl->getLocale().'/';
+				
+				
 				
 				//Calling the page controller
 				$fctrep = $call[0]->$call[1]($data);

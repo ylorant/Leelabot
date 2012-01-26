@@ -134,8 +134,8 @@ class OuterAPI
 			$this->_manager->loadConfig('webadmin', array(
 				'SiteRoot' => $config['BindAddress'].'/admin',
 				'Alias' => $WAConfig['Aliases'],
-				'DocumentRoot' => 'web',
-				'ProcessFiles' => 'controllers/dispatcher.class.php'));
+				'DocumentRoot' => '.',
+				'ProcessFiles' => 'web/controllers/dispatcher.class.php'));
 			
 			
 			if(isset($WAConfig['Authentication']) && Leelabot::parseBool($WAConfig['Authentication']) == TRUE && isset($WAConfig['AuthFile']) && is_file(Leelabot::$instance->getConfigLocation().'/'.$WAConfig['AuthFile']))
@@ -149,6 +149,9 @@ class OuterAPI
 		}
 		
 		$this->_server->connect();
+		
+		//Setting InnerAPI classes
+		Webadmin::setWAObject($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']);
 		
 		$this->_manager->getSite('webadmin')->classes['LeelabotAdmin']->setAuthentication($this->_WAAuth, $this->_WAAuthFile);
 		$this->_manager->getSite('webservice')->classes['LeelabotWebservice']->setAuthentication($this->_WSAuth, $this->_WSAuthFile);

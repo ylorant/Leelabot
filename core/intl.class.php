@@ -84,6 +84,16 @@ class Intl
 		return $list;
 	}
 	
+	/* Returns the current locale's aliases.
+	 * This function returns the current locale's aliases.
+	 * 
+	 * \return An array containing the current locale's aliases.
+	 */
+	public function getAliases()
+	{
+		return $this->_data['aliases'];
+	}
+	
 	/** Returns the current locale.
 	 * This function returns the current locale set with the function setLocale, or, if not set, the default locale.
 	 * 

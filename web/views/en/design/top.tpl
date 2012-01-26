@@ -50,20 +50,25 @@
 	</div>
 	<div class="middle">
 		<div class="left">
-			{if="$category == 'plugins'"}
+			{if="$category == 'plugins' || $category == 'plugin'"}
 				<h2>Plugins</h2>
 				<hr />
 				<ul>
-					<li{if="$subcategory == ''"} class="selected"{/if}>List</li>
+					<li{if="$subcategory == ''"} class="selected"{/if}><a href="/admin/plugins/">List</a></li>
 				</ul>
 				<hr />
-				<ul>
+				<ul id="pluginMenuLeft">
 				{loop="$plugins"}
-					{if="in_array($value.name, $loaded)"}
-						<li{if="$subcategory == $value.name"} class="selected"{/if}><a href="/admin/plugin/{$value.name}/index">{$value.dname}</a></li>
-					{/if}
+					<li id="pluginMenu-{$value.name}" {if="$subcategory == $value.name"} class="selected"{/if}>
+						{if="in_array($value.name, $loaded)"}
+							<a href="/admin/plugin/{$value.name}/index">{$value.dname}</a>
+						{else}
+							{$value.dname}
+						{/if}
+					</li>
 				{/loop}
 				</ul>
 			{/if}
+			
 		</div>
 		<div class="content">	

@@ -722,6 +722,25 @@ class Server
 		return isset($server->_server->players[$id]) ? $server->_server->players[$id] : NULL;
 	}
 	
+	/** Returns the player data for a GUID.
+	 * This function returns the player data for the given GUID.
+	 * 
+	 * \param $guid The GUID of the player to get data from.
+	 * 
+	 * \return A Storage object of the player data. If the player does not exists, it returns NULL.
+	 */
+	public static function getPlayerByGUID($guid)
+	{
+		$server = self::getInstance();
+		foreach($server->_server->players as $player)
+		{
+			if($player->guid == $guid)
+				return $player;
+		}
+		
+		return NULL;
+	}
+	
 	/** Returns the player list for the server.
 	 * This function returns the player data list for the server, or for only a team.
 	 * 
@@ -967,6 +986,7 @@ class ServerList
 class Locales
 {
 	private $_defaultIntl; ///< Default Intl object, from where locale objects will be cloned.
+	private $_globalLocale; ///< Default locale name.
 	private $_locales = array(); ///< Locales list.
 	private static $_instance; ///< Auto-reference for static singleton
 	
@@ -988,11 +1008,17 @@ class Locales
 	 * 
 	 * \returns Nothing.
 	 */
-	public static function init()
+	public static function init($intl = NULL)
 	{
 		$self = self::getInstance();
 		
+		
 		$self->_defaultIntl = new Intl();
+		if(!empty($intl))
+		{
+			$self->_locales[$intl->getLocale()] = $intl;
+			$self->_globalLocale = $intl->getLocale();
+		}
 	}
 	
 	/** Translates a message.
@@ -1003,23 +1029,45 @@ class Locales
 	 * 
 	 * \return The translated message, or, if there was an error, the original message.
 	 */
-	public function translate($locale, $from)
+	public static function translate($from, $locale = NULL)
 	{
 		$self = self::getInstance();
 		
-		$lcname = $self->_defaultIntl->localeExists($locale);
-		if(!$lcname)
-			return $from;
-		else
+		if($locale === NULL)
+			$lcname = $self->_globalLocale;
+		
+		if(!isset($self->_locales[$lcname]))
 		{
-			if(!isset($self->_locales[$lcname]))
+			$found = FALSE;
+			foreach($self->_locales as $lc)
 			{
-				$self->_locales[$lcname] = clone $self->_defaultIntl;
-				$self->_locales[$lcname]->setLocale($lcname);
+				if(in_array($locale, $lc->getAliases()))
+				{
+					$lcname = $lc->getName();
+					$found = TRUE;
+					break;
+				}
 			}
 			
-			return $self->_locales[$lcname]->translate($from);
+			if(!$found)
+				return $from;
 		}
+			
+		return $self->_locales[$lcname]->translate($from);
+	}
+	
+	public static function load($locale)
+	{
+		$lcname = $this->_defaultIntl->localeExists($locale);
+		if($lcname)
+		{
+			$self->_locales[$lcname] = new Intl();
+			$self->_locales[$lcname]->setLocale($lcname);
+			
+			return TRUE;
+		}
+		
+		return FALSE;
 	}
 	
 	/** Lists available locales
@@ -1027,7 +1075,7 @@ class Locales
 	 * 
 	 * \return An array containing the list of all available locales.
 	 */
-	public function getList()
+	public static function getList()
 	{
 		$self = self::getInstance();
 		return $self->_defaultIntl->getLocaleList();
@@ -1036,8 +1084,7 @@ class Locales
 
 /**
  * \brief Plugin access class.
- * This class allow any plugin to access to the plugin manager, for getting other plugins' objects (to query them), or to load new plugins (although the dependency
- * manager is preferred).
+ * This class allow any plugin to access to the plugin manager, for getting other plugins' objects (to query them), or to load new plugins (although the dependency manager is preferred).
  */
 class Plugins
 {
@@ -1102,5 +1149,55 @@ class Plugins
 	public static function getCommandList($plugin = FALSE)
 	{
 		return self::$_plugins->getCommandList($plugin);
+	}
+}
+
+
+/** \brief Webadmin access class.
+ * This class allows any plugin to directly query the LeelabotAadmin manager class, without any interference.
+ */
+class Webadmin
+{
+	private static $_WAObject;
+	
+	/** Sets the LeelabotAdmin object.
+	 * This function sets the LeelabotAdmin object, which handles all webadmin operations, from page parsing to authentification handling.
+	 * 
+	 * \param $obj The LeelabotAadmin object.
+	 * 
+	 * \return Nothing.
+	 */
+	public static function setWAObject($obj)
+	{
+		self::$_WAObject = $obj;
+	}
+	
+	/** Gets the template parser of the LeelabotAdmin object.
+	 * This function gets the template parser created on the LeelabotAdmin object.
+	 * 
+	 * \return An instance of the template parser.
+	 */
+	public static function getTemplateParser()
+	{
+		return self::$_WAObject->parser;
+	}
+	
+	/** Calls on the LeelabotAdmin object.
+	 * This function will translate all the static calls on the Webadmin class to the LeelabotAdmin object, if the said function exists.
+	 * If it does not exists, it will trigger an error.
+	 * 
+	 * \param $function The function name.
+	 * \param $params Function parameters.
+	 * 
+	 * \return The return of the function if found, FALSE otherwise.
+	 * \see LeelabotAdmin
+	 */
+	public static function __callStatic($function, $params)
+	{
+		if(method_exists(self::$_WAObject, $function))
+			return call_user_method_array($function, self::$_WAObject, $params);
+		
+		trigger_error("Unknown Webadmin method ".$function, E_USER_WARNING);
+		return FALSE;
 	}
 }

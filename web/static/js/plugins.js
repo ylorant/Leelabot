@@ -1,3 +1,15 @@
+function ucfirst (str) {
+    // http://kevin.vanzonneveld.net
+    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +   bugfixed by: Onno Marsman
+    // +   improved by: Brett Zamir (http://brett-zamir.me)
+    // *     example 1: ucfirst('kevin van zonneveld');
+    // *     returns 1: 'Kevin van zonneveld'
+    str += '';
+    var f = str.charAt(0).toUpperCase();
+    return f + str.substr(1);
+}
+
 function loadPlugin(plugin)
 {
 	$('#status_'+plugin).attr('onmouseover', '');
@@ -41,6 +53,8 @@ function loadPlugin(plugin)
 					$('#loadbox_'+curPlug).text('Unload');
 					$('#loadbox_'+curPlug).attr('onclick', 'unloadPlugin("'+curPlug+'");')
 					$('#loadbox_'+curPlug).append(image);
+					var name = $('#pluginMenu-'+ curPlug).html();
+					$('#pluginMenu-'+ curPlug).html('<a href="/admin/plugin/'+curPlug+'">'+name+'</a>');
 				}
 			}
 			else
@@ -96,6 +110,7 @@ function unloadPlugin(plugin)
 					$('#loadbox_'+curPlug).text('Load');
 					$('#loadbox_'+curPlug).attr('onclick', 'loadPlugin("'+curPlug+'");')
 					$('#loadbox_'+curPlug).append(image);
+					$('#pluginMenu-'+ curPlug).html(ucfirst(curPlug));
 				}
 				
 				if(data.length > 1)

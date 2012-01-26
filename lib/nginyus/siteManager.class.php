@@ -192,7 +192,7 @@ class NginyUS_Site extends NginyUS_Events
 	{
 		NginyUS::message('[$0] Loading files : $1', array($this->name, join(', ',$fileList)), E_DEBUG);
 		foreach($fileList as $file)
-			include($this->documentRoot.'/'.$file);
+			require($this->documentRoot.'/'.$file);
 	}
 	
 	public function setSiteRoot($root)

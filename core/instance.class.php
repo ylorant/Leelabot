@@ -442,7 +442,7 @@ class ServerInstance
 					//A client connects
 					case 'ClientConnect':
 						$id = intval($line[1]);
-						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'level' => $this->_defaultLevel, 'time' => time()));
+						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'team' => Server::TEAM_SPEC, 'level' => $this->_defaultLevel, 'time' => time()));
 						Leelabot::message('Client connected: $0', array($id), E_DEBUG);
 						$this->_leelabot->plugins->callServerEvent('ClientConnect', $id);
 						break;
@@ -460,9 +460,6 @@ class ServerInstance
 						
 						Leelabot::message('Client send user info: $0', array($id), E_DEBUG);
 						Leelabot::message('	Name: $0', array($userinfo['name']), E_DEBUG);
-						Leelabot::message('	IP: $0', array($userinfo['ip']), E_DEBUG);
-						
-						$this->_leelabot->plugins->callServerEvent('ClientUserinfo', array($id, $userinfo));
 						
 						//Basically it's a copypasta of the code user above for initial data storage
 						if(isset($userinfo['characterfile']))
@@ -483,6 +480,7 @@ class ServerInstance
 						}
 						$playerData['name'] = preg_replace('#^[0-9]#', '', $userinfo['name']);
 						$playerData['id'] = $id;
+						$this->_leelabot->plugins->callServerEvent('ClientUserinfo', array($id, $userinfo));
 						
 						$this->players[$id]->merge($playerData);
 						

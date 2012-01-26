@@ -24,10 +24,6 @@ class LeelabotAdminPlugins
 		$this->_dispatcher->disableDesign(); //We disable the design, because of AJAX
 		$this->_dispatcher->disableCache(); //Disabling cache, to be sure to re-execute the request the next time
 		
-		//Returning the the bot's root, since we're in the webadmin root
-		$cwd = getcwd();
-		chdir(Leelabot::$instance->root);
-		
 		//Saving the loaded plugins before loading, so we can get the loaded plugins during operation
 		$pluginsBefore = Leelabot::$instance->plugins->getLoadedPlugins();
 		
@@ -36,8 +32,6 @@ class LeelabotAdminPlugins
 			$ret = 'success:'.join('/',array_diff(Leelabot::$instance->plugins->getLoadedPlugins(), $pluginsBefore));
 		else
 			$ret = 'error:'.Leelabot::lastError();
-		
-		chdir($cwd); //Returning to the webadmin root.
 		
 		return $ret;
 	}
@@ -102,7 +96,7 @@ class LeelabotAdminPlugins
 	
 	public function checkPluginsUpdate()
 	{
-		$files = scandir('../plugins');
+		$files = scandir('plugins');
 		if($files != $this->_files)
 			$this->updatePluginsList($files);
 	}
@@ -120,8 +114,8 @@ class LeelabotAdminPlugins
 				
 			$name = pathinfo($f, PATHINFO_FILENAME);
 			
-			$this->pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Leelabot::$instance->intl->translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name), 'dependencies' => Leelabot::$instance->intl->translate('None'));
-			$content = file_get_contents('../plugins/'.$f);
+			$this->pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Locales::translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name), 'dependencies' => Locales::translate('None'));
+			$content = file_get_contents('plugins/'.$f);
 			
 			if(preg_match('#\\\\version (.+)\r?\n#isU', $content, $version))
 				$this->pluginsInfo[$f]['version'] = $version[1];

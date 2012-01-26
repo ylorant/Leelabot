@@ -209,7 +209,7 @@ class Leelabot
 		ServerList::setLeelabotClass($this);
 		
 		//Loading Locale InnerAPI class
-		Locales::init();
+		Locales::init($this->intl);
 		
 		//Loading the OuterAPI (if required, i.e. There is an API section in config and if there's an Enable parameter, it is active)
 		if(isset($this->config['API']) && (!isset($this->config['API']['Enable']) || Leelabot::parseBool($this->config['API']['Enable']) == TRUE))
@@ -290,7 +290,7 @@ class Leelabot
 				Server::setServer($this->servers[$name]);
 				
 				$this->servers[$name]->step();
-				usleep(5000);
+				usleep(7500);
 			}
 			if($this->outerAPI !== NULL)
 				$this->outerAPI->process();
@@ -601,6 +601,14 @@ class Leelabot
 		return $finalConfig;
 	}
 	
+	/** Parses an INI string, with recursive sections.
+	 * This function parses a string written in the INI format, and process sections to produce a recursive array of sections, splitting levels
+	 * with the dot symbol.
+	 * 
+	 * \param $str The string to parse.
+	 * 
+	 * \return FALSE if an error occured during the parsing, else it returns the recursive array obtained from the parsing.
+	 */
 	public function parseINIStringRecursive($str)
 	{
 		$config = array();
