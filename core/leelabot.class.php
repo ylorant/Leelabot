@@ -554,7 +554,7 @@ class Leelabot
 		}
 		
 		//Scanning config directory recursively (with also recursive section names)
-		$config = $this->parseCFGDirRecursive($this->_configDirectory);
+		$config = Leelabot::parseCFGDirRecursive($this->_configDirectory);
 		
 		if(!$config)
 			return FALSE;
@@ -572,7 +572,7 @@ class Leelabot
 	 * \param $dir The directory to analyze.
 	 * \return The configuration if it loaded successfully, FALSE otherwise.
 	 */
-	public function parseCFGDirRecursive($dir)
+	public static function parseCFGDirRecursive($dir)
 	{
 		if(!($dirContent = scandir($dir)))
 			return FALSE;
@@ -586,7 +586,7 @@ class Leelabot
 				$cfgdata .= "\n".file_get_contents($dir.'/'.$file);
 			elseif(is_dir($dir.'/'.$file) && !in_array($file, array('.', '..')) && $file[0] != '.')
 			{
-				if($fileConf = $this->parseCFGDirRecursive($dir.'/'.$file))
+				if($fileConf = Leelabot::parseCFGDirRecursive($dir.'/'.$file))
 					$finalConfig = array_merge($finalConfig, $fileConf);
 				else
 				{
@@ -596,7 +596,7 @@ class Leelabot
 			}
 		}
 		
-		$finalConfig = array_merge($finalConfig, $this->parseINIStringRecursive($cfgdata));
+		$finalConfig = array_merge($finalConfig, Leelabot::parseINIStringRecursive($cfgdata));
 		
 		return $finalConfig;
 	}
@@ -609,7 +609,7 @@ class Leelabot
 	 * 
 	 * \return FALSE if an error occured during the parsing, else it returns the recursive array obtained from the parsing.
 	 */
-	public function parseINIStringRecursive($str)
+	public static function parseINIStringRecursive($str)
 	{
 		$config = array();
 		
@@ -644,7 +644,7 @@ class Leelabot
 	 * 
 	 * \return The INI config data.
 	 */
-	public function generateINIStringRecursive($data, $root = "")
+	public static function generateINIStringRecursive($data, $root = "")
 	{
 		$out = "";
 		
@@ -669,7 +669,7 @@ class Leelabot
 		
 		//Processing sub-sections
 		foreach($arrays as $name => $value)
-			$out .= $this->generateINIStringRecursive($value, $root.($root ? '.' : '').$name)."\n\n";
+			$out .= Leelabot::generateINIStringRecursive($value, $root.($root ? '.' : '').$name)."\n\n";
 		
 		return trim($out);
 	}
@@ -714,7 +714,7 @@ class Leelabot
 	 * \param $args Command-line formatted list of arguments
 	 * \return argument list, in an ordered clean array.
 	 */
-	function parseArgs($args)
+	public static function parseArgs($args)
 	{
 		$result = array();
 		$noopt = array();
@@ -771,7 +771,7 @@ class Leelabot
 	 * \param $array The data to dump
 	 * \return The dumped data, into a string.
 	 */
-	public function dumpArray($array)
+	public static function dumpArray($array)
 	{
 		if(!is_array($array))
 			$array = array(gettype($array) => $array);

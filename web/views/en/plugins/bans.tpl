@@ -10,4 +10,5 @@
 			<div class="ban_desc">Description: {$value.Description}</div>
 		</div>
 	{/loop}
+	<input type="button" onclick="reloadBanlist();" value="Reload banlist" />
 </table>

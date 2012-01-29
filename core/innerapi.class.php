@@ -1195,7 +1195,7 @@ class Webadmin
 	public static function __callStatic($function, $params)
 	{
 		if(method_exists(self::$_WAObject, $function))
-			return call_user_method_array($function, self::$_WAObject, $params);
+			return call_user_func_array(array(self::$_WAObject, $function), $params);
 		
 		trigger_error("Unknown Webadmin method ".$function, E_USER_WARNING);
 		return FALSE;

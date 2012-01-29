@@ -73,6 +73,9 @@ class PluginBans extends Plugin
 			return FALSE;
 		}
 		
+		if(isset($this->config['DefaultDuration']))
+			$this->config['DefaultDuration'] = $this->_parseBanDuration($this->config['DefaultDuration']);
+		
 		$this->config['Banlist'] = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
 		$this->loadBanlist();
 		
@@ -97,15 +100,15 @@ class PluginBans extends Plugin
 		if(isset($userinfo['characterfile']))
 			return;
 		
+		$ip = explode(':', $userinfo['ip']);
+		$ip = $ip[0];
+		
 		//We check the GUID ban
 		if(isset($this->_banlist[$userinfo['cl_guid']]))
 		{
-			$this->_checkBanKick($id, $userinfo['ip'], $userinfo['cl_guid'], $userinfo['cl_guid']);
+			$this->_checkBanKick($id, $ip, $userinfo['cl_guid'], $userinfo['cl_guid']);
 			return;
 		}
-		
-		$ip = explode(':', $userinfo['ip']);
-		$ip = $ip[0];
 		
 		//We check the exact IP ban
 		if(isset($this->_bannedIP[$ip]))
@@ -151,8 +154,10 @@ class PluginBans extends Plugin
 		if($ban['Realm'] != 'all-servers' && !in_array($servername, explode(',',$ban['Realm'])))
 			return;
 		
+		echo "\n", time(), "\n", $ban['Duration'] + $ban['Begin'], "\n";
+		
 		//We check that the ban is over
-		if($ban['Duration'] != 'forever' && time() > $ban['Duration'] + $ban['Begin'])
+		if($ban['Duration'] != 'forever' && time() > ($ban['Duration'] + $ban['Begin']))
 		{
 			unset($this->_bannedIP[$ban['IP']]);
 			
@@ -172,7 +177,7 @@ class PluginBans extends Plugin
 			$this->saveBanlist();
 		}
 		
-		if($ip != $ban['IP'])
+		if($ip != $ban['IP'] && $ban['Duration'] > $this->_durations['day'])
 		{
 			$this->_bannedIP[$ip] = $this->_bannedIP[$ban['IP']];
 			$this->_banlist[$guid]['IP'] = $ip;
@@ -184,6 +189,11 @@ class PluginBans extends Plugin
 		RCon::kick($id);
 	}
 	
+	public function SrvEventClientDisconnect($id)
+	{
+		$this->_lastDisconnect[Server::getName()] = Server::getPlayer($id);
+	}
+	
 	/** Bans a player.
 	 * This command bans the player passed in first parameter, and parses the other parameters to add modifiers to the ban :
 	 * \li from <server(s)> : Specifies the range of the ban : servers can be defined one by one by separating them with a space,
@@ -193,7 +203,8 @@ class PluginBans extends Plugin
 	 * second(s), minute(s), hour(s), day(s), week(s), month(s), year(s)).
 	 * \li forever : Makes the ban permanent. Can't be used with the "for" parameter.
 	 * 
-	 * If none parameter specified, the defaults from config file are taken.
+	 * If none parameter specified, the defaults from config file are taken. If a default duration or range is not specified in the config, 
+	 * the default applied are 1 day and the current server from which the command has been emitted.
 	 * 
 	 * Examples : 
 	 * \li Simple ban : !ban linkboss
@@ -249,9 +260,9 @@ class PluginBans extends Plugin
 			
 			//Adding the entry to the banlist
 			$player = Server::getPlayer($pid);
-			if($ban['duration'] != 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1)
+			if($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1)
 				$this->_banlist[$player->guid] = array('GUIDList' => array($player->guid), 'IP' => FALSE, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
-			elseif($ban['duration'] != 'forever' && $ban['duration'] < $this->_durations['month'])
+			elseif($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['month'])
 			{
 				$this->_banlist[$player->guid] = array('GUIDList' => array($player->guid), 'IP' => $player->ip, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
 				$this->_bannedIP[$player->ip] = $player->guid;
@@ -267,8 +278,42 @@ class PluginBans extends Plugin
 			
 			//We save the banlist and we kick the player
 			$this->saveBanlist();
-			RCon::kick($player->id);
+			if(in_array(Server::getName(), $ban['servers']))
+				RCon::kick($player->id);
 		}
+	}
+	
+	public function CommandBanExit($id, $command)
+	{
+		//If no player has disconnected yet, we send an error
+		if(!isset($this->_lastDisconnect[Server::getName()]))
+		{
+			RCon::tell($id, 'No player found.');
+			return FALSE;
+		}
+		
+		$ban = $this->_parseBanCommand($command);
+		
+		//Adding the entry to the banlist
+		$player = $this->_lastDisconnect[Server::getName()];
+		if($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1)
+			$this->_banlist[$player->guid] = array('GUIDList' => array($player->guid), 'IP' => FALSE, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
+		elseif($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['month'])
+		{
+			$this->_banlist[$player->guid] = array('GUIDList' => array($player->guid), 'IP' => $player->ip, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
+			$this->_bannedIP[$player->ip] = $player->guid;
+		}
+		else
+		{
+			$ip = explode('.', $player->ip);
+			array_pop($ip);
+			$ip = join('.', $ip).'.0';
+			$this->_banlist[$player->guid] = array('GUIDList' => array($player->guid), 'IP' => $ip, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
+			$this->_bannedIP[$ip] = $player->guid;
+		}
+		
+		//We save the banlist and we kick the player
+		$this->saveBanlist();
 	}
 	
 	/** Parses a ban command to get ban infos.
@@ -295,15 +340,21 @@ class PluginBans extends Plugin
 				$baninfo[$category][] = $param;
 		}
 		
-		if(empty($baninfo['from']) && isset($this->config['DefaultRealm']) && in_array($this->config['DefaultRealm'], array('server', 'bot')))
-		{
+		//Setting default realm if not present
+		if(empty($baninfo['from']) && isset($this->config['DefaultRealm']) && $this->config['DefaultRealm'] == 'server')
 			$baninfo['from'][] = 'all-servers';
-			if($this->config['DefaultRealm'] == 'server')
-				$baninfo['from'][] = Server::getName();
-		}
+		elseif(empty($baninfo['from']))
+			$baninfo['from'][] = Server::getName();
+		
+		//Setting default duration if not present
+		$duration = $this->_parseBanDuration(join(' ', $baninfo['for']));
+		if($duration == -1 && isset($this->config['DefaultDuration']))
+			$duration = $this->config['DefaultDuration'];
+		elseif($duration == -1)
+			$duration = $this->_durations['day'];
 		
 		if(!$baninfo['permanent'])
-			$return = array('banned' => $baninfo['players'], 'servers' => $baninfo['from'], 'duration' => $this->_parseBanDuration(join(' ', $baninfo['for'])));
+			$return = array('banned' => $baninfo['players'], 'servers' => $baninfo['from'], 'duration' => $duration);
 		else
 			$return = array('banned' => $baninfo['players'], 'servers' => $baninfo['from'], 'duration' => 'forever');
 		
@@ -316,16 +367,20 @@ class PluginBans extends Plugin
 	 * 
 	 * \param $duration The duration of the ban, in literal form.
 	 * 
-	 * \return The duration equivalent in seconds, or if the parsing failed, it returns 0.
+	 * \return The duration equivalent in seconds, or if the parsing failed, it returns -1.
 	 * 
 	 * \see PluginBans::CommandBan()
 	 */
 	private function _parseBanDuration($duration)
 	{
+		if(empty($duration))
+			return -1;
+		
 		$duration = explode(' ', $duration);
 		$seconds = 0;
 		$multiplier = 0;
 		
+		//Parsing duration elements
 		foreach($duration as $el)
 		{
 			if(is_numeric($el))
@@ -361,14 +416,16 @@ class PluginBans extends Plugin
 		{
 			
 			$banlist[$guid] = $ban;
-			$banlist[$guid]['End'] = $ban['Duration'] != 'forever' ? ($ban['Begin'] + $ban['Duration']) : 'never';
+			$banlist[$guid]['End'] = $ban['Duration'] != 'forever' ? ($ban['Begin'] + $ban['Duration']) : Locales::translate('Forever');
 			if($ban['Realm'] == 'all-servers')
 				$banlist[$guid]['Realm'] = Locales::translate('Everywhere');
 			else
-				$banlist[$guid]['Realm'] = str_replace('server:all-servers', 'all-servers', join(',', $ban['Realm']));
+				$banlist[$guid]['Realm'] = str_replace('server:all-servers', 'all-servers', $ban['Realm']);
 			
 			if(!$ban['Description'])
 				$banlist[$guid]['Description'] = Locales::translate('None');
+			else
+				$banlist[$guid]['Description'] = $ban['Description'];
 		}
 		
 		$parser->assign('banlist', $banlist);
@@ -449,7 +506,7 @@ class PluginBans extends Plugin
 			return FALSE;
 		}
 		
-		$this->_banlist = $this->_main->parseINIStringRecursive($contents);
+		$this->_banlist = Leelabot::parseINIStringRecursive($contents);
 		
 		if(!$this->_banlist)
 			$this->_banlist = array();
@@ -472,7 +529,7 @@ class PluginBans extends Plugin
 	 */
 	public function saveBanlist()
 	{
-		$dump = $this->_main->generateINIStringRecursive($this->_banlist);
+		$dump = Leelabot::generateINIStringRecursive($this->_banlist);
 		return file_put_contents($this->config['Banlist'], $dump);
 	}
 }

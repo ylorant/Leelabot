@@ -224,7 +224,7 @@ class PluginBasicRights extends Plugin
 	public function loadRights($filename)
 	{
 		$contents = file_get_contents($filename);
-		$this->rights = $this->_main->parseINIStringRecursive($contents);
+		$this->rights = Leelabot::parseINIStringRecursive($contents);
 		
 		if(!$this->rights)
 			$this->rights = array();
@@ -234,7 +234,7 @@ class PluginBasicRights extends Plugin
 	
 	public function saveRights($filename)
 	{
-		return file_put_contents($filename, $this->_main->generateINIStringRecursive($this->rights));
+		return file_put_contents($filename, Leelabot::generateINIStringRecursive($this->rights));
 	}
 }
 
