@@ -120,8 +120,11 @@ class PluginClientBase extends Plugin
 		if(empty($command[0]))
 		{
 			foreach($list as $cmd => $level)
-				if($level > $player->level)
-					unset($list[$cmd]);
+			{
+				unset($list[$cmd]);
+				if($level <= $player->level)
+					$list['!'.$cmd] = $level;
+			}
 					
 			$list = implode(', ', array_keys($list));
 			Rcon::tell($player->id, 'List of commands : $list', array('list' => $list));
@@ -131,7 +134,7 @@ class PluginClientBase extends Plugin
 			$cmdHelp = strtolower(str_replace('!', '', $command[0]));
 			
 			//need into translate files for example : #id help_nextmap #to Return next map.
-			Rcon::tell($player->id, '$cmd : help_'.$cmdHelp, array('cmd' => '!'.$cmdHelp));
+			Rcon::tell($player->id, '$cmd: '.Locales::translate('help_'.$cmdHelp), array('cmd' => '!'.$cmdHelp), FALSE);
 		}
 	}
 	

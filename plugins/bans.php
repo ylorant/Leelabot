@@ -73,19 +73,26 @@ class PluginBans extends Plugin
 		$this->_bannedIPs = array();
 		$this->_bannedGUID = array();
 		
+		//Checking banlist existence or if we can create it
 		if(!isset($this->config['Banlist']) || (!is_file($this->_main->getConfigLocation().'/'.$this->config['Banlist']) && !touch($this->_main->getConfigLocation().'/'.$this->config['Banlist'])))
 		{
 			Leelabot::message("Can't load banlist. Bans will not be saved.", array(), E_WARNING);
 			return FALSE;
 		}
 		
+		//Default duration
 		if(isset($this->config['DefaultDuration']))
 			$this->config['DefaultDuration'] = $this->_parseBanDuration($this->config['DefaultDuration']);
 		
+		//Loading the banlist
 		$this->config['Banlist'] = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
 		$this->loadBanlist();
 		
 		$this->_plugins->addEventListener('bans', 'Ban');
+		
+		//Setting command rights
+		$this->setCommandLevel('ban', 10);
+		$this->setCommandLevel('banexit', 10);
 		
 		return TRUE;
 	}

@@ -36,7 +36,32 @@ class PluginAdminBase extends Plugin
 	 */
 	public function init()
 	{
-		$this->setCommandLevel('!kick', 10);
+		$this->setCommandLevel('die', 100);
+		$this->setCommandLevel('reload', 100);
+		$this->setCommandLevel('rcon', 100);
+		$this->setCommandLevel('mode', 50);
+		$this->setCommandLevel('pause', 50);
+		$this->setCommandLevel('cfg', 50);
+		$this->setCommandLevel('set', 50);
+		$this->setCommandLevel('exec', 50);
+		$this->setCommandLevel('whois', 10);
+		$this->setCommandLevel('shuffle', 10);
+		$this->setCommandLevel('shuffleteams', 10);
+		$this->setCommandLevel('swap', 10);
+		$this->setCommandLevel('slap', 10);
+		$this->setCommandLevel('nuke', 10);
+		$this->setCommandLevel('force', 10);
+		$this->setCommandLevel('say', 10);
+		$this->setCommandLevel('restart', 10);
+		$this->setCommandLevel('veto', 10);
+		$this->setCommandLevel('mute', 10);
+		$this->setCommandLevel('map', 10);
+		$this->setCommandLevel('nextmap', 10);
+		$this->setCommandLevel('bigtext', 10);
+		$this->setCommandLevel('kickall', 10);
+		$this->setCommandLevel('list', 10);
+		$this->setCommandLevel('cyclemap', 10);
+		$this->setCommandLevel('kick', 10);
 		
 		/* NOTE : The command list is in alphabetical order */
 	}

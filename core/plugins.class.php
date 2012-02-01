@@ -125,7 +125,7 @@ class PluginManager extends Events
 	 */
 	public function setCommandLevel($cmd, $level, $force = FALSE)
 	{
-		if(isset($this->_commands[$cmd]) && ($force || !isset($this->_commandLevels[$cmd])))
+		if(isset($this->_commands[$cmd]) && ($force || $this->_commandLevels[$cmd] == $this->_defaultLevel))
 			$this->_commandLevels[$cmd] = $level;
 		else
 			return FALSE;
