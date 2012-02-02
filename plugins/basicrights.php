@@ -97,6 +97,7 @@ class PluginBasicRights extends Plugin
 		}
 	}
 	
+	//TODO : Auth problem with brackets
 	public function SrvEventClientBegin($id)
 	{
 		$player = Server::getPlayer($id);
@@ -105,16 +106,14 @@ class PluginBasicRights extends Plugin
 		{
 			if((in_array($player->name, $auth['aliases']) && $player->ip == $auth['IP'])
 				|| (in_array($player->name, $auth['aliases']) && (isset($auth['GUID'][Server::getName()]) && $auth['GUID'][Server::getName()] == $player->guid))
-				|| ($player->ip == $auth['IP'] && $player->guid == (isset($auth['GUID'][Server::getName()]) && $auth['GUID'][Server::getName()] == $player->guid)))
+				|| ($player->ip == $auth['IP'] && (isset($auth['GUID'][Server::getName()]) && $auth['GUID'][Server::getName()] == $player->guid)))
 			{
-				if($this->config['Verbose'])
-					RCon::tell($id, 'You\'re now authed as $0', $authname);
-					
 				//Auth the player
 				$player->auth = $authname;
 				$player->level = $auth['level'];
 				
 				//Save player data modification
+				$modif = TRUE;
 				if(!in_array($player->name, $auth['aliases']))
 					$this->rights[$authname]['aliases'][] = $player->name;
 				elseif($player->ip != $auth['IP'])
@@ -122,9 +121,16 @@ class PluginBasicRights extends Plugin
 				elseif(!isset($auth['GUID'][Server::getName()]) || $auth['GUID'][Server::getName()] != $player->guid)
 					$this->rights[$authname]['GUID'][Server::getName()] = $player->guid;
 				else
-					break;
+					$modif = FALSE;
 				
-				$this->saveRights($this->config['RightsFile']);
+				//If a modification occured, we save the banlist
+				if($modif)
+					$this->saveRights($this->config['RightsFile']);
+				
+				if($this->config['Verbose'])
+					RCon::tell($id, 'You\'re now authed as $0', $authname);
+				
+				$this->_plugins->callEvent('rights', 'authenticate', $id, $authname);
 				break;
 			}
 		}
@@ -152,18 +158,19 @@ class PluginBasicRights extends Plugin
 		}
 		
 		//The password is good, so we register the player, we notify him and we unload the command.
-		$this->rights[$player->name] = array();
-		$this->rights[$player->name]['aliases'] = array($player->name);
-		$this->rights[$player->name]['GUID'] = array(Server::getName() => $player->guid);
-		$this->rights[$player->name]['IP'] = $player->ip;
-		$this->rights[$player->name]['level'] = 100;
+		$name = preg_replace("#[^a-zA-Z0-9]#", '', $player->name);
+		$this->rights[$name] = array();
+		$this->rights[$name]['aliases'] = array($player->name);
+		$this->rights[$name]['GUID'] = array(Server::getName() => $player->guid);
+		$this->rights[$name]['IP'] = $player->ip;
+		$this->rights[$name]['level'] = 100;
 		$this->saveRights($this->config['RightsFile']);
 		$this->deleteCommand('setadmin', $this);
 		
-		$this->_plugins->callEvent('rights', 'authenticate', $id, $player->name);
+		$this->_plugins->callEvent('rights', 'authenticate', $id, $name);
 		
 		$player->level = 100;
-		$player->auth = $player->name;
+		$player->auth = $name;
 		
 		RCon::tell($id, 'You\'re now a super-user on this server. Your pair IP/aliases will be used to authenticate you on other servers.');
 		RCon::tell($id, 'The !setadmin command is deactived for the current session. Make sure to remove the password from config.');
@@ -196,23 +203,27 @@ class PluginBasicRights extends Plugin
 		//If the player is not authed, we create an entry for him in the rights file
 		if(!$player->auth)
 		{
-			$this->rights[$player->name] = array();
-			$this->rights[$player->name]['aliases'] = array($player->name);
-			$this->rights[$player->name]['GUID'] = array(Server::getName() => $player->guid);
-			$this->rights[$player->name]['IP'] = $player->ip;
-			$this->rights[$player->name]['level'] = $level;
+			$name = preg_replace("#[^a-zA-Z0-9]#", '', $player->name);
+			$this->rights[$name] = array();
+			$this->rights[$name]['aliases'] = array($player->name);
+			$this->rights[$name]['GUID'] = array(Server::getName() => $player->guid);
+			$this->rights[$name]['IP'] = $player->ip;
+			$this->rights[$name]['level'] = $level;
 			$this->saveRights($this->config['RightsFile']);
 			
-			$player->auth = $player->name;
+			$player->auth = $name;
+			$this->_plugins->callEvent('rights', 'authenticate', $player->id, $name);
 			
 			if($this->config['Verbose'])
 			{
-				RCon::tell($id, 'Created auth user $0', $player->name);
-				RCon::tell($player->id, 'You\'re now authed as $0', $player->name);
+				RCon::tell($id, 'Created auth user $0', $name);
+				RCon::tell($player->id, 'You\'re now authed as $0', $name);
 			}
 		}
 		else
 			$this->rights[$player->auth] = $level;
+		
+		$this->saveRights($this->config['RightsFile']);
 		
 		$player->level = $level;
 		
