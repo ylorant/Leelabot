@@ -36,6 +36,7 @@ class PluginClientBase extends Plugin
 {
 	private $_autoteams = TRUE; // AutoTeams toggle.
 	private $_cyclemapfile = NULL; // Cyclemap file destination.
+	private $_ClientUserinfoChangedIgnore = array();
 	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
@@ -65,28 +66,35 @@ class PluginClientBase extends Plugin
 	{
 		if($this->_autoteams)
 		{
-			$player = Server::getPlayer($id);
-			
-			if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC)
+			if(!in_array($id, $this->_ClientUserinfoChangedIgnore))
 			{
-				$teams_count = Server::getTeamCount();
+				$player = Server::getPlayer($id);
 				
-				if($player->team == Server::TEAM_BLUE)
-					$otherteam = Server::TEAM_RED;
-				elseif($player->team == Server::TEAM_RED)
-					$otherteam = Server::TEAM_BLUE;
-				
-				if($teams_count[$player->team] <= $teams_count[$otherteam])
+				if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC)
 				{
-					// No balance and force player in his team
-					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
-					Rcon::forceteam($player->id, $teams[$player->team]);
-					return TRUE; 			
+					$teams_count = Server::getTeamCount();
+					
+					if($player->team == Server::TEAM_BLUE)
+						$otherteam = Server::TEAM_RED;
+					elseif($player->team == Server::TEAM_RED)
+						$otherteam = Server::TEAM_BLUE;
+					
+					if($teams_count[$player->team] <= $teams_count[$otherteam])
+					{
+						// No balance and force player in his team
+						$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
+						Rcon::forceteam($player->id, $teams[$player->team]);
+						return TRUE; 			
+					}
+					else
+					{
+						$this->_balance();
+					}
 				}
-				else
-				{
-					$this->_balance();
-				}
+			}
+			else
+			{
+				unset($this->_ClientUserinfoChangedIgnore[$id]);
 			}
 		}
 	}
@@ -260,6 +268,9 @@ class PluginClientBase extends Plugin
 			{
 				//We take the last player of the team
 				$player = array_shift($last);
+				
+				//Add on ClientUserinfoChanged ignore list
+				$this->_ClientUserinfoChangedIgnore[$player] = $player;
 				
 				//We change the team of the player
 				RCon::forceteam($player, $dest_team);

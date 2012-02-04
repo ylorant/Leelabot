@@ -120,14 +120,17 @@ class PluginWarns extends Plugin
 	{
 		$_warns = Server::get('warns');
 		
-		foreach($_warns as $player => &$warns)
+		if(count($_warns))
 		{
-			if($warns['num'] >= $this->config['WarnsKick'] && time() >= ($warns['last']+$this->config['SecondsBeforeKick']))
+			foreach($_warns as $player => &$warns)
 			{
-				Rcon::tell($player, 'You have $warns warnings. You will be kicked', array('warns' => $warns['num']));
-				$this->_clearWarn($player);
-				usleep(500000);
-				Rcon::kick($player);
+				if($warns['num'] >= $this->config['WarnsKick'] && time() >= ($warns['last']+$this->config['SecondsBeforeKick']))
+				{
+					Rcon::tell($player, 'You have $warns warnings. You will be kicked', array('warns' => $warns['num']));
+					$this->_clearWarn($player);
+					usleep(500000);
+					Rcon::kick($player);
+				}
 			}
 		}
 	}
