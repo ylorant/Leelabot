@@ -776,12 +776,12 @@ class PluginIrc extends Plugin
 			if(in_array($award, $this->_main->config['Plugin']['Stats']['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
 			{
 				if($_awards[$award][0] !== NULL)
-					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($_awards[$award][0])->name;
+					$buffer[] = "\037".ucfirst($award)."\037".' '.Server::getPlayer($_awards[$award][0])->name;
 				else
-					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
+					$buffer[] = "\037".ucfirst($award)."\037".' nobody';
 			}
 		}
-		$this->sendMessage("\002Awards :\002 ".join(' | ', $buffer));
+		$this->sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
 	}
 	
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
