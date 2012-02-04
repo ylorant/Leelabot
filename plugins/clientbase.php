@@ -64,32 +64,29 @@ class PluginClientBase extends Plugin
 	 */
 	public function SrvEventClientUserinfoChanged($id, $data)
 	{
-		if($this->_autoteams)
+		$player = Server::getPlayer($id);
+		
+		if($this->_autoteams && $player->team != $data['t'])
 		{
-			if(!in_array($id, $this->_ClientUserinfoChangedIgnore))
+			if(!in_array($id, $this->_ClientUserinfoChangedIgnore) && $player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC)
 			{
-				$player = Server::getPlayer($id);
+				$teams_count = Server::getTeamCount();
 				
-				if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC && $player->team != $data['t'])
+				if($player->team == Server::TEAM_BLUE)
+					$otherteam = Server::TEAM_RED;
+				elseif($player->team == Server::TEAM_RED)
+					$otherteam = Server::TEAM_BLUE;
+				
+				if($teams_count[$player->team] <= $teams_count[$otherteam])
 				{
-					$teams_count = Server::getTeamCount();
-					
-					if($player->team == Server::TEAM_BLUE)
-						$otherteam = Server::TEAM_RED;
-					elseif($player->team == Server::TEAM_RED)
-						$otherteam = Server::TEAM_BLUE;
-					
-					if($teams_count[$player->team] <= $teams_count[$otherteam])
-					{
-						// No balance and force player in his team
-						$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
-						Rcon::forceteam($player->id, $teams[$player->team]);
-						return TRUE; 			
-					}
-					else
-					{
-						$this->_balance();
-					}
+					// No balance and force player in his team
+					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
+					Rcon::forceteam($player->id, $teams[$player->team]);
+					return TRUE; 			
+				}
+				else
+				{
+					$this->_balance();
 				}
 			}
 			else
