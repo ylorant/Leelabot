@@ -70,7 +70,7 @@ class PluginClientBase extends Plugin
 			{
 				$player = Server::getPlayer($id);
 				
-				if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC)
+				if($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC && $player->team != $data['t'])
 				{
 					$teams_count = Server::getTeamCount();
 					
@@ -308,87 +308,6 @@ class PluginClientBase extends Plugin
 		<h1>Clientbase plugin</h1>
 		
 		";
-	}
-	
-	private function IrcStatus($_ircplugin)
-	{
-		$cmd = $_ircplugin->_cmd;
-		$serverlist = ServerList::getList();
-		$actual = Server::getName();
-	
-		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
-		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$this->_printServerInfo($_ircplugin);
-		}
-		else
-		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$this->_printServerInfo($_ircplugin);
-			}
-		}
-	
-		Server::setServer($this->_main->servers[$actual]);
-	}
-	
-	private function _printServerInfo($_ircplugin)
-	{
-		$serverinfo = Server::getServer()->serverInfo;
-		$this->sendMessage("\037Server :\037 ".$_ircplugin->_rmColor($serverinfo['sv_hostname']));
-		$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
-	}
-	
-	private function IrcPlayers($_ircplugin)
-	{
-		$cmd = $_ircplugin->_cmd;
-		$serverlist = ServerList::getList();
-		
-		$actual = Server::getName();
-	
-		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
-		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$this->_printPlayers($_ircplugin);
-		}
-		else
-		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$this->_printPlayers($_ircplugin);
-			}
-		}
-	
-		Server::setServer($this->_main->servers[$actual]);
-	}
-	
-	private function _printPlayers($_ircplugin)
-	{
-		$playerlist = array();
-		$nbplayers = 0;
-		
-		foreach(Server::getPlayerList() as $curPlayer)
-		{
-			//Gestion de la couleur en fonction de l'équipe
-			if(Server::getServer()->serverInfo['g_gametype'] != '0')
-			{
-				if($curPlayer->team == 1)
-					$color = "\00304";
-				elseif($curPlayer->team == 2)
-					$color = "\00302";
-				elseif($curPlayer->team == 3)
-					$color = "\00314";
-			}
-			else
-				$color = "\00308";
-			$playerlist[] = "\002".$color.$curPlayer->name."\017";
-			++$nbplayers;
-		}
-		
-		if($nbplayers >0) $_ircplugin->sendMessage('List of players : '.join(', ', $playerlist));
-		else $_ircplugin->sendMessage('No one.');
 	}
 }
 
