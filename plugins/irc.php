@@ -456,7 +456,8 @@ class PluginIrc extends Plugin
 						$this->_cmd = $cmd;
 						$this->_message = $message;
 						
-						$this->_plugins->callEvent('irc', substr($cmd[0], 1), &$this);
+						echo substr($cmd[0], 1)."\n";
+						$this->_plugins->callEvent('irc', substr($cmd[0], 1), $this);
 					}
 					else
 					{
@@ -689,7 +690,7 @@ class PluginIrc extends Plugin
 		$this->privmsg($this->config['MainChannel'], "\002Awards :\002 ".join(' | ', $buffer));
 	}
 	
-	private function _nameOfServer($cmdkey, $otherargs = TRUE)
+	public function _nameOfServer($cmdkey, $otherargs = TRUE)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
@@ -727,7 +728,7 @@ class PluginIrc extends Plugin
 		return $server;
 	}
 						
-	private function _verifyClientLevel($levelwant)
+	public function _verifyClientLevel($levelwant)
 	{
 		if($levelwant == 'voice')
 		{
