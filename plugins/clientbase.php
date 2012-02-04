@@ -68,7 +68,7 @@ class PluginClientBase extends Plugin
 		
 		if($this->_autoteams && $data['t'] != $player->team)
 		{
-			if(!in_array($id, $this->_ClientUserinfoChangedIgnore) && $player->team != Server::TEAM_SPEC)
+			if(!in_array($id, $this->_ClientUserinfoChangedIgnore))
 			{
 				$teams_count = Server::getTeamCount();
 				
