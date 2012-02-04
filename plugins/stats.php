@@ -107,6 +107,9 @@ class PluginStats extends Plugin
 		else
 			$this->config['AllowPlayerVerbosity'] = FALSE;
 			
+		//Adding event listener
+		$this->_plugins->addEventListener('stats', 'Stats');
+		
 		$this->_initVars();
 	}
 	
@@ -174,8 +177,9 @@ class PluginStats extends Plugin
 		}
 		
 		if(!empty($this->config['ShowAwards']))
+		{
 			$this->_showAwardsMsg();
-		
+		}
 		//Stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
@@ -522,9 +526,14 @@ class PluginStats extends Plugin
 		}
 		
 		if($player === NULL)
+		{
 			Rcon::say('Awards : $awards', array('awards' => join('^3 - ', $buffer)));
+			$this->_plugins->callEvent('stats', 'showawards', $_awards);
+		}
 		else
+		{
 			Rcon::tell($player, 'Awards : $awards', array('awards' => join('^3 - ', $buffer)));
+		}
 	}
 	
 	//Affiche le message de statistiques

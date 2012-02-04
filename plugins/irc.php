@@ -87,6 +87,9 @@ class PluginIrc extends Plugin
 			
 			//Irc bot main routine
 			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
+			
+			//Adding event listener
+			$this->_plugins->addEventListener('irc', 'Irc');
 		}
 		else
 		{
@@ -190,7 +193,7 @@ class PluginIrc extends Plugin
 			}
 			else
 			{
-				$this->_connected = TRUE;
+				$this->_connected = FALSE;
 				Leelabot::message('The IRC connection has failed. We will try again in a few seconds.', array());
 			}
 		}
@@ -452,6 +455,8 @@ class PluginIrc extends Plugin
 						$cmd[0] = trim($cmd[0]);
 						$this->_cmd = $cmd;
 						$this->_message = $message;
+						
+						$this->_plugins->callEvent('irc', substr($cmd[0], 1), &$this);
 						
 						if(array_key_exists($cmd[0], $this->_cmdIrc))
 						{
@@ -1201,6 +1206,13 @@ class PluginIrc extends Plugin
 	{
 		$serverlist = ServerList::getList();
 		$this->sendMessage("Servers : ".join(', ', $serverlist));
+	}
+	
+	public function StatsShowAwards($server, $_awards)
+	{
+		$this->sendMessage("Servers : ".join(', ', $serverlist));
+		
+		$this->_printAwards(Server::getName());
 	}
 	
 	private function _nameOfServer($cmdkey, $otherargs = TRUE)
