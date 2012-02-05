@@ -39,6 +39,7 @@ class PluginAdminBase extends Plugin
 		$this->setCommandLevel('die', 100);
 		$this->setCommandLevel('reload', 100);
 		$this->setCommandLevel('rcon', 100);
+		$this->setCommandLevel('sysinfo', 100);
 		$this->setCommandLevel('mode', 50);
 		$this->setCommandLevel('pause', 50);
 		$this->setCommandLevel('cfg', 50);
@@ -64,6 +65,13 @@ class PluginAdminBase extends Plugin
 		$this->setCommandLevel('kick', 10);
 		
 		/* NOTE : The command list is in alphabetical order */
+	}
+	
+	public function CommandSysinfo($id, $command)
+	{
+		RCon::tell($id, "Memory consumption: $0/$1 KB", array(memory_get_usage()/1000, memory_get_usage(TRUE)/1000));
+		RCon::tell($id, "PHP version : $0", array(phpversion()));
+		
 	}
 	
 	/** Bigtext command. Send a message for all.

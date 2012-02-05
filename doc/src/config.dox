@@ -2,5 +2,24 @@
  * 
  * \section config_struct Configuration structure
  * 
+ * In Leelabot, configuration is stored in .cfg files, inside a folder, along with other files or not (only the .cfg files are parsed).
+ * Inside this folder, sub-folders are allowed, with the same rules than the root folder. For cimplicity purposes, the best practice is to
+ * create a "conf" directory (maybe with an other name), which will hold all configuration for the bot (and data files when not using a database), 
+ * and in that directory, a subdirectory "plugins" which will hold all plugin configuration, and in the root folder, the main bot configuration.
+ * 
+ * Configuration can be hold in only one file, as in how many files as you want, since they are glued up before being analysed as a whole.
+ * The configuration data is stored using a slightly modified version of .INI files, adding recursive sections. Orphan parameters are not used
+ * and they will throw a warning if found. Even if glued files may be solving problem of orphan parameters by setting them to the last section
+ * in the previous file, it is advised to redefine the section in which the parameters are defined in the start of each file.
+ * 
+ * Section names are cleaved by a dot '.' symbol, disallowing it in sub-sections names. Finally, configuration parameters are defined using the
+ * good ol' name=value syntax (with or without semicolon at the end of the line). Try to respect the case in which the parameters are named, or
+ * the bot's behavior will be unexpected.
+ * 
+ * Finally, values in the configuration are mainly strings, integers and booleans. Booleans are variables that can take two different values,
+ * making them useful for defining switches, like for optional functionalities. In the configuration, multiple values can be used to define the
+ * state of the variable : "1", "true", "on", "yes" are recognized as true (the "switch" is activated) and everything else is recognized as
+ * false (the "switch" is off).
+ * 
  * \section config_params Configuration parameters
  */

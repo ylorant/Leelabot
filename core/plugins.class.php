@@ -775,7 +775,7 @@ class PluginManager extends Events
 					else
 					{
 						if(!$this->_quietReply)
-							RCon:tell($player, 'You\'re not allowed to execute this command.');
+							RCon::tell($player, 'You\'re not allowed to execute this command.');
 						break;
 					}
 				}
