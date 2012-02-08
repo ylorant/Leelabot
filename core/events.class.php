@@ -108,6 +108,9 @@ class Events
 		
 		if(!isset($this->_events[$listener][$event]))
 			$this->_events[$listener][$event] = array();
+			
+		if(!isset($this->_eventLevels[$listener][$event]))
+			$this->_eventLevels[$listener][$event] = 0;
 		
 		if(isset($this->_events[$listener][$event][$id]))
 		{
@@ -123,7 +126,7 @@ class Events
 		
 		$this->_events[$listener][$event][$id] = $callback;
 		
-		if($this->_events[$listener][$event] < $level)
+		if($this->_eventLevels[$listener][$event] < $level)
 			$this->_events[$listener][$event] = $level;
 		
 		return TRUE;
@@ -154,7 +157,7 @@ class Events
 		
 		if(!isset($this->_events[$listener][$event][$id]))
 		{
-			Leelabot::message('Error: Already defined identifier: $0', $id, E_DEBUG);
+			Leelabot::message('Error: Undefined identifier: $0', $id, E_DEBUG);
 			return FALSE;
 		}
 		
@@ -172,16 +175,17 @@ class Events
 	/** Calls an event for an event listener.
 	 * This function calls the callbacks for the given event name. It will execute the callbacks by giving them for parameters the additionnal parameter given to this
 	 * method.
-	 * For example, calling callEvent like that : $this->callEvent('somelistener', 'connect', 1, 'hi'); will call the callbacks bound to the event "connect" with 2
+	 * For example, calling callEvent like that : $this->callEvent('somelistener', 'connect', 0, NULL, 1, 'hi'); will call the callbacks bound to the event "connect" with 2
 	 * parameters : 1 and 'hi'.
 	 * 
 	 * \param $listener The listener from which the event will be called.
 	 * \param $event The event to call.
 	 * \param $level The level of the entity who is executing the command.
+	 * \param $ids A restricted list of IDs who will be able to execute the event
 	 * 
-	 * \return An error code relating to the error type occured, or TRUE if no error occured.
+	 * \return An error code relating to the error type occured, or NULL if no error occured.
 	 */
-	public function callEvent($listener, $event, $level = 0)
+	public function callEvent($listener, $event, $level = 0, $ids = NULL)
 	{
 		if(!isset($this->_events[$listener]))
 		{
@@ -189,22 +193,32 @@ class Events
 			return Events::UNDEFINED_LISTENER;
 		}
 		
-		if(!isset($this->_events[$listener][$event]) || !$this->_events[$listener][$event])
+		if(!isset($this->_events[$listener][$event]))
 			return Events::UNDEFINED_EVENT;
 		
 		if($level < $this->_eventLevels[$listener][$event])
 			return Events::ACCESS_DENIED;
 		
+		Leelabot::message('Event call: $0/$1 : $2', array($listener, $event, $level));
+		
 		//Get additionnal parameters given to the method to give them to the callbacks
 		$params = func_get_args();
 		array_shift($params);
 		array_shift($params);
+		array_shift($params);
+		array_shift($params);
 		
 		//Calling back
+		$found = FALSE;
 		foreach($this->_events[$listener][$event] as $id => $callback)
-			call_user_func_array($callback, $params);
-		
-		return TRUE;
+		{
+			if(!is_array($ids) || in_array($id, $ids))
+			{
+				$found = TRUE;
+				call_user_func_array($callback, $params);
+			}
+		}
+		return $found ? TRUE : Events::UNDEFINED_EVENT;
 	}
 	
 	/** List the available events for a listener.
@@ -285,10 +299,46 @@ class Events
 		
 		if(!isset($this->_events[$listener][$event]))
 		{
-			Leelabot::message('Error: Undefined Event: $0', $id, E_DEBUG);
+			Leelabot::message('Error: Undefined Event: $0', $event, E_DEBUG);
 			return FALSE;
 		}
 		
 		return $this->_eventLevels[$listener][$event];
+	}
+	
+	/** Returns the callback for an event.
+	 * This function returns all the callbacks for a given event.
+	 * 
+	 * \param $listener The listener in which the event is located.
+	 * \param $event The event's name.
+	 * 
+	 * \return An array containing in key the callback id, and in value the callback, or FALSE if an error occured. 
+	 */
+	public function getEventCallbacks($listener, $event)
+	{
+		if(!isset($this->_events[$listener]))
+		{
+			Leelabot::message('Error: Undefined Event Listener: $0', $listener, E_DEBUG);
+			return FALSE;
+		}
+		
+		if(!isset($this->_events[$listener][$event]))
+		{
+			Leelabot::message('Error: Undefined Event: $0', $id, E_DEBUG);
+			return FALSE;
+		}
+		
+		return $this->_events[$listener][$event];
+	}
+	
+	public function eventExists($listener, $event)
+	{
+		if(!isset($this->_events[$listener]))
+		{
+			Leelabot::message('Error: Undefined Event Listener: $0', $listener, E_DEBUG);
+			return FALSE;
+		}
+		
+		return isset($this->_events[$listener][$event]);
 	}
 }

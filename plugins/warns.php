@@ -3,7 +3,7 @@
  * \file plugins/warns.php
  * \author Eser Deniz <srwiez@gmail.com>
  * \version 1.0
- * \brief Warns plugin for Leelabot. It allows give warning to bad player avec good player can forgive bad player :D
+ * \brief Warns plugin for Leelabot. It warns automatically bad players (for teamkilling, insulting), and kicks them if they got too much warnings.
  *
  * \section LICENSE
  *
@@ -128,7 +128,6 @@ class PluginWarns extends Plugin
 				{
 					Rcon::tell($player, 'You have $warns warnings. You will be kicked', array('warns' => $warns['num']));
 					$this->_clearWarn($player);
-					usleep(500000);
 					Rcon::kick($player);
 				}
 			}

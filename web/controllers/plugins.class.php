@@ -68,8 +68,9 @@ class LeelabotAdminPlugins
 		foreach($this->pluginsInfo as $plugin)
 			$servers[$plugin['name']] = array();
 		
-		foreach(Leelabot::$instance->servers as $servername => $server)
+		foreach(ServerList::getList() as $servername)
 		{
+			$server = ServerList::getServer($servername);
 			$list = $server->getPlugins();
 			foreach($list as $p)
 			{
@@ -78,6 +79,7 @@ class LeelabotAdminPlugins
 				$servers[$p][] = $servername;
 			}
 		}
+		print_r($servers);
 		
 		foreach($servers as &$s)
 		{

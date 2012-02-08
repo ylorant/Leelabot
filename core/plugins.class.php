@@ -44,9 +44,6 @@ class PluginManager extends Events
 	private $_plugins; ///< Plugins list
 	private $_pluginClasses; ///< Plugin classes names
 	private $_routines = array(); ///< Routines list
-	private $_serverEvents = array(); ///< Server events
-	private $_commands = array(); ///< Commands
-	private $_commandLevels = array(); ///< Command levels
 	private $_defaultLevel; ///< Default level for new commands.
 	private $_quietReply; ///< Trigger for the automatic reply for invalid commands/Insufficient access
 	private $_pluginCache = array(); ///< Cache for already loaded plugins (to avoid class redefinition when reloading plugins)
@@ -62,6 +59,9 @@ class PluginManager extends Events
 		$this->_plugins = array();
 		$this->_defaultLevel = 0;
 		$this->_quietReply = FALSE;
+		
+		$this->addEventListener('command', 'Command');
+		$this->addEventListener('serverevent', 'SrvEvent');
 	}
 	
 	/** Returns the name of a plugin from its instance.
@@ -125,8 +125,8 @@ class PluginManager extends Events
 	 */
 	public function setCommandLevel($cmd, $level, $force = FALSE)
 	{
-		if(isset($this->_commands[$cmd]) && ($force || $this->_commandLevels[$cmd] == $this->_defaultLevel))
-			$this->_commandLevels[$cmd] = $level;
+		if($this->eventExists('command', $cmd) && ($force || $this->getEventLevel('command', $cmd) == $this->_defaultLevel))
+			$this->setEventLevel('command', $cmd, $level);
 		else
 			return FALSE;
 		
@@ -270,17 +270,17 @@ class PluginManager extends Events
 		}
 		
 		//Deleting server events
-		foreach($this->_serverEvents as $eventName => $eventList)
+		foreach($this->getEventsNames('serverevent') as $event)
 		{
-			if(isset($eventList[$this->_plugins[$plugin]['className']]))
-				$this->deleteServerEvent($eventName, $this->_plugins[$plugin]['obj']);
+			foreach($this->getEventCallbacks('serverevent',$event)  as $callID => $callback)
+				$this->deleteServerEvent($callID, $this->_plugins[$plugin]['obj']);
 		}
 		
 		//Deleting commands
-		foreach($this->_commands as $eventName => $eventList)
+		foreach($this->getEventsNames('command') as $event)
 		{
-			if(isset($eventList[$this->_plugins[$plugin]['className']]))
-				$this->deleteCommand($eventName, $this->_plugins[$plugin]['obj']);
+			foreach($this->getEventCallbacks('command',$event)  as $callID => $callback)
+				$this->deleteCommand($event, $this->_plugins[$plugin]['obj']);
 		}
 		
 		$dependencies = $this->_plugins[$plugin]['dependencies'];
@@ -362,12 +362,6 @@ class PluginManager extends Events
 				//Checks for routines
 				if(preg_match('#^Routine#', $method))
 					$this->addRoutine($this->_plugins[$params['name']]['obj'], $method);
-				//Checks for server events
-				if(preg_match('#^SrvEvent#', $method))
-					$this->addServerEvent(preg_replace('#SrvEvent(.+)#', '$1', $method), $this->_plugins[$params['name']]['obj'], $method);
-				//Checks from command (found commands are used in lower case)
-				if(preg_match('#^Command#', $method))
-					$this->addCommand(strtolower(preg_replace('#Command(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
 				//Checks for Webservice methods
 				if(preg_match('#^WSMethod#', $method))
 					$this->addWSMethod(lcfirst(preg_replace('#WSMethod(.+)#', '$1', $method)), $this->_plugins[$params['name']]['obj'], $method);
@@ -379,7 +373,11 @@ class PluginManager extends Events
 				foreach($this->_autoMethods as $listener => $prefix)
 				{
 					if(preg_match('#^'.$prefix.'#', $method))
-						$this->addEvent($listener, $params['className'], strtolower(preg_replace('#'.$prefix.'(.+)#', '$1', $method)), array($this->_plugins[$params['name']]['obj'], $method));
+					{
+						$event = strtolower(preg_replace('#'.$prefix.'(.+)#', '$1', $method));
+						Leelabot::message('Adding method $0, on event $1/$2', array($params['className'].'::'.$method, $listener, $event), E_DEBUG);
+						$this->addEvent($listener, $params['name'], $event, array($this->_plugins[$params['name']]['obj'], $method));
+					}
 				}
 			}
 		}
@@ -467,16 +465,7 @@ class PluginManager extends Events
 	{
 		Leelabot::message('Adding method $0, on server event $1', array(get_class($plugin).'::'.$method, $event), E_DEBUG);
 		
-		if(!method_exists($plugin, $method)) //Check if method exists
-		{
-			Leelabot::message('Error : Target method does not exists.', array(), E_DEBUG);
-			return FALSE;
-		}
-		
-		if(!isset($this->_serverEvents[$event]))
-			$this->_serverEvents[$event] = array();
-		
-		$this->_serverEvents[$event][get_class($plugin)] = array($plugin, $method);
+		$this->addEvent('serverevent', $this->getName($plugin), $event, array($plugin, $method), 0);
 		
 		return TRUE;
 	}
@@ -498,17 +487,13 @@ class PluginManager extends Events
 		
 		Leelabot::message('Adding method $0, on client command $1, with level $2', array(get_class($plugin).'::'.$method, '!'.$event, $level), E_DEBUG);
 		
-		if(!method_exists($plugin, $method)) //Check if method exists
-		{
-			Leelabot::message('Target method does not exists.', array(), E_DEBUG);
-			return FALSE;
-		}
+		$this->addEvent('command', $this->getName($plugin), $event, array($plugin, $method), $level);
 		
-		if(!isset($this->_commands[$event]))
-			$this->_commands[$event] = array();
-		
-		$this->_commands[$event][get_class($plugin)] = array($plugin, $method);
-		$this->_commandLevels[$event] = $level;
+		//~ if(!isset($this->_commands[$event]))
+			//~ $this->_commands[$event] = array();
+		//~ 
+		//~ $this->_commands[$event][get_class($plugin)] = ;
+		//~ $this->_commandLevels[$event] = $level;
 		
 		return TRUE;
 	}
@@ -590,21 +575,7 @@ class PluginManager extends Events
 	{
 		Leelabot::message('Deleting server event $0', array(get_class($plugin).'::'.$event), E_DEBUG);
 		
-		if(!isset($this->_serverEvents[$event]))
-		{
-			Leelabot::message('Event $0 does not exists.', array($event), E_WARNING);
-			return FALSE;
-		}
-		
-		if(!isset($this->_serverEvents[$event][get_class($plugin)]))
-		{
-			Leelabot::message('Method does not exists.', array(), E_WARNING);
-			return FALSE;
-		}
-		
-		unset($this->_serverEvents[$event][get_class($plugin)]);
-		if(empty($this->_serverEvents[$event]))
-			unset($this->_serverEvents[$event]);
+		$this->deleteEvent('serverevent', $event, $this->getName($plugin));
 		
 		return TRUE;
 	}
@@ -621,21 +592,7 @@ class PluginManager extends Events
 	{
 		Leelabot::message('Deleting command $0', array(get_class($plugin).'::'.$event), E_DEBUG);
 		
-		if(!isset($this->_commands[$event]))
-		{
-			Leelabot::message('Event $0 does not exists.', array($event), E_WARNING);
-			return FALSE;
-		}
-		
-		if(!isset($this->_commands[$event][get_class($plugin)]))
-		{
-			Leelabot::message('Method does not exists.', array(), E_WARNING);
-			return FALSE;
-		}
-		
-		unset($this->_commands[$event][get_class($plugin)]);
-		if(empty($this->_commands[$event]))
-			unset($this->_commands[$event]);
+		$this->deleteEvent('command', $event, $this->getName($plugin));
 		
 		return TRUE;
 	}
@@ -649,20 +606,18 @@ class PluginManager extends Events
 	 */
 	public function getCommandList($plugins = FALSE)
 	{
-		$return = array();
 		if($plugins != FALSE)
 		{
-			foreach($this->_commands as $event => $info)
+			$return = array();
+			foreach($this->listEvents('command') as $event => $level)
 			{
-				if(in_array($this->getName($info[0]), $plugins))
-					$return[$event] = $this->_commandLevels[$event];
+				$callbacks = array_keys($this->getEventCallbacks('command', $event));
+				if(array_intersect($plugins, $callbacks))
+					$return[$event] = $level;
 			}
 		}
 		else
-		{
-			foreach($this->_commands as $event => $info)
-				$return[$event] = $this->_commandLevels[$event];
-		}
+			$return = $this->listEvents('command');
 		
 		return $return;
 	}
@@ -736,18 +691,13 @@ class PluginManager extends Events
 	 */
 	public function callServerEvent($event, $params = array())
 	{
-		if(isset($this->_serverEvents[$event]))
-		{
-			if(!is_array($params))
-				$params = array($params);
-			
-			$serverPlugins = Server::getPlugins();
-			foreach($this->_serverEvents[$event] as $plugin => &$event)
-			{
-				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
-					call_user_func_array($event, $params);
-			}
-		}
+		$event = strtolower($event);
+		
+		if(!is_array($params))
+			$params = array($params);
+		
+		call_user_func_array(array($this, 'callEvent'), array_merge(array('serverevent', $event, 0, Server::getPlugins()), $params));
+		
 		return TRUE;
 	}
 	
@@ -762,29 +712,19 @@ class PluginManager extends Events
 	 */
 	public function callCommand($event, $player, $params)
 	{
-		if(isset($this->_commands[$event]))
+		$player = Server::getPlayer($player);
+		$ret = $this->callEvent('command', $event, $player->level, Server::getPlugins(), $player->id, $params);
+		
+		switch($ret)
 		{
-			$serverPlugins = Server::getPlugins();
-			foreach($this->_commands[$event] as $plugin => &$class)
-			{
-				if(in_array($this->_pluginClasses[$plugin], $serverPlugins))
-				{
-					Leelabot::message('Level matching : $0/$1', array(Server::getPlayer($player)->level,  $this->_commandLevels[$event]), E_DEBUG);
-					if(Server::getPlayer($player)->level >= $this->_commandLevels[$event])
-						$class[0]->$class[1]($player, $params);
-					else
-					{
-						if(!$this->_quietReply)
-							RCon::tell($player, 'You\'re not allowed to execute this command.');
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			if(!$this->_quietReply)
-				RCon::tell($player, 'Command not found.');
+			case Events::ACCESS_DENIED:
+				RCon::tell($player->id, "You're not allowed to use this command.");
+				break;
+			case Events::UNDEFINED_EVENT:
+			case Events::UNDEFINED_LISTENER:
+				var_dump($ret);
+				RCon::tell($player->id, "Command not found.");
+				break;
 		}
 	}
 }

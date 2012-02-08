@@ -870,6 +870,8 @@ class Leelabot
 			$message = Leelabot::$instance->intl->translate($message);
 		
 		//Parsing message vars
+		if(!is_array($args))
+			$args = array($args);
 		foreach($args as $id => $value)
 			$message = str_replace('$'.$id, $value, $message);
 		

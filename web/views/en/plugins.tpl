@@ -28,7 +28,7 @@
 		</p>
 			
 		<div class="serverbox">
-			<strong>Used on :</strong> {$servers[$value.name]}
+			<strong>Enabled on :</strong> {$servers[$value.name]}
 		</div>
 	</div>
 {/loop}
