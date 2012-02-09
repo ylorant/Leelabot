@@ -365,6 +365,13 @@ class ServerInstance
 				}
 			}
 			
+			//We call ClientBegin for spectators
+			foreach($this->players as $id => $player)
+			{
+				if($player->team == Server::TEAM_SPEC)
+					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
+			}
+			
 			//Finally, we init scoreboard and virtually start a game (for the plugins).
 			$this->scores = array(1 => 0, 2 => 0);
 			$this->_leelabot->plugins->callServerEvent('InitGame', $this->serverInfo);

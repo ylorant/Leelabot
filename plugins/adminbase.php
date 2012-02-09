@@ -156,7 +156,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]) && !empty($command[1]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -196,7 +196,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -228,7 +228,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -280,7 +280,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -414,7 +414,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -578,7 +578,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{
@@ -636,7 +636,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$target = Server::searchPlayer($command[0]);
-			if(!$target)
+			if($target === FALSE)
 				RCon::tell($id, "No player found.");
 			elseif(is_array($target))
 			{

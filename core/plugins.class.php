@@ -715,16 +715,18 @@ class PluginManager extends Events
 		$player = Server::getPlayer($player);
 		$ret = $this->callEvent('command', $event, $player->level, Server::getPlugins(), $player->id, $params);
 		
-		switch($ret)
+		if($ret !== TRUE)
 		{
-			case Events::ACCESS_DENIED:
-				RCon::tell($player->id, "You're not allowed to use this command.");
-				break;
-			case Events::UNDEFINED_EVENT:
-			case Events::UNDEFINED_LISTENER:
-				var_dump($ret);
-				RCon::tell($player->id, "Command not found.");
-				break;
+			switch($ret)
+			{
+				case Events::ACCESS_DENIED:
+					RCon::tell($player->id, "You're not allowed to use this command.");
+					break;
+				case Events::UNDEFINED_EVENT:
+				case Events::UNDEFINED_LISTENER:
+					RCon::tell($player->id, "Command not found.");
+					break;
+			}
 		}
 	}
 }
