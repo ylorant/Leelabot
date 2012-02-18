@@ -652,6 +652,7 @@ class ServerInstance
 				elseif($this->_logfile['state'] == FTP_FAILED) //Precedent reading has failed
 				{
 					Leelabot::message('Can\'t read the remote FTP log anymore.', array(), E_WARNING);
+					$this->openLogFile();
 					return FALSE;
 				}
 				else
