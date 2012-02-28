@@ -64,7 +64,7 @@ class PluginAdminBase extends Plugin
 		$this->setCommandLevel('cyclemap', 10);
 		$this->setCommandLevel('kick', 10);
 		
-		/* NOTE : The command list is in alphabetical order */
+		/* NOTE : The command list above is not in alphabetical order */
 	}
 	
 	public function CommandSysinfo($id, $command)

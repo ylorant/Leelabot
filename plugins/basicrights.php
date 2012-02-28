@@ -20,8 +20,11 @@
  *
  * \section DESCRIPTION
  *
- * This file contains the plugin basicrights, managing the rights on the bot in a simple way. With this management, each user can have their own right level. This level
- * is shared on all servers, and all levels must be modified one by one.
+ * This file contains the plugin basicrights, managing the rights on the bot in a simple way. With this management,
+ * 	each user can have their own right level. This level is shared on all servers, and all levels must be modified one by one.
+ * 
+ * This plugin defines an event listener "rights", with the method prefix "Rights", and an unique event :
+ * \li authenticate($id, $authname) : The client has been authed. Parameters : the client ID and its authname
  */
 
 class PluginBasicRights extends Plugin
@@ -97,7 +100,14 @@ class PluginBasicRights extends Plugin
 		}
 	}
 	
-	//TODO : Auth problem with brackets
+	/** Client begins, we check its auth and we give him rights if necessary.
+	 * This function is triggered by the ClientBegin event. It will check if the client is authed on the right list and grant him rights
+	 * if necessary, and update the right list if some of his information has changed.
+	 * 
+	 * \param $id The client ID.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventClientBegin($id)
 	{
 		$player = Server::getPlayer($id);
@@ -136,6 +146,15 @@ class PluginBasicRights extends Plugin
 		}
 	}
 	
+	/** First auth command. Give all rights.
+	 * This function is triggered by the !setadmin command. It will need for argument a password, the same that is defined in
+	 * the configuration. If the given password is valid, the bot will put the client in the rights file with the super cow powers.
+	 * 
+	 * \param $id The client ID.
+	 * \param $command The client command parameters.
+	 * 
+	 * \return Nothing.
+	 */
 	public function CommandSetadmin($id, $command)
 	{
 		if(!isset($command[0]))
@@ -176,6 +195,15 @@ class PluginBasicRights extends Plugin
 		RCon::tell($id, 'The !setadmin command is deactived for the current session. Make sure to remove the password from config.');
 	}
 	
+	/** Gives a player a specific level.
+	 * This function gives to the specified player a specific level. It can only be used by an admin with super cow powers.
+	 * The first command parameter is the search mask for the wanted player, and the second one is the player's new right level.
+	 * 
+	 * \param $id The client ID.
+	 * \param $command The command parameters.
+	 * 
+	 * \return Nothing.
+	 */
 	public function CommandGiveRights($id, $command)
 	{
 		if(!isset($command[1]))

@@ -151,8 +151,8 @@ class PluginManager extends Events
 	}
 	
 	/** Loads plugins from an array.
-	 * This function loads plugins from an array, allowing to load multiple plugins in one time. Basically, it justs do a burst call of loadPlugin for all specified
-	 * plugins, plus a load verification.
+	 * This function loads plugins from an array, allowing to load multiple plugins in one time.
+	 * Basically, it justs do a burst call of loadPlugin for all specified plugins, plus a load verification.
 	 * 
 	 * \param $list Plugin list to be loaded.
 	 * \return TRUE if all plugins loaded successfully, FALSE otherwise.
@@ -382,7 +382,13 @@ class PluginManager extends Events
 			}
 		}
 		
-		$this->_plugins[$params['name']]['obj']->init(); //Call to init() method of loaded plugin, for internal initializations and such.
+		//Call to init() method of loaded plugin, for internal initializations and such. If it returns FALSE, the plugin is unloaded.
+		if($this->_plugins[$params['name']]['obj']->init() === FALSE)
+		{
+			$this->unloadPlugin($params['name']);
+			return FALSE;
+		}
+		
 		Leelabot::message('Loaded plugin $0', array($params['name']));
 		
 		//Now that the plugin is loaded, we update the list of all plugins' classes names

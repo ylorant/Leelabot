@@ -225,7 +225,26 @@ class Leelabot
 		{
 			//Getting automatically loaded plugins
 			$this->config['Plugins']['AutoLoad'] = explode(',', $this->config['Plugins']['AutoLoad']);
-			$this->config['Plugins']['AutoLoad'] = array_map('trim', $this->config['Plugins']['AutoLoad']);
+			
+			//Setting priority order.
+			$order = array();
+			$unordered = array();
+			foreach($this->config['Plugins']['AutoLoad'] as $plugin)
+			{
+				$plugin = trim($plugin);
+				if(strpos($plugin, '/'))
+				{
+					$priority = explode('/', $plugin);
+					$i = 0;
+					for(; isset($order[$priority[1].'.'.$i]);$i++);
+					$order[$priority[0].'.'.$i] = $priority[0];
+				}
+				else
+					$unordered[] = $plugin;
+			}
+			
+			ksort($order);
+			$this->config['Plugins']['AutoLoad'] = array_merge(array_values($order), $unordered);
 			
 			//Setting default right level for commands
 			if(isset($this->config['Commands']['DefaultLevel']))
@@ -911,6 +930,26 @@ class Leelabot
 		
 		if(Leelabot::$verbose >= 2 || $errno == E_ERROR )
 			Leelabot::message('Error in $0 at line $1 : $2', array($errfile, $errline, $errstr), $errno, FALSE, FALSE);
+	}
+	
+	/** Generates an UUID.
+	 * This function generates an UUID.
+	 * 
+	 * \author Anis uddin Ahmad <admin@ajaxray.com>
+	 * 
+	 * \param $prefix An optional prefix.
+	 * 
+	 * \return The UUID.
+	 */
+	public static function UUID($prefix = '')
+	{
+		$chars = md5(uniqid(mt_rand(), true));
+		$uuid  = substr($chars,0,8) . '-';
+		$uuid .= substr($chars,8,4) . '-';
+		$uuid .= substr($chars,12,4) . '-';
+		$uuid .= substr($chars,16,4) . '-';
+		$uuid .= substr($chars,20,12);
+		return $prefix . $uuid;
 	}
 }
 

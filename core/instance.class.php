@@ -449,7 +449,7 @@ class ServerInstance
 					//A client connects
 					case 'ClientConnect':
 						$id = intval($line[1]);
-						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'team' => Server::TEAM_SPEC, 'level' => $this->_defaultLevel, 'time' => time()));
+						$this->players[$id] = new Storage(array('id' => $id, 'begin' => FALSE, 'team' => Server::TEAM_SPEC, 'level' => $this->_defaultLevel, 'time' => time(), 'uuid' => Leelabot::UUID()));
 						Leelabot::message('Client connected: $0', array($id), E_DEBUG);
 						$this->_leelabot->plugins->callServerEvent('ClientConnect', $id);
 						break;

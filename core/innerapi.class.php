@@ -1003,6 +1003,29 @@ class Locales
         return self::$_instance;
 	}
 	
+	private function getLocaleName($locale = NULL)
+	{
+		if($locale === NULL)
+			$lcname = $this->_globalLocale;
+		
+		if(!isset($this->_locales[$lcname]))
+		{
+			$found = FALSE;
+			foreach($this->_locales as $lc)
+			{
+				if(in_array($locale, $lc->getAliases()))
+				{
+					$lcname = $lc->getName();
+					$found = TRUE;
+					break;
+				}
+			}
+			
+			if(!$found)
+				return NULL;
+		}
+	}
+	
 	/** Inits the class.
 	 * This function inits the class, by loading the default template object.
 	 * 
@@ -1024,8 +1047,8 @@ class Locales
 	/** Translates a message.
 	 * This method translates a message from an identifier or English to another locale, loading if necessary new locale files.
 	 * 
-	 * \param $locale The destination locale name.
 	 * \param $from The message to translate.
+	 * \param $locale The destination locale name.
 	 * 
 	 * \return The translated message, or, if there was an error, the original message.
 	 */
@@ -1033,27 +1056,72 @@ class Locales
 	{
 		$self = self::getInstance();
 		
-		if($locale === NULL)
-			$lcname = $self->_globalLocale;
+		$lcname = $self->getLocaleName($locale);
 		
-		if(!isset($self->_locales[$lcname]))
-		{
-			$found = FALSE;
-			foreach($self->_locales as $lc)
-			{
-				if(in_array($locale, $lc->getAliases()))
-				{
-					$lcname = $lc->getName();
-					$found = TRUE;
-					break;
-				}
-			}
-			
-			if(!$found)
-				return $from;
-		}
+		if($lcname === NULL)
+			return $from;
 			
 		return $self->_locales[$lcname]->translate($from);
+	}
+	
+	/** Returns the datetime format.
+	 * This function returns the dateTime format for the identified locale, or the default bot locale if none given. For more information,
+	 * see Intl::getDateTimeFormat().
+	 * 
+	 * \param $locale The destination locale for the format.
+	 * 
+	 * \return The desired format or a default format if none found.
+	 */
+	public static function getDateTimeFormat($locale = NULL)
+	{
+		$self = self::getInstance();
+		
+		$lcname = $self->getLocaleName($locale);
+		
+		if($lcname === NULL)
+			return "m/d/Y h:i:s A";
+			
+		return $self->_locales[$lcname]->getDateTimeFormat();
+	}
+	
+	/** Returns the date format.
+	 * This function returns the date format for the identified locale, or the default bot locale if none given. For more information,
+	 * see Intl::getDateFormat().
+	 * 
+	 * \param $locale The destination locale for the format.
+	 * 
+	 * \return The desired format or a default format if none found.
+	 */
+	public static function getDateFormat($locale = NULL)
+	{
+		$self = self::getInstance();
+		
+		$lcname = $self->getLocaleName($locale);
+		
+		if($lcname === NULL)
+			return "m/d/Y";
+			
+		return $self->_locales[$lcname]->getDateFormat();
+	}
+	
+	/** Returns the time format.
+	 * This function returns the time format for the identified locale, or the default bot locale if none given. For more information,
+	 * see Intl::getTimeFormat().
+	 * 
+	 * \param $locale The destination locale for the format.
+	 * 
+	 * \return The desired format or a default format if none found.
+	 */
+	public static function getTimeFormat($locale = NULL)
+	{
+		$self = self::getInstance();
+		
+		$lcname = $self->getLocaleName($locale);
+		
+		if($lcname === NULL)
+			return "h:i:s A";
+			
+		return $self->_locales[$lcname]->getTimeFormat();
 	}
 	
 	public static function load($locale)

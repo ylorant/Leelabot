@@ -40,9 +40,10 @@
  * \brief Plugin Bans class.
  * This class contains the methods and properties forming the bans plugin. It manages bans on the server, permanent and temporary.
  * 
- * This class also implements a new event listener, named bans, bound on the Ban method prefix. It defines 4 events
+ * This class also implements a new event listener, named bans, bound on the Ban method prefix. It defines 3 events :
  * \li new($id, $banID) : When a player is banned. Parameters : the client ID which is banned, and the ban ID.
- * \li exitnew($banID)
+ * \li exitnew($banID) : When a player is banned after a deconnection. Parameters : the ban ID.
+ * \li connect($id, $banID) : When a banned player connects to the server. Parameters : the banned client ID, and the ban ID.
  */
 class PluginBans extends Plugin
 {
@@ -73,26 +74,26 @@ class PluginBans extends Plugin
 		$this->_bannedIPs = array();
 		$this->_bannedGUID = array();
 		
-		//Checking banlist existence or if we can create it
-		if(!isset($this->config['Banlist']) || (!is_file($this->_main->getConfigLocation().'/'.$this->config['Banlist']) && !touch($this->_main->getConfigLocation().'/'.$this->config['Banlist'])))
-		{
-			Leelabot::message("Can't load banlist. Bans will not be saved.", array(), E_WARNING);
-			return FALSE;
-		}
-		
-		//Default duration
-		if(isset($this->config['DefaultDuration']))
-			$this->config['DefaultDuration'] = $this->_parseBanDuration($this->config['DefaultDuration']);
-		
-		//Loading the banlist
-		$this->config['Banlist'] = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
-		$this->loadBanlist();
-		
 		$this->_plugins->addEventListener('bans', 'Ban');
 		
 		//Setting command rights
 		$this->setCommandLevel('ban', 10);
 		$this->setCommandLevel('banexit', 10);
+		
+		//Default duration
+		if(isset($this->config['DefaultDuration']))
+			$this->config['DefaultDuration'] = $this->_parseBanDuration($this->config['DefaultDuration']);
+		
+		//Checking banlist existence or if we can create it
+		if(!isset($this->config['Banlist']) || (!is_file($this->_main->getConfigLocation().'/'.$this->config['Banlist']) && !touch($this->_main->getConfigLocation().'/'.$this->config['Banlist'])))
+		{
+			Leelabot::message("Can't load banlist. Bans will not be saved.", array(), E_WARNING);
+			return TRUE;
+		}
+		
+		//Loading the banlist
+		$this->config['Banlist'] = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
+		$this->loadBanlist();
 		
 		return TRUE;
 	}
@@ -309,10 +310,10 @@ class PluginBans extends Plugin
 			
 			//Adding the entry to the banlist
 			$player = Server::getPlayer($pid);
-			$banID = $this->uuid();
-			if($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1)
+			$banID = Leelabot::UUID();
+			if($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1) //GUID save
 				$this->_banlist[$banID] = array('GUIDList' => array($player->guid), 'IP' => FALSE, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
-			elseif($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['month'])
+			elseif($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['month']) //GUID + complete IP save
 			{
 				$this->_banlist[$banID] = array('GUIDList' => array($player->guid), 'IP' => $player->ip, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
 				
@@ -321,7 +322,7 @@ class PluginBans extends Plugin
 				
 				$this->_bannedIP[$player->ip][] = $banID;
 			}
-			else
+			else //GUID + IP mask /24 save
 			{
 				$ip = explode('.', $player->ip);
 				array_pop($ip);
@@ -345,7 +346,7 @@ class PluginBans extends Plugin
 			//We call the event
 			$this->_plugins->callEvent('bans', 'new', $player->id, $banID);
 			
-			if(in_array(Server::getName(), $ban['servers']))
+			if(in_array(Server::getName(), $ban['servers']) || $ban['servers'][0] == self::GLOBALBAN) //NEED TEST, CALL APERTURE SCIENCE
 				RCon::kick($player->id);
 		}
 	}
@@ -373,7 +374,7 @@ class PluginBans extends Plugin
 		
 		//Adding the entry to the banlist
 		$player = $this->_lastDisconnect[Server::getName()];
-		$banID = $this->uuid();
+		$banID = Leelabot::UUID();
 		if($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['day'] && count($ban['servers']) == 1)
 			$this->_banlist[$banID] = array('GUIDList' => array($player->guid), 'IP' => FALSE, 'Aliases' => array($player->name), 'Duration' => $ban['duration'], 'Begin' => time(), 'Realm' => join(',', $ban['servers']), 'Identifier' => $player->name, 'Description' => '');
 		elseif($ban['duration'] !== 'forever' && $ban['duration'] < $this->_durations['month'])
@@ -408,25 +409,6 @@ class PluginBans extends Plugin
 		$this->saveBanlist();
 		
 		$this->_plugins->callEvent('bans', 'exitnew', $banID); //Calling the event
-	}
-	/** Generates an UUID.
-	 * This function generates an UUID.
-	 * 
-	 * \author Anis uddin Ahmad <admin@ajaxray.com>
-	 * 
-	 * \param $prefix An optional prefix.
-	 * 
-	 * \return The UUID.
-	 */
-	public function uuid($prefix = '')
-	{
-		$chars = md5(uniqid(mt_rand(), true));
-		$uuid  = substr($chars,0,8) . '-';
-		$uuid .= substr($chars,8,4) . '-';
-		$uuid .= substr($chars,12,4) . '-';
-		$uuid .= substr($chars,16,4) . '-';
-		$uuid .= substr($chars,20,12);
-		return $prefix . $uuid;
 	}
 	
 	/** Parses a ban command to get ban infos.
