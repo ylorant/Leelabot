@@ -227,7 +227,7 @@ class LeelaBotIrc
     public static function setPseudo($pseudo)
     {
 		$instance = self::getInstance();
-		$instance->_pseudo = $pseuod;
+		$instance->_pseudo = $pseudo;
 	}
     
     public static function setChannel($channel)
@@ -473,7 +473,7 @@ class PluginIrc extends Plugin
 			$message = explode(':',$donnees,3);
 			$pseudo = explode('!',$message[1]);
 			$pseudo = $pseudo[0];
-			LeelaBotIrc::setPseudo($seudo);
+			LeelaBotIrc::setPseudo($pseudo);
 			
 			if(isset($commande[1]) && rtrim($commande[0]) == 'PING')
 					LeelaBotIrc::send('PONG :'.$message[1]);
