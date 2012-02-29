@@ -25,23 +25,289 @@
  */
 
 /**
- * \brief Plugin irc class.
- * This class contains the methods and properties needed by the IRC plugin. It contains the IRC Bot.
+ * \brief IRC Connection class.
+ * This class contains the methods and properties needed by the IRC bot.
  */
+
+class LeelaBotIrc
+{
+	private static $_instance;
+	
+	private $_socket; // Socket of bot
+	private $_connected = FALSE; // if bot connected to irc
+	private $_configured = FALSE; // if configured
+	
+	public $config = array();
+
+	private function __construct() {}
+
+    private function __clone () {}
+    
+    public static function getInstance () {
+        if (!(self::$_instance instanceof self))
+            self::$_instance = new self();
+ 
+        return self::$_instance;
+    }
+    
+    public function setConfig(&$config)
+    {
+		$instance->config = $config;
+	}
+    
+    public function setConfigured($configured)
+    {
+		$instance->_configured = $configured;
+	}
+	
+	public function connect()
+	{
+		$instance = self::getInstance();
+		
+		if($instance->_configured)
+		{
+			if($instance->_socket = fsockopen($instance->config['Server'], $instance->config['Port'], $errno, $errstr, 10))
+			{
+				stream_set_blocking($instance->_socket, 0);
+				
+				$instance->_connected = TRUE;
+				
+				$instance->send("USER".str_repeat(' '.$instance->config['User'], 4));
+				$instance->send("NICK ".$instance->config['Nick']);
+				
+				Leelabot::message('The IRC bot "$0" is connected to $1:$2', array($instance->config['Nick'], $instance->config['Server'], $instance->config['Port']));
+			}
+			else
+			{
+				$instance->_connected = FALSE;
+				Leelabot::message('The IRC connection has failed. We will try again in a few seconds.', array());
+			}
+		}
+	}
+	
+	public function disconnect($reason = 'bye !')
+	{
+		$instance = self::getInstance();
+		
+		if($instance->_configured)
+		{
+			if($instance->_connected)
+			{
+				$instance->send("QUIT :".$reason);
+				usleep(500000);
+				fclose($instance->_socket);
+				$instance->_connected = FALSE;
+				
+				Leelabot::message('The IRC bot is disconnect.');
+			}
+		}
+	}
+	
+	public function send($command)
+	{
+		$instance = self::getInstance();
+		
+		if($instance->_connected)
+		{
+			fputs($instance->_socket, $command."\r\n");
+		}
+	}
+	
+	public function get()
+	{
+		$instance = self::getInstance();
+		
+		if($instance->_connected)
+		{
+			$return = fgets($instance->_socket, 1024);
+			
+			if($return) // On lit les données du serveur
+			{
+				return $return;
+			}
+			elseif($return === FALSE && $instance->_connected = true)
+			{
+				if(feof($instance->_socket))
+				{
+					$instance->_connected = false; 
+			    }
+			}
+		}
+		else
+		{
+			$instance->connect();
+		}
+	}
+	
+	
+	public function privmsg($dest, $message)
+	{
+		$instance = self::getInstance();
+		$instance->send('PRIVMSG '.$dest.' :'.$message);
+	}
+	
+	public function notice($dest, $message)
+	{
+		$instance = self::getInstance();
+		$instance->send('NOTICE '.$dest.' :'.$message);
+	}
+	
+	public function join($chan)
+	{
+		$instance = self::getInstance();
+		$instance->send('JOIN '.$chan);
+	}
+	
+	public function part($chan)
+	{
+		$instance = self::getInstance();
+		$instance->send('PART '.$chan);
+	}
+	
+	public function haveLevel($name, $chan, $right)
+	{
+		$instance = self::getInstance();
+		
+		$r = $instance->getLevel($name, $chan);
+		
+		if($r >= $right)
+		{
+			return TRUE;
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+	
+	public function getLevel($name, $chan)
+	{
+		$instance = self::getInstance();
+		
+		$instance->send('NAMES '.$chan.'');
+		$continue = TRUE;
+		while($continue)
+		{
+			$ret = rtrim($instance->get());
+			if($ret)
+			{
+				$data = explode(':',$ret);
+				$cmd = explode(' ',$data[1]);
+				if($cmd[1] == '353')
+					$reply = $ret;
+				elseif($cmd[1] == '366')
+					$continue = FALSE;
+			}
+		}
+		
+		$result = explode(' ', $reply);
+		array_shift($result); 
+		array_shift($result); 
+		array_shift($result);
+		array_shift($result); 
+		array_shift($result); 
+		array_walk($result, 'trim');
+		
+		$result[0] = substr($result[0], 1);
+		
+		if(in_array('@'.$name, $result) == TRUE)
+			return 2;
+		elseif(in_array('+'.$name, $result) == TRUE)
+			return 1;
+		else
+			return 0;
+	}
+	
+	public function sendMessage($message)
+	{
+		$instance = self::getInstance();
+		
+		if($instance->config['MessageMode'] == 'privmsg')
+			$instance->privmsg($instance->_pseudo, $message);
+		elseif($instance->config['MessageMode'] == 'chanmsg')
+			$instance->privmsg($instance->_channel, $message);
+		elseif($instance->config['MessageMode'] == 'notice')
+			$instance->notice($instance->_pseudo, $message);
+	}
+	
+	//Vire les couleurs des messages UrT (merki SRWieZ :D)
+	public function rmColor($string)
+	{
+		$result = $string;
+		$result = preg_replace ("/\^x....../i", "", $result); // remove OSP's colors (^Xrrggbb)
+		$result = preg_replace ("/\^./", "", $result); // remove Q3 colors (^2) or OSP control (^N, ^B etc..)
+		return $result;
+	}
+	
+	//Fonction normalisant le texte envoyé (uniquement les accents)
+	public function standardize($string)
+	{
+        $a = 'âäàéèëêîïûüç';
+        $b = 'aaaeeeeiiuuc'; 
+        $string = utf8_decode($string);     
+        $string = strtr($string, utf8_decode($a), $b);
+        return utf8_encode($string); 
+	}
+	
+	public function nameOfServer($cmd, $cmdkey, $otherargs = TRUE)
+	{
+		$instance = self::getInstance();
+		
+		$serverlist = ServerList::getList();
+		$server = false;
+		
+		if(isset($cmd[$cmdkey]))
+		{
+			if(in_array($cmd[$cmdkey], ServerList::getList()))
+			{
+				$server = $cmd[$cmdkey];
+			}
+			else
+			{
+				if($otherargs)
+				{
+					if(count($serverlist) == 1)
+					{
+						$server = Server::getName();
+					}
+					else
+					{
+						$instance->sendMessage("Please specify the server : ".join(', ', $serverlist));
+					}
+				}
+				else
+				{
+					$instance->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
+				}
+			}
+		}
+		else
+		{
+			if(count($serverlist) == 1)
+			{
+				$server = Server::getName();
+			}
+			else
+			{
+				$instance->sendMessage("Please specify the server : ".join(', ', $serverlist));
+			}
+		}
+		
+		return $server;
+	}
+}
+
+
+
+/**
+ * \brief Plugin irc class.
+ * This class contains the methods and properties needed by the IRC plugin.
+ */
+
 class PluginIrc extends Plugin
 {
 	//Private vars
-	private $_socket; // Socket of bot
-	private $_connected = FALSE; // if bot connected to irc
-	private $_configured = FALSE; 
-	
-	private $_pseudo;
-	private $_channel;
-	private $_cmd;
-	private $_message;
-	
 	private $_cmdIrc = array(); // Irc cmds for irc clients
-	
 	private $_mapUt4List = array('casa', 'kingdom', 'turnpike', 'abbey', 'prague', 'mandolin', 'uptown', 'algiers', 'austria', 'maya', 'tombs', 'elgin', 'oildepot', 'swim', 'harbortown', 'ramelle', 'toxic', 'sanc', 'riyadh', 'ambush', 'eagle', 'suburbs', 'crossing', 'subway', 'tunis', 'thingley');
 	
 	/** Init function. Loads configuration.
@@ -60,12 +326,14 @@ class PluginIrc extends Plugin
 			$this->configureAutospeak();
 			
 			//The bot is now configured
-			$this->_configured = TRUE;
+			LeelaBotIrc::setConfig($this->config);
+			LeelaBotIrc::setConfigured(TRUE);
 			
 			//Connection
-			$this->_connect();
+			LeelaBotIrc::connect();
 			
 			//IRC commands
+			/*
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
 			$this->_addCmd('!status', 'CmdStatus', '!status [<server>]', 'Permet d\'avoir les infos sur la partie actuel.', 0);
 			$this->_addCmd('!players', 'CmdPlayers', '!players [<server>]', 'Permet d\'avoir la liste des joueurs présent sur le serveur.', 0);
@@ -84,6 +352,10 @@ class PluginIrc extends Plugin
 			$this->_addCmd('!restart', 'CmdRestart', '!restart [<server>]', 'Permet de faire un restart.', 2);
 			$this->_addCmd('!reload', 'CmdReload', '!reload [<server>]', 'Permet de faire un reload.', 2);
 			$this->_addCmd('!serverlist', 'CmdServerList', '!serverlist', 'Permet d\'obtenir la liste des servers.', 2);
+			*/
+			
+			//Adding event listener
+			$this->_plugins->addEventListener('irc', 'Irc');
 			
 			//Irc bot main routine
 			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
@@ -164,239 +436,9 @@ class PluginIrc extends Plugin
 	
 	public function destroy()
 	{
-		$this->_disconnect('Plugin Unload');
+		LeelaBotIrc::disconnect('Plugin Unload');
 		
 		return TRUE;
-	}
-	
-	/////////////////////////////////////////////
-	// Private functions for IRC connection    //
-	/////////////////////////////////////////////
-	
-	private function _connect()
-	{
-		if($this->_configured)
-		{
-			if($this->_socket = fsockopen($this->config['Server'], $this->config['Port'], $errno, $errstr, 10))
-			{
-				stream_set_blocking($this->_socket, 0);
-				
-				$this->_connected = TRUE;
-				
-				$this->_send("USER".str_repeat(' '.$this->config['User'], 4));
-				$this->_send("NICK ".$this->config['Nick']);
-				
-				Leelabot::message('The IRC bot "$0" is connected to $1:$2', array($this->config['Nick'], $this->config['Server'], $this->config['Port']));
-			}
-			else
-			{
-				$this->_connected = FALSE;
-				Leelabot::message('The IRC connection has failed. We will try again in a few seconds.', array());
-			}
-		}
-	}
-	
-	private function _disconnect($reason = '')
-	{
-		if($this->_configured)
-		{
-			if($this->_connected)
-			{
-				$this->_send("QUIT : bye ! ".$reason);
-				usleep(500000);
-				fclose($this->_socket);
-				$this->_connected = FALSE;
-				
-				Leelabot::message('The IRC bot is disconnect.');
-			}
-		}
-	}
-	
-	private function _send($commande)
-	{
-		if($this->_connected)
-		{
-			fputs($this->_socket, $commande."\r\n");
-		}
-	}
-	
-	private function _get()
-	{
-		if($this->_connected)
-		{
-			$return = fgets($this->_socket, 1024);
-			
-			if($return) // On lit les données du serveur
-			{
-				return $return;
-			}
-			elseif($return === FALSE && $this->_connected = true)
-			{
-				if(feof($this->_socket))
-				{
-					$this->_connected = false; 
-			    }
-			}
-		}
-		else
-		{
-			$this->_connect();
-		}
-	}
-	
-	/////////////////////////////////////////////
-	// Fonctions Public en rapport avec IRC    //
-	/////////////////////////////////////////////
-	
-	public function privmsg($dest, $message)
-	{
-		$this->_send('PRIVMSG '.$dest.' :'.$message);
-	}
-	
-	public function notice($dest, $message)
-	{
-		$this->_send('NOTICE '.$dest.' :'.$message);
-	}
-	
-	public function join($chan)
-	{
-		$this->_send('JOIN '.$chan);
-	}
-	
-	public function part($chan)
-	{
-		$this->_send('PART '.$chan);
-	}
-	
-	public function isRights($name, $chan, $droit)
-	{
-		$r = $this->rights($name, $chan);
-		
-		if($droit == '@')
-		{
-			if($r == $droit)
-				return true;
-			else
-				return false;
-		}
-		elseif($droit == '+')
-		{
-			if($r == $droit OR $r == '@')
-				return true;
-			else
-				return false;
-		}
-		else
-		{
-			return true;
-		}
-	}
-	
-	public function rights($name, $chan)
-	{
-		$this->_send('NAMES '.$chan.'');
-		$continue = TRUE;
-		while($continue)
-		{
-			$ret = rtrim($this->_get());
-			if($ret)
-			{
-				$data = explode(':',$ret);
-				$cmd = explode(' ',$data[1]);
-				if($cmd[1] == '353')
-					$reponse = $ret;
-				elseif($cmd[1] == '366')
-					$continue = FALSE;
-			}
-		}
-		
-		$result = explode(' ', $reponse);
-		array_shift($result); 
-		array_shift($result); 
-		array_shift($result);
-		array_shift($result); 
-		array_shift($result); 
-		array_walk($result, 'trim');
-		
-		$result[0] = substr($result[0], 1);
-		
-		if(in_array('@'.$name, $result) == TRUE)
-			return '@';
-		elseif(in_array('+'.$name, $result) == TRUE)
-			return '+';
-		else
-			return '';
-	}
-	
-	public function sendMessage($message)
-	{				
-		if($this->config['MessageMode'] == 'privmsg')
-			$this->privmsg($this->_pseudo, $message);
-		elseif($this->config['MessageMode'] == 'chanmsg')
-			$this->privmsg($this->_channel, $message);
-		elseif($this->config['MessageMode'] == 'notice')
-			$this->notice($this->_pseudo, $message);
-	}
-	
-	/////////////////////////////////////////////
-	// Fonctions privés du bot IRC             //
-	/////////////////////////////////////////////
-	
-	private function _addCmd($cmd, $fonction, $usage, $text, $droits = 0)
-	{
-		// $droits (0:rien, 1:voice, 2:op)
-		if(!array_key_exists($cmd, $this->_cmdIrc))
-		{
-			$this->_cmdIrc[$cmd] = array(
-			'cmd' => $cmd,
-			'func' => $fonction,
-			'use' => $usage,
-			'text' => $text,
-			'r' => $droits
-			);
-			
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-	
-	private function _deleteCmd($cmd)
-	{
-		if(array_key_exists($cmd, $this->_cmdIrc))
-		{
-			unset($this->_cmdIrc[$cmd]);
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-	
-	/////////////////////////////////////////////
-	// Fonctions utiles                        //
-	/////////////////////////////////////////////
-	
-	//Vire les couleurs des messages UrT (merki SRWieZ :D)
-	public function _rmColor($string)
-	{
-		$result = $string;
-		$result = preg_replace ("/\^x....../i", "", $result); // remove OSP's colors (^Xrrggbb)
-		$result = preg_replace ("/\^./", "", $result); // remove Q3 colors (^2) or OSP control (^N, ^B etc..)
-		return $result;
-	}
-	
-	//Fonction normalisant le texte envoyé (uniquement les accents)
-	public function normaliser($string)
-	{
-        $a = 'âäàéèëêîïûüç';
-        $b = 'aaaeeeeiiuuc'; 
-        $string = utf8_decode($string);     
-        $string = strtr($string, utf8_decode($a), $b);
-        return utf8_encode($string); 
 	}
 	
 	/////////////////////////////////////////////
@@ -406,7 +448,7 @@ class PluginIrc extends Plugin
 	//Exécutions à chaque fin de boucle, qu'il y ait un message transmis par le serveur ou non
 	public function RoutineIrcMain()
 	{
-		$donnees = $this->_get();
+		$donnees = LeelaBotIrc::get();
 		if($donnees) //Si le serveur nous a envoyé quelque chose
 		{
 			$commande = explode(' ',$donnees);
@@ -415,7 +457,7 @@ class PluginIrc extends Plugin
 			$pseudo = $pseudo[0];
 			
 			if(isset($commande[1]) && rtrim($commande[0]) == 'PING')
-					$this->_send('PONG :'.$message[1]);
+					LeelaBotIrc::send('PONG :'.$message[1]);
 			
 			// For crazy IRC server
 			if(isset($commande[1]))
@@ -425,67 +467,42 @@ class PluginIrc extends Plugin
 					if(isset($this->config['AutoPerform']))
 					{
 						foreach($this->config['AutoPerform'] as $command)
-							$this->_send($command);
+							LeelaBotIrc::send($command);
 					}
 					
-					$this->join(implode(',', $this->config['Channels']));
+					LeelaBotIrc::join(implode(',', $this->config['Channels']));
 						
-					Leelabot::message('The bot has join $0', array(implode(',', $this->config['Channels'])));
+					Leelabot::message('The IRC bot has join $0', array(implode(',', $this->config['Channels'])));
 				}
 				
 				if($commande[1] == '433')
 				{
 					$this->config['Nick'] = $this->config['Nick'].'_';
-					$this->_send("NICK ".$this->config['Nick']);
+					LeelaBotIrc::setConfig($this->config);
+					LeelaBotIrc::send("NICK ".$this->config['Nick']);
 					
-					Leelabot::message('The nickname has changed for $0', array($this->config['Nick']));
+					Leelabot::message('The IRC nickname has changed for $0', array($this->config['Nick']));
 				}
 				
 				if($commande[1] == 'PRIVMSG') //Si c'est un message
 				{
-					$this->_pseudo = $pseudo;
-					$this->_channel = $commande[2];
+					$channel = $commande[2];
 					
 					if($message[2][0] == '!') //Si c'est une commande
 					{
-						$cmd = explode(' ',trim($message[2]));
-						$cmd[0] = trim($cmd[0]);
-						$this->_cmd = $cmd;
-						$this->_message = $message;
+						$cmd = explode(' ', trim($message[2]));
+						$cmd[0] = $cmd[0];
 						
-						if(array_key_exists($cmd[0], $this->_cmdIrc))
-						{
-							if($this->_cmdIrc[$cmd[0]]['r'] == 1)
-							{
-								if($this->isRights(trim($pseudo), $this->config['MainChannel'], '+'))
-								{
-									$this->{$this->_cmdIrc[$cmd[0]]['func']}();
-								}
-								else
-								{
-									$this->sendMessage('Vous devez être "voice" pour utiliser cette commande.');
-								}
-							}
-							elseif($this->_cmdIrc[$cmd[0]]['r'] == 2)
-							{
-								if($this->isRights(trim($pseudo), $this->config['MainChannel'], '@'))
-								{
-									$this->{$this->_cmdIrc[$cmd[0]]['func']}();
-								}
-								else
-								{
-									$this->sendMessage('Vous devez être "operateur" pour utiliser cette commande.');
-								}
-							}
-							else
-							{
-								$this->{$this->_cmdIrc[$cmd[0]]['func']}();
-							}
-						}
+						$level = LeelaBotIrc::getLevel($this->_pseudo, $this->config['MainChannel']);
+						
+						$return = $this->_plugins->callEvent('irc', substr($cmd[0], 1), $level, NULL, $pseudo, $channel, $cmd, $message);
+						
+						if($return == Events::ACCESS_DENIED)
+							LeelaBotIrc::sendMessage("You don't have enough rights.");
 					}
 					else
 					{
-						$irc2urt = $this->normaliser(rtrim($message[2]));
+						$irc2urt = LeelaBotIrc::standardize(rtrim($message[2]));
 						$pseudo = explode(' ',$message[1]);
 						$pseudo = explode('!',$pseudo[0]);
 						$pseudo = $pseudo[0];
@@ -530,11 +547,11 @@ class PluginIrc extends Plugin
 	
 	public function CommandIrcco($player, $args)
 	{
-		$this->_send('NAMES '.$this->config['MainChannel']);
+		LeelaBotIrc::send('NAMES '.$this->config['MainChannel']);
 		$continue = TRUE;
 		while($continue)
 		{
-			$ret = rtrim($this->_get());
+			$ret = rtrim(LeelaBotIrc::get());
 			if($ret)
 			$data = explode(':',$ret);
 			$cmd = explode(' ',$data[1]);
@@ -554,8 +571,8 @@ class PluginIrc extends Plugin
 	public function CommandIrc($player, $args)
 	{
 		$server = Server::getName();
-		$nick = $this->_rmColor(Server::getPlayer($player)->name);
-		$message = $this->_rmColor(implode(' ', $args));
+		$nick = LeelaBotIrc::rmColor(Server::getPlayer($player)->name);
+		$message = LeelaBotIrc::rmColor(implode(' ', $args));
 		
 		if(is_array($this->config['AutoSpeak']))
 		{
@@ -563,7 +580,7 @@ class PluginIrc extends Plugin
 			{
 				if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(0, 3)))
 				{
-					$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+					LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 				}
 			}
 		}
@@ -573,7 +590,7 @@ class PluginIrc extends Plugin
 			{
 				foreach($this->config['Channels'] as $channel)
 				{
-					$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+					LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 				}
 			}
 		}
@@ -584,8 +601,8 @@ class PluginIrc extends Plugin
 	{
 		if($contents[0] != '!')
 		{
-			$nick = $this->_rmColor(Server::getPlayer($id)->name);
-			$message = $this->_rmColor($contents);
+			$nick = LeelaBotIrc::rmColor(Server::getPlayer($id)->name);
+			$message = LeelaBotIrc::rmColor($contents);
 			$server = Server::getName();
 				
 			if(is_array($this->config['AutoSpeak']))
@@ -594,7 +611,7 @@ class PluginIrc extends Plugin
 				{
 					if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(1, 2)))
 					{
-						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+						LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 					}
 				}
 			}
@@ -604,65 +621,98 @@ class PluginIrc extends Plugin
 				{
 					foreach($this->config['Channels'] as $channel)
 					{
-						$this->privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
+						LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
 					}
 				}
 			}
 		}
 	}
 	
+	// Stats plugin event
+	public function StatsShowAwards($awards)
+	{
+		$buffer = array();
+		
+		foreach($awards as $award => $player)
+		{
+				if($player !== NULL)
+					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($player)->name;
+				else
+					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
+		}
+		
+		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards :\002 ".join(' | ', $buffer));
+	}
+	
 	/////////////////////////////////////////////
 	// Fonctions IRC	                       //
 	/////////////////////////////////////////////
-	private function CmdHelp()
+	public function IrcHelp($pseudo, $channel, $cmd, $message)
 	{
-		$cmd = $this->_cmd;
-		
-		$r = $this->rights(trim($this->_pseudo), $this->config['MainChannel']);
+		$level = LeelaBotIrc::getLevel(trim($pseudo), $this->config['MainChannel']);
 		
 		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
 		{
 			$list = array();
 			
-			foreach($this->_cmdIrc as $cmds)
+			foreach($this->_plugins->listEvents('irc') as $event => $lvl)
 			{
-				if($cmds['r'] == 1)
-				{
-					if($r == '+' OR $r == '@')
-						$list[] = $cmds['cmd'];
-				}
-				elseif($cmds['r'] == 2)
-				{
-					if($r == '@')
-						$list[] = $cmds['cmd'];
-				}
-				else
-				{
-					$list[] = $cmds['cmd'];
-				}
+				if($level >= $lvl)
+					$list[] = $event;
 			}
 			
-			$this->sendMessage('List : '.join(', ', $list).'.');
+			LeelaBotIrc::sendMessage('List : '.join(', ', $list).'.');
 		}
 		else //Sinon on affiche l'aide d'une commande
 		{
 			$cmd[1] = str_replace('!','',$cmd[1]);
-			$cmd[1] = '!'.$cmd[1];
 			
-			if(array_key_exists($cmd[1], $this->_cmdIrc))
+			if($this->_plugins->eventExists('irc', $cmd[1]))
 			{
-				$this->sendMessage('Usage : '.$this->_cmdIrc[$cmd[1]]['use']);
-				$this->sendMessage($this->_cmdIrc[$cmd[1]]['text']);
+				LeelaBotIrc::sendMessage('!'.$cmd[1].' : euh..');
+				// TODO : find help.
 			}
 			else
 			{
-				$this->sendMessage("This command doesn't exist.");
+				LeelaBotIrc::sendMessage("This command doesn't exist.");
 			}
 		}
 		
 	}
 	
-	private function CmdStatus()
+	public function IrcUrt($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer(1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$i = 2;
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$i = 1;
+			}
+			
+			if(isset($envoi[$i]))
+				$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => LeelaBotIrc::standardize(rtrim($envoi[$i]))));
+		}
+	}
+	
+	public function IrcServerList($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		LeelaBotIrc::sendMessage("Servers : ".join(', ', $serverlist));
+	}
+	
+	/*
+	public function IrcStatus($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
@@ -688,11 +738,11 @@ class PluginIrc extends Plugin
 	private function _printServerInfo($server)
 	{
 		$serverinfo = Server::getServer()->serverInfo;
-		$this->sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
-		$this->sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+		LeelaBotIrc::sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+		LeelaBotIrc::sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
 	}
 	
-	private function CmdPlayers()
+	public function IrcPlayers($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
@@ -739,11 +789,11 @@ class PluginIrc extends Plugin
 			++$nbplayers;
 		}
 		
-		if($nbplayers >0) $this->sendMessage('List of players : '.join(', ', $playerlist));
-		else $this->sendMessage('No one.');
+		if($nbplayers >0) LeelaBotIrc::sendMessage('List of players : '.join(', ', $playerlist));
+		else LeelaBotIrc::sendMessage('No one.');
 	}
 	
-	private function CmdAwards()
+	public function IrcAwards($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
@@ -781,14 +831,14 @@ class PluginIrc extends Plugin
 					$buffer[] = "\037".ucfirst($award)."\037".' nobody';
 			}
 		}
-		$this->sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
+		LeelaBotIrc::sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
 	}
 	
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
-	private function CmdStats()
+	public function IrcStats($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(2, FALSE);
+		$server = LeelaBotIrc::nameOfServer(2, FALSE);
 		$actual = Server::getName();
 		
 		if(isset($cmd[1])) //Il faut un paramètre : le joueur
@@ -801,14 +851,14 @@ class PluginIrc extends Plugin
 				
 				if(!$target)
 				{
-					$this->sendMessage("Unknown player");
+					LeelaBotIrc::sendMessage("Unknown player");
 				}
 				elseif(is_array($target))
 				{
 					$players = array();
 					foreach($target as $p)
 						$players[] = Server::getPlayer($p)->name;
-					$this->sendMessage("Multiple players found : ".join(', ', $players));
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
 				}
 				else
 				{
@@ -828,7 +878,7 @@ class PluginIrc extends Plugin
 					if(Server::getServer()->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
 						$caps = " - \037Caps\037 : ".$_stats[$player->id]['caps'];
 						
-					$this->sendMessage("\002Stats de ".$player->name."\002 : ".$hits."\037Kills\037 : ".$_stats[$player->id]['kills']." - \037Deaths\037 : ".$_stats[$player->id]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$_stats[$player->id]['streaks']);
+					LeelaBotIrc::sendMessage("\002Stats de ".$player->name."\002 : ".$hits."\037Kills\037 : ".$_stats[$player->id]['kills']." - \037Deaths\037 : ".$_stats[$player->id]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$_stats[$player->id]['streaks']);
 
 				}
 				
@@ -837,41 +887,14 @@ class PluginIrc extends Plugin
 		}
 		else
 		{
-			$this->sendMessage("Player name missing");
+			LeelaBotIrc::sendMessage("Player name missing");
 		}
 	}
 	
-	private function CmdUrt()
+	public function IrcKick($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$message = $this->_message;
-		$server = $this->_nameOfServer(1);
-		
-		if($server !== false)
-		{
-			$rcon = ServerList::getServerRCon($server);
-			$serverlist = ServerList::getList();
-			
-			if(in_array($cmd[1], $serverlist))
-			{
-				$envoi = explode(' ', $message[2], 3);
-				$i = 2;
-			}
-			else
-			{
-				$envoi = explode(' ', $message[2], 2);
-				$i = 1;
-			}
-			
-			if(isset($envoi[$i]))
-				$rcon->say('^4IRC : <$nick> $message', array('nick' => $this->_pseudo, 'message' => $this->normaliser(rtrim($envoi[$i]))));
-		}
-	}
-	
-	private function CmdKick()
-	{
-		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -889,32 +912,32 @@ class PluginIrc extends Plugin
 				
 				if(!$target)
 				{
-					$this->sendMessage("Unknown player");
+					LeelaBotIrc::sendMessage("Unknown player");
 				}
 				elseif(is_array($target))
 				{
 					$players = array();
 					foreach($target as $p)
 						$players[] = Server::getPlayer($p)->name;
-					$this->sendMessage("Multiple players found : ".join(', ', $players));
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
 				}
 				else
 				{
 					$rcon->kick($target);
-					$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was kicked.");
 				}
 			}
 			else
 			{
-				$this->sendMessage("Player name missing");
+				LeelaBotIrc::sendMessage("Player name missing");
 			}
 		}
 	}
 	
-	private function CmdKickAll()
+	public function IrcKickAll($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -932,7 +955,7 @@ class PluginIrc extends Plugin
 				
 				if(!$target)
 				{
-					$this->sendMessage("Unknown player");
+					LeelaBotIrc::sendMessage("Unknown player");
 				}
 				elseif(is_array($target))
 				{
@@ -942,25 +965,25 @@ class PluginIrc extends Plugin
 						$rcon->kick($p);
 						$players[] = Server::getPlayer($p)->name;
 					}
-					$this->sendMessage(join(', ', $players)." are kicked.");
+					LeelaBotIrc::sendMessage(join(', ', $players)." are kicked.");
 				}
 				else
 				{
 					$rcon->kick($target);
-					$this->sendMessage(Server::getPlayer($target)->name." was kicked.");
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was kicked.");
 				}
 			}
 			else
 			{
-				$this->sendMessage("Player name missing");
+				LeelaBotIrc::sendMessage("Player name missing");
 			}
 		}
 	}
 	
-	private function CmdSlap()
+	public function IrcSlap($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -978,32 +1001,32 @@ class PluginIrc extends Plugin
 				
 				if(!$target)
 				{
-					$this->sendMessage("Unknown player");
+					LeelaBotIrc::sendMessage("Unknown player");
 				}
 				elseif(is_array($target))
 				{
 					$players = array();
 					foreach($target as $p)
 						$players[] = Server::getPlayer($p)->name;
-					$this->sendMessage("Multiple players found : ".join(', ', $players));
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
 				}
 				else
 				{
 					$rcon->slap($target);
-					$this->sendMessage(Server::getPlayer($target)->name." was slapped.");
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was slapped.");
 				}
 			}
 			else
 			{
-				$this->sendMessage("Player name missing");
+				LeelaBotIrc::sendMessage("Player name missing");
 			}
 		}
 	}
 	
-	private function CmdMute()
+	public function IrcMute($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -1021,33 +1044,33 @@ class PluginIrc extends Plugin
 				
 				if(!$target)
 				{
-					$this->sendMessage("Unknown player");
+					LeelaBotIrc::sendMessage("Unknown player");
 				}
 				elseif(is_array($target))
 				{
 					$players = array();
 					foreach($target as $p)
 						$players[] = Server::getPlayer($p)->name;
-					$this->sendMessage("Multiple players found : ".join(', ', $players));
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
 				}
 				else
 				{
 					$rcon->mute($target);
-					$this->sendMessage(Server::getPlayer($target)->name." was muted.");
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was muted.");
 				}
 			}
 			else
 			{
-				$this->sendMessage("Player name missing");
+				LeelaBotIrc::sendMessage("Player name missing");
 			}
 		}
 	}
 	
-	private function CmdSay()
+	public function IrcSay($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$message = $this->_message;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -1070,11 +1093,11 @@ class PluginIrc extends Plugin
 		}
 	}
 	
-	private function CmdBigtext()
+	public function IrcBigtext($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$message = $this->_message;
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -1097,11 +1120,11 @@ class PluginIrc extends Plugin
 		}
 	}
 	
-	private function CmdMap()
+	public function IrcMap($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -1120,20 +1143,20 @@ class PluginIrc extends Plugin
 				else
 					$rcon->map('"'.$map.'"');
 				
-				$this->sendMessage("Map changed !");
+				LeelaBotIrc::sendMessage("Map changed !");
 			}
 			else
 			{
-				$this->sendMessage("What's name of the map ?");
+				LeelaBotIrc::sendMessage("What's name of the map ?");
 			}
 		}
 	}
 	
-	private function CmdNextMap()
+	public function IrcNextMap($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
 		$serverlist = ServerList::getList();
-		$server = $this->_nameOfServer(1);
+		$server = LeelaBotIrc::nameOfServer(1);
 		
 		if($server !== false)
 		{
@@ -1152,19 +1175,19 @@ class PluginIrc extends Plugin
 				else
 					$rcon->set('g_nextmap "'.$map.'"');
 					
-				$this->sendMessage("Next map changed !");
+				LeelaBotIrc::sendMessage("Next map changed !");
 			}
 			else
 			{
-				$this->sendMessage("What's name of the map ?");
+				LeelaBotIrc::sendMessage("What's name of the map ?");
 			}
 		}
 	}
 	
-	private function CmdCyclemap()
+	public function IrcCyclemap($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, FALSE);
+		$server = LeelaBotIrc::nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
@@ -1173,10 +1196,10 @@ class PluginIrc extends Plugin
 		}
 	}
 	
-	private function CmdRestart()
+	public function IrcRestart($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, FALSE);
+		$server = LeelaBotIrc::nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
@@ -1185,22 +1208,16 @@ class PluginIrc extends Plugin
 		}
 	}
 	
-	private function CmdReload()
+	public function IrcReload($pseudo, $channel, $cmd, $message)
 	{
 		$cmd = $this->_cmd;
-		$server = $this->_nameOfServer(1, FALSE);
+		$server = LeelaBotIrc::nameOfServer(1, FALSE);
 		
 		if($server !== false)
 		{
 			$rcon = ServerList::getServerRCon($server);
 			$rcon->reload();
 		}
-	}
-	
-	private function CmdServerList()
-	{
-		$serverlist = ServerList::getList();
-		$this->sendMessage("Servers : ".join(', ', $serverlist));
 	}
 	
 	// Stats plugin event
@@ -1217,53 +1234,7 @@ class PluginIrc extends Plugin
 		}
 		
 		$this->privmsg($this->config['MainChannel'], "\002Awards :\002 ".join(' | ', $buffer));
-	}
-	
-	private function _nameOfServer($cmdkey, $otherargs = TRUE)
-	{
-		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
-		$server = false;
-		
-		if(isset($cmd[$cmdkey]))
-		{
-			if(in_array($cmd[$cmdkey], ServerList::getList()))
-			{
-				$server = $cmd[$cmdkey];
-			}
-			else
-			{
-				if($otherargs)
-				{
-					if(count($serverlist) == 1)
-					{
-						$server = Server::getName();
-					}
-					else
-					{
-						$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
-					}
-				}
-				else
-				{
-					$this->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
-				}
-			}
-		}
-		else
-		{
-			if(count($serverlist) == 1)
-			{
-				$server = Server::getName();
-			}
-			else
-			{
-				$this->sendMessage("Please specify the server : ".join(', ', $serverlist));
-			}
-		}
-		
-		return $server;
-	}
+	}*/
 }
 
 $this->addPluginData(array(

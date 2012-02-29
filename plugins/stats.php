@@ -531,7 +531,7 @@ class PluginStats extends Plugin
 		if($player === NULL) // End of game
 		{
 			Rcon::say('Awards : $awards', array('awards' => join('^3 - ', $buffer)));
-			$this->_plugins->callEvent('stats', 'showawards', $eventAwards);
+			$this->_plugins->callEvent('stats', 'showawards', 0, NULL, $eventAwards);
 		}
 		else
 		{
