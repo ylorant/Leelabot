@@ -591,7 +591,6 @@ class ServerInstance
 							$this->scores[$player->team]++;
 						}
 						break;
-						break;
 					//Player message
 					case 'say':
 					case 'sayteam':
