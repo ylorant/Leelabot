@@ -346,7 +346,7 @@ class PluginBans extends Plugin
 			//We call the event
 			$this->_plugins->callEvent('bans', 'new', $player->id, $banID);
 			
-			if(in_array(Server::getName(), $ban['servers']) || $ban['servers'][0] == self::GLOBALBAN) //NEED TEST, CALL APERTURE SCIENCE
+			if(in_array(Server::getName(), $ban['servers']) || $ban['servers'][0] == self::GLOBALBAN) //NEED TEST, CALL APERTURE SCIENCE
 				RCon::kick($player->id);
 		}
 	}

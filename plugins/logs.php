@@ -65,10 +65,19 @@ class PluginLogs extends Plugin
 			$this->_logFiles['chat'] = fopen($this->config['LogRoot'].'chat.log', $mode);
 	}
 	
-	
+	/** Client connection : notify it in the connection log.
+	 * This function is triggered by the ClientConnect event. It will log the client ID and his UUID in the connection log.
+	 * 
+	 * \param $id The client ID.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventClientConnect($id)
 	{
-		
+		$player = Server::getPlayer($id);
+		$this->log('connection', 'Client connected:');
+		$this->log('connection', "\t".'ID: '.$id);
+		$this->log('connection', "\t".'UUID: <'.$player->uuid.'>');
 	}
 	
 	/** Client userinfo : notify it in the connection log.
