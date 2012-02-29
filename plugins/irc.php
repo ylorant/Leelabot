@@ -50,17 +50,17 @@ class LeelaBotIrc
         return self::$_instance;
     }
     
-    public function setConfig(&$config)
+    public static function setConfig(&$config)
     {
 		$instance->config = $config;
 	}
     
-    public function setConfigured($configured)
+    public static function setConfigured($configured)
     {
 		$instance->_configured = $configured;
 	}
 	
-	public function connect()
+	public static function connect()
 	{
 		$instance = self::getInstance();
 		
@@ -85,7 +85,7 @@ class LeelaBotIrc
 		}
 	}
 	
-	public function disconnect($reason = 'bye !')
+	public static function disconnect($reason = 'bye !')
 	{
 		$instance = self::getInstance();
 		
@@ -103,7 +103,7 @@ class LeelaBotIrc
 		}
 	}
 	
-	public function send($command)
+	public static function send($command)
 	{
 		$instance = self::getInstance();
 		
@@ -113,7 +113,7 @@ class LeelaBotIrc
 		}
 	}
 	
-	public function get()
+	public static function get()
 	{
 		$instance = self::getInstance();
 		
@@ -140,31 +140,31 @@ class LeelaBotIrc
 	}
 	
 	
-	public function privmsg($dest, $message)
+	public static function privmsg($dest, $message)
 	{
 		$instance = self::getInstance();
 		$instance->send('PRIVMSG '.$dest.' :'.$message);
 	}
 	
-	public function notice($dest, $message)
+	public static function notice($dest, $message)
 	{
 		$instance = self::getInstance();
 		$instance->send('NOTICE '.$dest.' :'.$message);
 	}
 	
-	public function join($chan)
+	public static function join($chan)
 	{
 		$instance = self::getInstance();
 		$instance->send('JOIN '.$chan);
 	}
 	
-	public function part($chan)
+	public static function part($chan)
 	{
 		$instance = self::getInstance();
 		$instance->send('PART '.$chan);
 	}
 	
-	public function haveLevel($name, $chan, $right)
+	public static function haveLevel($name, $chan, $right)
 	{
 		$instance = self::getInstance();
 		
@@ -180,7 +180,7 @@ class LeelaBotIrc
 		}
 	}
 	
-	public function getLevel($name, $chan)
+	public static function getLevel($name, $chan)
 	{
 		$instance = self::getInstance();
 		
@@ -218,7 +218,7 @@ class LeelaBotIrc
 			return 0;
 	}
 	
-	public function sendMessage($message)
+	public static function sendMessage($message)
 	{
 		$instance = self::getInstance();
 		
@@ -231,7 +231,7 @@ class LeelaBotIrc
 	}
 	
 	//Vire les couleurs des messages UrT (merki SRWieZ :D)
-	public function rmColor($string)
+	public static function rmColor($string)
 	{
 		$result = $string;
 		$result = preg_replace ("/\^x....../i", "", $result); // remove OSP's colors (^Xrrggbb)
@@ -240,7 +240,7 @@ class LeelaBotIrc
 	}
 	
 	//Fonction normalisant le texte envoyé (uniquement les accents)
-	public function standardize($string)
+	public static function standardize($string)
 	{
         $a = 'âäàéèëêîïûüç';
         $b = 'aaaeeeeiiuuc'; 
@@ -249,7 +249,7 @@ class LeelaBotIrc
         return utf8_encode($string); 
 	}
 	
-	public function nameOfServer($cmd, $cmdkey, $otherargs = TRUE)
+	public static function nameOfServer($cmd, $cmdkey, $otherargs = TRUE)
 	{
 		$instance = self::getInstance();
 		
