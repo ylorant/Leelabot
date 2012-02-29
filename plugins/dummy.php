@@ -31,6 +31,12 @@ class PluginDummy extends Plugin
 		
 	}
 	
+	public function CommandReloadPlugin($id, $command)
+	{
+		$this->_plugins->unloadPlugin($command[0]);
+		$this->_plugins->loadPlugin($command[0]);
+	}
+	
 	public function SrvEventClientBegin($id)
 	{
 		$player = Server::getPlayer($id);
