@@ -34,8 +34,12 @@ class LeelaBotIrc
 	private static $_instance;
 	
 	private $_socket; // Socket of bot
+	
 	private $_connected = FALSE; // if bot connected to irc
 	private $_configured = FALSE; // if configured
+	
+	private $_pseudo; // last person who spoke.
+	private $_channel; // last channel where last person who spoke.
 	
 	public $config = array();
 
@@ -218,6 +222,18 @@ class LeelaBotIrc
 			return 1;
 		else
 			return 0;
+	}
+    
+    public static function setPseudo($pseudo)
+    {
+		$instance = self::getInstance();
+		$instance->_pseudo = $pseuod;
+	}
+    
+    public static function setChannel($channel)
+    {
+		$instance = self::getInstance();
+		$instance->_channel = $channel;
 	}
 	
 	public static function sendMessage($message)
@@ -457,6 +473,7 @@ class PluginIrc extends Plugin
 			$message = explode(':',$donnees,3);
 			$pseudo = explode('!',$message[1]);
 			$pseudo = $pseudo[0];
+			LeelaBotIrc::setPseudo($seudo);
 			
 			if(isset($commande[1]) && rtrim($commande[0]) == 'PING')
 					LeelaBotIrc::send('PONG :'.$message[1]);
@@ -489,13 +506,14 @@ class PluginIrc extends Plugin
 				if($commande[1] == 'PRIVMSG') //Si c'est un message
 				{
 					$channel = $commande[2];
+					LeelaBotIrc::setChannel($channel);
 					
 					if($message[2][0] == '!') //Si c'est une commande
 					{
 						$cmd = explode(' ', trim($message[2]));
 						$cmd[0] = $cmd[0];
 						
-						$level = LeelaBotIrc::getLevel($this->_pseudo, $this->config['MainChannel']);
+						$level = LeelaBotIrc::getLevel($pseudo, $this->config['MainChannel']);
 						
 						$return = $this->_plugins->callEvent('irc', substr($cmd[0], 1), $level, NULL, $pseudo, $channel, $cmd, $message);
 						
@@ -510,7 +528,6 @@ class PluginIrc extends Plugin
 						$pseudo = $pseudo[0];
 								
 						$serverlist = ServerList::getList();
-						$channel = $this->_channel;
 						
 						if(is_array($this->config['AutoSpeak']))
 						{
