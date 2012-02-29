@@ -583,6 +583,14 @@ class ServerInstance
 						$flag = explode(':', $line[1]);
 						$flag = explode(' ', $flag[0]);
 						$this->_leelabot->plugins->callServerEvent('Flag', $flag);
+						
+						//If flag has been captured
+						if($flag[1] == 2)
+						{
+							$player = Server::getPlayer($flag[0]);
+							$this->scores[$player->team]++;
+						}
+						break;
 						break;
 					//Player message
 					case 'say':

@@ -70,10 +70,6 @@ class Leelabot
 		$logContent = NULL;
 		$CLIArguments = Leelabot::parseArgs($CLIArguments);
 		
-		//Loading plugin manager class
-		$this->plugins = new PluginManager($this);
-		Plugins::setPluginManager($this->plugins);
-		
 		//Checking CLI argument for root modification, and modification in case
 		if($rootParam = array_intersect(array('r', 'root'), array_keys($CLIArguments)))
 			chdir($CLIArguments[$rootParam[0]]);
@@ -96,6 +92,10 @@ class Leelabot
 		}
 		
 		Leelabot::message('Leelabot version $0 starting...', array(Leelabot::VERSION), E_NOTICE, TRUE);
+		
+		//Loading plugin manager class
+		$this->plugins = new PluginManager($this);
+		Plugins::setPluginManager($this->plugins);
 		
 		//Pre-parsing CLI arguments (these arguments are relative to config loading and files location)
 		$this->processCLIPreparsingArguments($CLIArguments);

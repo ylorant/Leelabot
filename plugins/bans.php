@@ -40,8 +40,9 @@
  * \brief Plugin Bans class.
  * This class contains the methods and properties forming the bans plugin. It manages bans on the server, permanent and temporary.
  * 
- * This class also implements a new event listener, named bans, bound on the Ban method prefix. It defines 3 events :
+ * This class also implements a new event listener, named bans, bound on the Ban method prefix. It defines 4 events :
  * \li new($id, $banID) : When a player is banned. Parameters : the client ID which is banned, and the ban ID.
+ * \li drop($id, $banID) : When a ban on a player is dropped. Parameters : the client ID which was banned, and the ban ID.
  * \li exitnew($banID) : When a player is banned after a deconnection. Parameters : the ban ID.
  * \li connect($id, $banID) : When a banned player connects to the server. Parameters : the banned client ID, and the ban ID.
  */
@@ -195,8 +196,8 @@ class PluginBans extends Plugin
 					unset($this->_bannedGUID[$currentGUID]);
 			}
 			
+			$this->_plugins->callEventSimple('bans', 'drop', $id, $banID); //Calling the event
 			unset($this->_banlist[$banID]);
-			$this->_plugins->callEvent('bans', 'drop', $banID); //Calling the event
 			
 			$this->saveBanlist();
 			return FALSE;
@@ -220,7 +221,7 @@ class PluginBans extends Plugin
 		}
 		
 		Leelabot::message('Client $0 is banned from server $1, kicked.', array($id, Server::getName()));
-		$this->_plugins->callEvent('bans', 'connect', $id, $banID); //Calling the event
+		$this->_plugins->callEventSimple('bans', 'connect', $id, $banID); //Calling the event
 		RCon::kick($id);
 		
 		return TRUE;
@@ -344,7 +345,7 @@ class PluginBans extends Plugin
 			$this->saveBanlist();
 			
 			//We call the event
-			$this->_plugins->callEvent('bans', 'new', $player->id, $banID);
+			$this->_plugins->callEventSimple('bans', 'new', $player->id, $banID);
 			
 			if(in_array(Server::getName(), $ban['servers']) || $ban['servers'][0] == self::GLOBALBAN) //NEED TEST, CALL APERTURE SCIENCE
 				RCon::kick($player->id);
@@ -408,7 +409,7 @@ class PluginBans extends Plugin
 		//We save the banlist and we kick the player
 		$this->saveBanlist();
 		
-		$this->_plugins->callEvent('bans', 'exitnew', $banID); //Calling the event
+		$this->_plugins->callEventSimple('bans', 'exitnew', $banID); //Calling the event
 	}
 	
 	/** Parses a ban command to get ban infos.

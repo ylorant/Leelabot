@@ -735,6 +735,60 @@ class PluginManager extends Events
 			}
 		}
 	}
+	
+	/** Easier call for Events::callEvent.
+	 * This function is a basic alias for Events::callEvent(), for the case where you'll just want to call an event, with no consideration for
+	 * right level.
+	 * 
+	 * \param $listener The listener from which the event will be called.
+	 * \param $event The event to call.
+	 * 
+	 * \see Events::callEventSimple()
+	 * \see Events::callEvent()
+	 */
+	public function callEventSimple($listener, $event)
+	{
+		$args = func_get_args();
+		array_shift($args);
+		array_shift($args);
+		
+		return call_user_func_array(array($this, 'callEvent'), array_merge(array($listener, $event, 0, Server::getPlugins()), $args));
+	}
+	
+	/** Adds a custom event listener, with its auto-binding method prefix.
+	 * This function adds a new event listener to the event system. It allows a plugin to create his own space of events, which it cans trigger after, allowing better
+	 * and easier interaction between plugins.
+	 * 
+	 * \param $name The name the listener will get.
+	 * \param $autoMethodPrefix The prefix there will be used by other plugins for automatic method binding.
+	 * 
+	 * \return TRUE if the listener was correctly created, FALSE otherwise.
+	 * 
+	 * \see Events::addEventListener()
+	 */
+	public function addEventListener($name, $autoMethodPrefix)
+	{
+		parent::addEventListener($name, $autoMethodPrefix);
+		
+		Leelabot::message('Using automatic events recognition on all plugins for listener $0...', $name);
+		foreach($this->_plugins as $pluginName => &$data)
+		{
+			if($this->_pluginCache[$pluginName]['autoload'] === TRUE)
+			{
+				$methods = get_class_methods($data['className']);
+				
+				foreach($methods as $method)
+				{
+					if(preg_match('#^'.$autoMethodPrefix.'#', $method))
+					{
+						$event = strtolower(preg_replace('#'.$autoMethodPrefix.'(.+)#', '$1', $method));
+						Leelabot::message('Adding method $0, on event $1/$2', array($data['className'].'::'.$method, $name, $event), E_DEBUG);
+						$this->addEvent($name, $pluginName, $event, array($data['obj'], $method));
+					}
+				}
+			}
+		}
+	}
 }
 
 /**

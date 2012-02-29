@@ -65,6 +65,24 @@ class PluginLogs extends Plugin
 			$this->_logFiles['chat'] = fopen($this->config['LogRoot'].'chat.log', $mode);
 	}
 	
+	/** Client authentication : notify it in the connection log.
+	 * This function is triggered by the RightsAuthenticate event. It will logs the client authname and his level in the connection log.
+	 * 
+	 * \param $id The client ID.
+	 * \param $authname The client authname
+	 * 
+	 * \return Nothing.
+	 */
+	public function RightsAuthenticate($id, $authname)
+	{
+		$player = Server::getPlayer($id);
+		var_dump($player);
+		$this->log('connection', 'Client '.$player->name.' <'.$player->uuid.'> authed:');
+		$this->log('connection', "\t".'Auth name: '.$player->auth);
+		$this->log('connection', "\t".'Level: '.$player->level);
+		
+	}
+	
 	/** Client connection : notify it in the connection log.
 	 * This function is triggered by the ClientConnect event. It will log the client ID and his UUID in the connection log.
 	 * 
@@ -97,7 +115,7 @@ class PluginLogs extends Plugin
 			$address = explode(':', $userinfo['ip']);
 			$this->log('connection', 'User data for <'.$player->uuid.'> :');
 			$this->log('connection', "\t".'IP: '.$address[0]);
-			$this->log('connection', "\t".'GUID: '.$userinfo['guid']);
+			$this->log('connection', "\t".'GUID: '.$userinfo['cl_guid']);
 			$this->log('connection', "\t".'Name: '.$userinfo['name']);
 			if(isset($userinfo['characterfile']))
 				$this->log('connection', "\t".'Is a bot.');
@@ -116,7 +134,7 @@ class PluginLogs extends Plugin
 	public function BanConnect($id, $banID)
 	{
 		$player = Server::getPlayer($id);
-		$this->log('connection', 'Player '.$player->name.' <'.$player->hash.'> is banned with banID ['.$banID.']');
+		$this->log('connection', 'Player <'.$player->uuid.'> is banned with banID ['.$banID.']');
 	}
 	
 	/** Client authentification : notify it in the connection log.
@@ -139,7 +157,7 @@ class PluginLogs extends Plugin
 	public function SrvEventClientUserinfoChanged($id, $userinfo)
 	{
 		$player = Server::getPlayer($id);
-		$this->log('connection', 'Player '.$player->hash.' changed :');
+		$this->log('connection', 'Player '.$player->name.' <'.$player->uuid.'> changed :');
 		$this->log('connection', "\tName: ".$userinfo['n']);
 		$this->log('connection', "\tTeam: ".Server::getTeamName($userinfo['t']));
 	}
@@ -154,7 +172,7 @@ class PluginLogs extends Plugin
 	public function SrvEventClientDisconnect($id)
 	{
 		$player = Server::getPlayer($id);
-		$this->log('connection', 'Player '.$player->name.' <'.$player->hash.'> disconnected.');
+		$this->log('connection', 'Player '.$player->name.' <'.$player->uuid.'> disconnected.');
 	}
 	
 	/** Logs the data into specific logs.

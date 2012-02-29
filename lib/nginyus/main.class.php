@@ -15,7 +15,7 @@ class NginyUS extends NginyUS_Framework
 	
 	public static $continue;
 	
-	const NAME = NginyUS;
+	const NAME = 'NginyUS';
 	const VERSION = "0.0.1";
 	
 	const AUTH_BASIC = 1;

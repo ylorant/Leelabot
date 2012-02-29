@@ -221,6 +221,24 @@ class Events
 		return $found ? TRUE : Events::UNDEFINED_EVENT;
 	}
 	
+	/** Easier call for Events::callEvent.
+	 * This function is a basic alias for Events::callEvent(), for the case where you'll just want to call an event, with no consideration for
+	 * right level or callback ID restriction.
+	 * 
+	 * \param $listener The listener from which the event will be called.
+	 * \param $event The event to call.
+	 * 
+	 * \see Events::callEvent()
+	 */
+	public function callEventSimple($listener, $event)
+	{
+		$args = func_get_args();
+		array_shift($args);
+		array_shift($args);
+		
+		return call_user_func_array(array($this, 'callEvent'), array_merge(array($listener, $event, 0, NULL), $args));
+	}
+	
 	/** List the available events for a listener.
 	 * This function lists all the available events for the given listener.
 	 * 

@@ -140,7 +140,7 @@ class PluginBasicRights extends Plugin
 				if($this->config['Verbose'])
 					RCon::tell($id, 'You\'re now authed as $0', $authname);
 				
-				$this->_plugins->callEvent('rights', 'authenticate', $id, $authname);
+				$this->_plugins->callEventSimple('rights', 'authenticate', $id, $authname);
 				break;
 			}
 		}
@@ -186,7 +186,7 @@ class PluginBasicRights extends Plugin
 		$this->saveRights($this->config['RightsFile']);
 		$this->deleteCommand('setadmin', $this);
 		
-		$this->_plugins->callEvent('rights', 'authenticate', $id, $name);
+		$this->_plugins->callEventSimple('rights', 'authenticate', $id, $name);
 		
 		$player->level = 100;
 		$player->auth = $name;
@@ -240,7 +240,7 @@ class PluginBasicRights extends Plugin
 			$this->saveRights($this->config['RightsFile']);
 			
 			$player->auth = $name;
-			$this->_plugins->callEvent('rights', 'authenticate', $player->id, $name);
+			$this->_plugins->callEventSimple('rights', 'authenticate', $player->id, $name);
 			
 			if($this->config['Verbose'])
 			{
