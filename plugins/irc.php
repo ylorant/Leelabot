@@ -52,11 +52,13 @@ class LeelaBotIrc
     
     public static function setConfig(&$config)
     {
+		$instance = self::getInstance();
 		$instance->config = $config;
 	}
     
     public static function setConfigured($configured)
     {
+		$instance = self::getInstance();
 		$instance->_configured = $configured;
 	}
 	
