@@ -306,6 +306,86 @@ class PluginClientBase extends Plugin
 		
 		";
 	}
+	
+	
+	public function IrcStatus($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		$actual = Server::getName();
+	
+		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
+		{
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printServerInfo($cmd[1]);
+		}
+		else
+		{
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printServerInfo($server);
+			}
+		}
+	
+		Server::setServer($this->_main->servers[$actual]);
+	}
+	
+	private function _printServerInfo($server)
+	{
+		$serverinfo = Server::getServer()->serverInfo;
+		LeelaBotIrc::sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+		LeelaBotIrc::sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+	}
+	
+	public function IrcPlayers($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		
+		$actual = Server::getName();
+	
+		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
+		{
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printPlayers($cmd[1]);
+		}
+		else
+		{
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printPlayers($server);
+			}
+		}
+	
+		Server::setServer($this->_main->servers[$actual]);
+	}
+	
+	private function _printPlayers($server)
+	{
+		$playerlist = array();
+		$nbplayers = 0;
+		
+		foreach(Server::getPlayerList() as $curPlayer)
+		{
+			//Gestion de la couleur en fonction de l'équipe
+			if(Server::getServer()->serverInfo['g_gametype'] != '0')
+			{
+				if($curPlayer->team == 1)
+					$color = "\00304";
+				elseif($curPlayer->team == 2)
+					$color = "\00302";
+				elseif($curPlayer->team == 3)
+					$color = "\00314";
+			}
+			else
+				$color = "\00308";
+			$playerlist[] = "\002".$color.$curPlayer->name."\017";
+			++$nbplayers;
+		}
+		
+		if($nbplayers >0) LeelaBotIrc::sendMessage('List of players : '.join(', ', $playerlist));
+		else LeelaBotIrc::sendMessage('No one.');
+	}
 }
 
 $this->addPluginData(array(

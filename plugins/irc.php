@@ -511,11 +511,11 @@ class PluginIrc extends Plugin
 					if($message[2][0] == '!') //Si c'est une commande
 					{
 						$cmd = explode(' ', trim($message[2]));
-						$cmd[0] = $cmd[0];
+						$cmd[0] = substr($cmd[0], 1);
 						
 						$level = LeelaBotIrc::getLevel($pseudo, $this->config['MainChannel']);
 						
-						$return = $this->_plugins->callEvent('irc', substr($cmd[0], 1), $level, NULL, $pseudo, $channel, $cmd, $message);
+						$return = $this->_plugins->callEvent('irc', $cmd[0], $level, NULL, $pseudo, $channel, $cmd, $message);
 						
 						if($return == Events::ACCESS_DENIED)
 							LeelaBotIrc::sendMessage("You don't have enough rights.");
@@ -731,184 +731,9 @@ class PluginIrc extends Plugin
 	}
 	
 	/*
-	public function IrcStatus($pseudo, $channel, $cmd, $message)
-	{
-		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
-		$actual = Server::getName();
 	
-		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
-		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$this->_printServerInfo($cmd[1]);
-		}
-		else
-		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$this->_printServerInfo($server);
-			}
-		}
 	
-		Server::setServer($this->_main->servers[$actual]);
-	}
 	
-	private function _printServerInfo($server)
-	{
-		$serverinfo = Server::getServer()->serverInfo;
-		LeelaBotIrc::sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
-		LeelaBotIrc::sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
-	}
-	
-	public function IrcPlayers($pseudo, $channel, $cmd, $message)
-	{
-		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
-		
-		$actual = Server::getName();
-	
-		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
-		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$this->_printPlayers($cmd[1]);
-		}
-		else
-		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$this->_printPlayers($server);
-			}
-		}
-	
-		Server::setServer($this->_main->servers[$actual]);
-	}
-	
-	private function _printPlayers($server)
-	{
-		$playerlist = array();
-		$nbplayers = 0;
-		
-		foreach(Server::getPlayerList() as $curPlayer)
-		{
-			//Gestion de la couleur en fonction de l'équipe
-			if(Server::getServer()->serverInfo['g_gametype'] != '0')
-			{
-				if($curPlayer->team == 1)
-					$color = "\00304";
-				elseif($curPlayer->team == 2)
-					$color = "\00302";
-				elseif($curPlayer->team == 3)
-					$color = "\00314";
-			}
-			else
-				$color = "\00308";
-			$playerlist[] = "\002".$color.$curPlayer->name."\017";
-			++$nbplayers;
-		}
-		
-		if($nbplayers >0) LeelaBotIrc::sendMessage('List of players : '.join(', ', $playerlist));
-		else LeelaBotIrc::sendMessage('No one.');
-	}
-	
-	public function IrcAwards($pseudo, $channel, $cmd, $message)
-	{
-		$cmd = $this->_cmd;
-		$serverlist = ServerList::getList();
-		$actual = Server::getName();
-	
-		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
-		{
-			Server::setServer($this->_main->servers[$cmd[1]]);
-			$this->_printAwards($cmd[1]);
-		}
-		else
-		{
-			foreach($serverlist as $server)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				$this->_printAwards($server);
-			}
-		}
-	
-		Server::setServer($this->_main->servers[$actual]);
-	}
-	
-	private function _printAwards($server)
-	{
-		$buffer = array();
-		$_awards = Server::get('awards');
-		
-		foreach($this->_main->config['Plugin']['Stats']['ShowAwards'] as $award)
-		{
-			if(in_array($award, $this->_main->config['Plugin']['Stats']['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
-			{
-				if($_awards[$award][0] !== NULL)
-					$buffer[] = "\037".ucfirst($award)."\037".' '.Server::getPlayer($_awards[$award][0])->name;
-				else
-					$buffer[] = "\037".ucfirst($award)."\037".' nobody';
-			}
-		}
-		LeelaBotIrc::sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
-	}
-	
-	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
-	public function IrcStats($pseudo, $channel, $cmd, $message)
-	{
-		$cmd = $this->_cmd;
-		$server = LeelaBotIrc::nameOfServer(2, FALSE);
-		$actual = Server::getName();
-		
-		if(isset($cmd[1])) //Il faut un paramètre : le joueur
-		{
-			if($server !== false)
-			{
-				Server::setServer($this->_main->servers[$server]);
-				
-				$target = Server::searchPlayer(trim($cmd[1]));
-				
-				if(!$target)
-				{
-					LeelaBotIrc::sendMessage("Unknown player");
-				}
-				elseif(is_array($target))
-				{
-					$players = array();
-					foreach($target as $p)
-						$players[] = Server::getPlayer($p)->name;
-					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
-				}
-				else
-				{
-					$buffer = array();
-					
-					$_stats = Server::get('stats');
-					$_awards = Server::get('awards');
-					$player = Server::getPlayer($target);
-					
-					if($_stats[$player->id]['deaths'] != 0)
-						$ratio = $_stats[$player->id]['kills'] / $_stats[$player->id]['deaths'];
-					else
-						$ratio = $_stats[$player->id]['kills'];
-						
-					if(in_array('hits', $this->_main->config['Plugin']['Stats']['ShowStats'])) //Gestion des hits en fonction de la configuration du plugin de stats
-						$hits = "\037Hits\037 : ".$_stats[$player->id]['hits']." - ";
-					if(Server::getServer()->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
-						$caps = " - \037Caps\037 : ".$_stats[$player->id]['caps'];
-						
-					LeelaBotIrc::sendMessage("\002Stats de ".$player->name."\002 : ".$hits."\037Kills\037 : ".$_stats[$player->id]['kills']." - \037Deaths\037 : ".$_stats[$player->id]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$_stats[$player->id]['streaks']);
-
-				}
-				
-				Server::setServer($this->_main->servers[$actual]);
-			}
-		}
-		else
-		{
-			LeelaBotIrc::sendMessage("Player name missing");
-		}
-	}
 	
 	public function IrcKick($pseudo, $channel, $cmd, $message)
 	{

@@ -614,6 +614,102 @@ class PluginStats extends Plugin
 		Server::set('stats', $_stats);
 		Server::set('awards', $_awards);
 	}
+	
+	public function IrcAwards($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		$actual = Server::getName();
+	
+		if(isset($cmd[1]) && in_array($cmd[1], $serverlist))
+		{
+			Server::setServer($this->_main->servers[$cmd[1]]);
+			$this->_printAwards($cmd[1]);
+		}
+		else
+		{
+			foreach($serverlist as $server)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				$this->_printAwards($server);
+			}
+		}
+	
+		Server::setServer($this->_main->servers[$actual]);
+	}
+	
+	private function _printAwards($server)
+	{
+		$buffer = array();
+		$_awards = Server::get('awards');
+		
+		foreach($this->config['ShowAwards'] as $award)
+		{
+			if(in_array($award, $this->config['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			{
+				if($_awards[$award][0] !== NULL)
+					$buffer[] = "\037".ucfirst($award)."\037".' '.Server::getPlayer($_awards[$award][0])->name;
+				else
+					$buffer[] = "\037".ucfirst($award)."\037".' nobody';
+			}
+		}
+		LeelaBotIrc::sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
+	}
+	
+	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
+	public function IrcStats($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer(2, FALSE);
+		$actual = Server::getName();
+		
+		if(isset($cmd[1])) //Il faut un paramètre : le joueur
+		{
+			if($server !== false)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				
+				$target = Server::searchPlayer(trim($cmd[1]));
+				
+				if(!$target)
+				{
+					LeelaBotIrc::sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$buffer = array();
+					
+					$_stats = Server::get('stats');
+					$_awards = Server::get('awards');
+					$player = Server::getPlayer($target);
+					
+					if($_stats[$player->id]['deaths'] != 0)
+						$ratio = $_stats[$player->id]['kills'] / $_stats[$player->id]['deaths'];
+					else
+						$ratio = $_stats[$player->id]['kills'];
+						
+					if(in_array('hits', $this->config['ShowStats'])) //Gestion des hits en fonction de la configuration du plugin de stats
+						$hits = "\037Hits\037 : ".$_stats[$player->id]['hits']." - ";
+					if(Server::getServer()->serverInfo['g_gametype'] == 7) //Gestion des caps uniquement en CTF
+						$caps = " - \037Caps\037 : ".$_stats[$player->id]['caps'];
+						
+					LeelaBotIrc::sendMessage("\002Stats de ".$player->name."\002 : ".$hits."\037Kills\037 : ".$_stats[$player->id]['kills']." - \037Deaths\037 : ".$_stats[$player->id]['deaths']." - \037Ratio\037 : ".$ratio.$caps." - \037Streaks\037 : ".$_stats[$player->id]['streaks']);
+
+				}
+				
+				Server::setServer($this->_main->servers[$actual]);
+			}
+		}
+		else
+		{
+			LeelaBotIrc::sendMessage("Player name missing");
+		}
+	}
 }
 
 $this->addPluginData(array(
