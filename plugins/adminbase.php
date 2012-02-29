@@ -660,7 +660,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcKick($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -702,7 +702,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcKickAll($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -747,7 +747,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcSlap($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -789,7 +789,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcMute($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -831,7 +831,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcSay($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -850,13 +850,13 @@ class PluginAdminBase extends Plugin
 			}
 			
 			if(isset($envoi[$i]))
-				$rcon->say($this->normaliser(rtrim($envoi[$i])));
+				$rcon->say(LeelaBotIrc::standardize(rtrim($envoi[$i])));
 		}
 	}
 	
 	public function IrcBigtext($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -875,14 +875,14 @@ class PluginAdminBase extends Plugin
 			}
 			
 			if(isset($envoi[$i]))
-				$rcon->bigtext($this->normaliser(rtrim($envoi[$i])));
+				$rcon->bigtext(LeelaBotIrc::standardize(rtrim($envoi[$i])));
 		}
 	}
 	
 	public function IrcMap($pseudo, $channel, $cmd, $message)
 	{
 		$serverlist = ServerList::getList();
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -913,7 +913,7 @@ class PluginAdminBase extends Plugin
 	public function IrcNextMap($pseudo, $channel, $cmd, $message)
 	{
 		$serverlist = ServerList::getList();
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -943,7 +943,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcCyclemap($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		$server = LeelaBotIrc::nameOfServer($cmd[1], FALSE);
 		
 		if($server !== false)
 		{
@@ -954,7 +954,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcRestart($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		$server = LeelaBotIrc::nameOfServer($cmd[1], FALSE);
 		
 		if($server !== false)
 		{
@@ -965,7 +965,7 @@ class PluginAdminBase extends Plugin
 	
 	public function IrcReload($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		$server = LeelaBotIrc::nameOfServer($cmd[1], FALSE);
 		
 		if($server !== false)
 		{

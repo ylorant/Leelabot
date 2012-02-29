@@ -333,7 +333,7 @@ class PluginClientBase extends Plugin
 	private function _printServerInfo($server)
 	{
 		$serverinfo = Server::getServer()->serverInfo;
-		LeelaBotIrc::sendMessage("\037Server :\037 ".$this->_rmColor($serverinfo['sv_hostname']));
+		LeelaBotIrc::sendMessage("\037Server :\037 ".LeelaBotIrc::rmColor($serverinfo['sv_hostname']));
 		LeelaBotIrc::sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
 	}
 	

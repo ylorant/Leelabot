@@ -531,7 +531,7 @@ class PluginStats extends Plugin
 		if($player === NULL) // End of game
 		{
 			Rcon::say('Awards : $awards', array('awards' => join('^3 - ', $buffer)));
-			$this->_plugins->callEvent('stats', 'showawards', 0, NULL, $eventAwards);
+			$this->_plugins->callEventSimple('stats', 'showawards', $eventAwards);
 		}
 		else
 		{
@@ -658,7 +658,7 @@ class PluginStats extends Plugin
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
 	public function IrcStats($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 2, FALSE);
+		$server = LeelaBotIrc::nameOfServer($cmd[2], FALSE);
 		$actual = Server::getName();
 		
 		if(isset($cmd[1])) //Il faut un paramètre : le joueur

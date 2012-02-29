@@ -267,48 +267,36 @@ class LeelaBotIrc
         return utf8_encode($string); 
 	}
 	
-	public static function nameOfServer($cmd, $cmdkey, $otherargs = TRUE)
+	public static function nameOfServer($arg, $otherargs = TRUE)
 	{
 		$instance = self::getInstance();
 		
 		$serverlist = ServerList::getList();
 		$server = false;
 		
-		if(isset($cmd[$cmdkey]))
+		if(isset($arg))
 		{
-			if(in_array($cmd[$cmdkey], ServerList::getList()))
-			{
-				$server = $cmd[$cmdkey];
-			}
+			if(in_array($arg, ServerList::getList()))
+				$server = $arg;
 			else
 			{
 				if($otherargs)
 				{
 					if(count($serverlist) == 1)
-					{
 						$server = Server::getName();
-					}
 					else
-					{
 						$instance->sendMessage("Please specify the server : ".join(', ', $serverlist));
-					}
 				}
 				else
-				{
 					$instance->sendMessage("This server doesn't exist. Available Servers : ".join(', ', $serverlist));
-				}
 			}
 		}
 		else
 		{
 			if(count($serverlist) == 1)
-			{
 				$server = Server::getName();
-			}
 			else
-			{
 				$instance->sendMessage("Please specify the server : ".join(', ', $serverlist));
-			}
 		}
 		
 		return $server;
@@ -341,7 +329,10 @@ class PluginIrc extends Plugin
 			$this->config['Channels'] = explode(',', $this->config['Channels']);
 			
 			//Autospeak configuration
-			$this->configureAutospeak();
+			if(isset($this->config['AutoSpeak']))
+				$this->configureAutospeak();
+			else
+				$this->config['AutoSpeak'] = 0;
 			
 			//The bot is now configured
 			LeelaBotIrc::setConfig($this->config);
@@ -387,69 +378,44 @@ class PluginIrc extends Plugin
 	private function configureAutospeak()
 	{
 		// Autospeak IRC <=> URT
-		if(isset($this->config['AutoSpeak']))
+		if(!is_array($this->config['AutoSpeak']) && (!is_numeric($this->config['AutoSpeak']) || !in_array($this->config['AutoSpeak'], array(0, 1, 2, 3))))
 		{
-			if(is_array($this->config['AutoSpeak']))
-			{
-				$serverlist = ServerList::getList();
-				
-				$autospeak = array();
-				
-				foreach($this->config['AutoSpeak'] as $name => $server)
-				{
-					if(is_array($server) and count($server))
-					{
-						$autospeak[$name] = array();
-						
-						foreach($server as $channel => $mode)
-						{
-							$channel = '#'.$channel;
-							
-							if(in_array($channel, $this->config['Channels']))
-							{
-								if(is_numeric($mode) && in_array($mode, array(0, 1, 2, 3)))
-								{
-									$autospeak[$name][$channel] = $mode;
-								}
-								else
-								{
-									$autospeak[$name][$channel] = 0;
-									Leelabot::message('The Autospeak.$0 configuration for $1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
-								}
-							}
-							else
-							{
-								Leelabot::message('In Autospeak.$0 configuration, $1 was not recognized.', array($name, $channel), E_WARNING);
-							}
-						}
-					}
-					else
-					{
-						foreach($this->config['Channels'] as $channel)
-						{
-							$autospeak[$name][$channel] = 0;
-						}
-						
-						Leelabot::message('The Autospeak.$0 configuration is invalid. Default values was set (0 for all chans).', array($name), E_WARNING);
-					}
-				}
-				
-				$this->config['AutoSpeak'] = $autospeak;
-			}
-			elseif(is_numeric($this->config['AutoSpeak']) && in_array($this->config['AutoSpeak'], array(0, 1, 2, 3)))
-			{
-				$this->config['AutoSpeak'] = $this->config['AutoSpeak'];
-			}
-			else
-			{
-				Leelabot::message('The Autospeak configuration was not recognized !', array(), E_WARNING);
-				$this->config['AutoSpeak'] = 0;
-			}
-		}
-		else
-		{
+			Leelabot::message('The Autospeak configuration was not recognized !', array(), E_WARNING);
 			$this->config['AutoSpeak'] = 0;
+			return;
 		}
+			
+		$serverlist = ServerList::getList();
+		$autospeak = array();
+		foreach($this->config['AutoSpeak'] as $name => $server)
+		{
+			if(is_array($server) && count($server))
+			{
+				$autospeak[$name] = array();
+				foreach($server as $channel => $mode)
+				{
+					$channel = '#'.$channel;
+					if(in_array($channel, $this->config['Channels']) && is_numeric($mode) && in_array($mode, array(0, 1, 2, 3)))
+						$autospeak[$name][$channel] = $mode;
+					elseif(in_array($channel, $this->config['Channels']))
+					{
+						$autospeak[$name][$channel] = 0;
+						Leelabot::message('The Autospeak.$0 configuration for $1 is invalid. Default values was set (0).', array($name, $channel), E_WARNING);
+					}	
+					else
+						Leelabot::message('In Autospeak.$0 configuration, $1 was not recognized.', array($name, $channel), E_WARNING);
+				}
+				continue;
+			}
+			
+			foreach($this->config['Channels'] as $channel)
+				$autospeak[$name][$channel] = 0;
+				
+			Leelabot::message('The Autospeak.$0 configuration is invalid. Default values was set (0 for all chans).', array($name), E_WARNING);
+		}
+		
+		$this->config['AutoSpeak'] = $autospeak;
+		
 	}
 	
 	public function destroy()
@@ -517,7 +483,7 @@ class PluginIrc extends Plugin
 						
 						$return = $this->_plugins->callEvent('irc', $cmd[0], $level, NULL, $pseudo, $channel, $cmd, $message);
 						
-						if($return == Events::ACCESS_DENIED)
+						if($return === Events::ACCESS_DENIED)
 							LeelaBotIrc::sendMessage("You don't have enough rights.");
 					}
 					else
@@ -540,16 +506,12 @@ class PluginIrc extends Plugin
 								}
 							}
 						}
-						elseif(is_numeric($this->config['AutoSpeak']))
+						elseif(is_numeric($this->config['AutoSpeak']) && in_array($this->config['AutoSpeak'], array(1, 3)))
 						{
-							if(in_array($this->config['AutoSpeak'], array(1, 3)))
+							foreach($serverlist as $server)
 							{
-								
-								foreach($serverlist as $server)
-								{
-									$rcon = ServerList::getServerRCon($server);
-									$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
-								}
+								$rcon = ServerList::getServerRCon($server);
+								$rcon->say('^4IRC : <$nick> $message', array('nick' => $pseudo, 'message' => $irc2urt));
 							}
 						}
 					}
@@ -572,12 +534,15 @@ class PluginIrc extends Plugin
 		{
 			$ret = rtrim(LeelaBotIrc::get());
 			if($ret)
-			$data = explode(':',$ret);
-			$cmd = explode(' ',$data[1]);
-			if($cmd[1] == '353')
-				$nicks .= ' '.$data[2];
-			elseif($cmd[1] == '366')
-				$continue = FALSE;
+			{
+				$data = explode(':',$ret);
+				$cmd = explode(' ',$data[1]);
+				
+				if($cmd[1] == '353')
+					$nicks .= ' '.$data[2];
+				elseif($cmd[1] == '366')
+					$continue = FALSE;
+			}
 		}
 		
 		$nicks = str_replace(array('@','+','~'), array('','',''), $nicks);
@@ -598,9 +563,7 @@ class PluginIrc extends Plugin
 			foreach($this->config['Channels'] as $channel)
 			{
 				if(isset($this->config['AutoSpeak'][$server][$channel]) && in_array($this->config['AutoSpeak'][$server][$channel], array(0, 3)))
-				{
 					LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
-				}
 			}
 		}
 		elseif(is_numeric($this->config['AutoSpeak']))
@@ -608,9 +571,7 @@ class PluginIrc extends Plugin
 			if(in_array($this->config['AutoSpeak'], array(0, 3)))
 			{
 				foreach($this->config['Channels'] as $channel)
-				{
 					LeelaBotIrc::privmsg($channel, "\002[".$server."] <".$nick."> :\002 ".$message);
-				}
 			}
 		}
 	}
@@ -701,7 +662,7 @@ class PluginIrc extends Plugin
 	
 	public function IrcUrt($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		$server = LeelaBotIrc::nameOfServer($cmd[1]);
 		
 		if($server !== false)
 		{
@@ -736,5 +697,4 @@ $this->addPluginData(array(
 'name' => 'irc',
 'className' => 'PluginIrc',
 'display' => 'IRC Plugin',
-'dependencies' => array('stats'),
 'autoload' => TRUE));
