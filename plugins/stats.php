@@ -658,7 +658,7 @@ class PluginStats extends Plugin
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
 	public function IrcStats($pseudo, $channel, $cmd, $message)
 	{
-		$server = LeelaBotIrc::nameOfServer(2, FALSE);
+		$server = LeelaBotIrc::nameOfServer($cmd, 2, FALSE);
 		$actual = Server::getName();
 		
 		if(isset($cmd[1])) //Il faut un paramètre : le joueur

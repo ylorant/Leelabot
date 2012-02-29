@@ -656,6 +656,323 @@ class PluginAdminBase extends Plugin
 			Rcon::tell($id, 'Missing parameters.');
 		}
 	}
+	
+	
+	public function IrcKick($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$kick = $cmd[2];
+			else
+				$kick = $cmd[1];
+		
+			if(isset($kick))
+			{
+				$target = Server::searchPlayer(trim($kick));
+				
+				if(!$target)
+				{
+					LeelaBotIrc::sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->kick($target);
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was kicked.");
+				}
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("Player name missing");
+			}
+		}
+	}
+	
+	public function IrcKickAll($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$kick = $cmd[2];
+			else
+				$kick = $cmd[1];
+		
+			if(isset($kick))
+			{
+				$target = Server::searchPlayer(trim($kick));
+				
+				if(!$target)
+				{
+					LeelaBotIrc::sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+					{
+						$rcon->kick($p);
+						$players[] = Server::getPlayer($p)->name;
+					}
+					LeelaBotIrc::sendMessage(join(', ', $players)." are kicked.");
+				}
+				else
+				{
+					$rcon->kick($target);
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was kicked.");
+				}
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("Player name missing");
+			}
+		}
+	}
+	
+	public function IrcSlap($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$slap = $cmd[2];
+			else
+				$slap = $cmd[1];
+		
+			if(isset($slap))
+			{
+				$target = Server::searchPlayer(trim($slap));
+				
+				if(!$target)
+				{
+					LeelaBotIrc::sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->slap($target);
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was slapped.");
+				}
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("Player name missing");
+			}
+		}
+	}
+	
+	public function IrcMute($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$mute = $cmd[2];
+			else
+				$mute = $cmd[1];
+		
+			if(isset($mute))
+			{
+				$target = Server::searchPlayer(trim($mute));
+				
+				if(!$target)
+				{
+					LeelaBotIrc::sendMessage("Unknown player");
+				}
+				elseif(is_array($target))
+				{
+					$players = array();
+					foreach($target as $p)
+						$players[] = Server::getPlayer($p)->name;
+					LeelaBotIrc::sendMessage("Multiple players found : ".join(', ', $players));
+				}
+				else
+				{
+					$rcon->mute($target);
+					LeelaBotIrc::sendMessage(Server::getPlayer($target)->name." was muted.");
+				}
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("Player name missing");
+			}
+		}
+	}
+	
+	public function IrcSay($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$i = 2;
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$i = 1;
+			}
+			
+			if(isset($envoi[$i]))
+				$rcon->say($this->normaliser(rtrim($envoi[$i])));
+		}
+	}
+	
+	public function IrcBigtext($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+			{
+				$envoi = explode(' ', $message[2], 3);
+				$i = 2;
+			}
+			else
+			{
+				$envoi = explode(' ', $message[2], 2);
+				$i = 1;
+			}
+			
+			if(isset($envoi[$i]))
+				$rcon->bigtext($this->normaliser(rtrim($envoi[$i])));
+		}
+	}
+	
+	public function IrcMap($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$map = $cmd[2];
+			else
+				$map = $cmd[1];
+			
+			if(isset($map))
+			{
+				if(in_array($map, $this->_mapUt4List))
+					$rcon->map('"ut4_'.$map.'"');
+				else
+					$rcon->map('"'.$map.'"');
+				
+				LeelaBotIrc::sendMessage("Map changed !");
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("What's name of the map ?");
+			}
+		}
+	}
+	
+	public function IrcNextMap($pseudo, $channel, $cmd, $message)
+	{
+		$serverlist = ServerList::getList();
+		$server = LeelaBotIrc::nameOfServer($cmd, 1);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$serverlist = ServerList::getList();
+			
+			if(in_array($cmd[1], $serverlist))
+				$map = $cmd[2];
+			else
+				$map = $cmd[1];
+			
+			if(isset($map))
+			{
+				if(in_array($map, $this->_mapUt4List))
+					$rcon->set('g_nextmap "ut4_'.$map.'"');
+				else
+					$rcon->set('g_nextmap "'.$map.'"');
+					
+				LeelaBotIrc::sendMessage("Next map changed !");
+			}
+			else
+			{
+				LeelaBotIrc::sendMessage("What's name of the map ?");
+			}
+		}
+	}
+	
+	public function IrcCyclemap($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->cyclemap();
+		}
+	}
+	
+	public function IrcRestart($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->restart();
+		}
+	}
+	
+	public function IrcReload($pseudo, $channel, $cmd, $message)
+	{
+		$server = LeelaBotIrc::nameOfServer($cmd, 1, FALSE);
+		
+		if($server !== false)
+		{
+			$rcon = ServerList::getServerRCon($server);
+			$rcon->reload();
+		}
+	}
 }
 
 $this->addPluginData(array(
