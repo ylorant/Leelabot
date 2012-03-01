@@ -53,6 +53,10 @@ class PluginClientBase extends Plugin
 			if(isset($this->config['CycleMapFile']))
 				$this->_cyclemapfile = $this->config['CycleMapFile'];
 		}
+			
+		//IRC commands level (0:all , 1:voice, 2:operator)
+		$this->_plugins->setEventLevel('irc', 'status', 0);
+		$this->_plugins->setEventLevel('irc', 'players', 0);
 	}
 	
 	/** ClientUserinfo event. Perform team balance if needed.
