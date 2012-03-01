@@ -342,11 +342,6 @@ class PluginIrc extends Plugin
 			//Connection
 			LeelaBotIrc::connect();
 			
-			//IRC commands level (0:all , 1:voice, 2:operator)
-			$this->_plugins->setEventLevel('irc', 'help', 0);
-			$this->_plugins->setEventLevel('irc', 'serverlist', 0);
-			$this->_plugins->setEventLevel('irc', 'urt', 2);
-			
 			/*
 			$this->_addCmd('!help', 'CmdHelp', '!help <commande>', 'Permet d\'avoir de l\'aide sur une commande.', 0);
 			$this->_addCmd('!status', 'CmdStatus', '!status [<server>]', 'Permet d\'avoir les infos sur la partie actuel.', 0);
@@ -370,6 +365,11 @@ class PluginIrc extends Plugin
 			
 			//Adding event listener
 			$this->_plugins->addEventListener('irc', 'Irc');
+			
+			//IRC commands level (0:all , 1:voice, 2:operator)
+			$this->_plugins->setEventLevel('irc', 'help', 0);
+			$this->_plugins->setEventLevel('irc', 'serverlist', 0);
+			$this->_plugins->setEventLevel('irc', 'urt', 2);
 			
 			//Irc bot main routine
 			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
