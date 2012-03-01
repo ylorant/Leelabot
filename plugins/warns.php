@@ -44,13 +44,19 @@ class PluginWarns extends Plugin
 	{
 		// Got an warning on teamkill
 		if(isset($this->config['TeamKills']))
-			$this->config['TeamKills'] = Leelabot::parseBool($this->config['TeamKills']);
+		{
+			if(!is_bool($this->config['TeamKills'])) // Only if is the first load of plugin
+				$this->config['TeamKills'] = Leelabot::parseBool($this->config['TeamKills']);
+		}
 		else
 			$this->config['TeamKills'] = TRUE;
 			
 		// Got an warning on teamhit
 		if(isset($this->config['TeamHits']))
-			$this->config['TeamHits'] = Leelabot::parseBool($this->config['TeamHits']);
+		{
+			if(!is_bool($this->config['TeamHits'])) // Only if is the first load of plugin
+				$this->config['TeamHits'] = Leelabot::parseBool($this->config['TeamHits']);
+		}
 		else
 			$this->config['TeamHits'] = FALSE;
 		
@@ -59,7 +65,9 @@ class PluginWarns extends Plugin
 		{
 			if(isset($this->config['BadWords']))
 			{
-				$this->config['BadWords'] = Leelabot::parseBool($this->config['BadWords']);
+				if(!is_bool($this->config['BadWords'])) // Only if is the first load of plugin
+					$this->config['BadWords'] = Leelabot::parseBool($this->config['BadWords']);
+				
 				$this->_badwords = explode('\n', file_get_contents($this->_main->getConfigLocation().'/'.$this->config['BadWordsFile']));
 			}
 			else
@@ -69,7 +77,8 @@ class PluginWarns extends Plugin
 		{
 			if(isset($this->config['BadWords']))
 			{
-				$this->config['BadWords'] = Leelabot::parseBool($this->config['BadWords']);
+				if(!is_bool($this->config['BadWords'])) // Only if is the first load of plugin
+					$this->config['BadWords'] = Leelabot::parseBool($this->config['BadWords']);
 				
 				if($this->config['BadWords'])
 					Leelabot::message("The BadWordsFile configuration isn't set. The bot can't load BadWords warning.", array(), E_WARNING);
@@ -80,7 +89,10 @@ class PluginWarns extends Plugin
 			
 		// Clear warning on InitGame
 		if(isset($this->config['ClearOnInit']))
-			$this->config['ClearOnInit'] = Leelabot::parseBool($this->config['ClearOnInit']);
+		{
+			if(!is_bool($this->config['ClearOnInit'])) // Only if is the first load of plugin
+				$this->config['ClearOnInit'] = Leelabot::parseBool($this->config['ClearOnInit']);
+		}
 		else
 			$this->config['ClearOnInit'] = TRUE;
 			

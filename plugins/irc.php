@@ -326,7 +326,8 @@ class PluginIrc extends Plugin
 		//Config
 		if(isset($this->config['Server']) && isset($this->config['Port']) && isset($this->config['Nick']) && isset($this->config['User']) && isset($this->config['Channels']) && isset($this->config['MainChannel']) && isset($this->config['MessageMode']) && in_array($this->config['MessageMode'], array('notice', 'chanmsg', 'privmsg')))
 		{
-			$this->config['Channels'] = explode(',', $this->config['Channels']);
+			if(!is_array($this->config['Channels']))
+				$this->config['Channels'] = explode(',', $this->config['Channels']);
 			
 			//Autospeak configuration
 			if(isset($this->config['AutoSpeak']))

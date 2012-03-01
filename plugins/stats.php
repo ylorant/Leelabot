@@ -67,43 +67,60 @@ class PluginStats extends Plugin
 	{
 		// What kind of stats will be displayed
 		if(isset($this->config['ShowStats']))
-			$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
+		{
+			if(!is_array($this->config['ShowStats'])) // Only if is the first load of plugin
+				$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
+		}
 		else
 			$this->config['ShowStats'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
 		
 		// What kind of awards will be displayed
 		if(isset($this->config['ShowAwards']))
-			$this->config['ShowAwards'] = explode(',', $this->config['ShowAwards']);
+		{
+			if(!is_array($this->config['ShowAwards'])) // Only if is the first load of plugin
+				$this->config['ShowAwards'] = explode(',', $this->config['ShowAwards']);
+		}
 		else
 			$this->config['ShowAwards'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
 			
 		// Display flag captures on top
 		if(isset($this->config['DisplayCaps']))
-			$this->config['DisplayCaps'] = Leelabot::parseBool($this->config['DisplayCaps']);
+		{
+			if(!is_bool($this->config['DisplayCaps'])) // Only if is the first load of plugin
+				$this->config['DisplayCaps'] = Leelabot::parseBool($this->config['DisplayCaps']);
+		}
 		else
 			$this->config['DisplayCaps'] = TRUE;
 			
 		// Display headshots on top (every 5 heads)
 		if(isset($this->config['DisplayHeads']))
-			$this->config['DisplayHeads'] = Leelabot::parseBool($this->config['DisplayHeads']);
+		{
+			if(!is_bool($this->config['DisplayHeads'])) // Only if is the first load of plugin
+				$this->config['DisplayHeads'] = Leelabot::parseBool($this->config['DisplayHeads']);
+		}
 		else
 			$this->config['DisplayHeads'] = TRUE;
 			
 		// Display streaks on top (only if is the best streaks)
 		if(isset($this->config['DisplayStreaks']))
-			$this->config['DisplayStreaks'] = Leelabot::parseBool($this->config['DisplayStreaks']);
+		{
+			if(!is_bool($this->config['DisplayStreaks'])) // Only if is the first load of plugin
+				$this->config['DisplayStreaks'] = Leelabot::parseBool($this->config['DisplayStreaks']);
+		}
 		else
 			$this->config['DisplayStreaks'] = TRUE;
 			
-		// Default verbosity for the players
-		if(isset($this->config['StatsVerbosity']) && in_array($this->config['StatsVerbosity'], array('0','1','2','3')))
-			$this->config['StatsVerbosity'] = $this->config['StatsVerbosity']; // stupid line :D (but usefull)
-		else
+		// Default verbosity for the players and only if is the first load of plugin
+		if(!(isset($this->config['StatsVerbosity']) && is_numeric($this->config['StatsVerbosity']) && in_array(intval($this->config['StatsVerbosity']), array(0,1,2,3))))
 			$this->config['StatsVerbosity'] = 2;
-			
+		
+		
 		// Allow player to change their verbosity 
 		if(isset($this->config['AllowPlayerVerbosity']))
-			$this->config['AllowPlayerVerbosity'] = Leelabot::parseBool($this->config['AllowPlayerVerbosity']);
+		{
+			if(!is_bool($this->config['AllowPlayerVerbosity'])) // Only if is the first load of plugin
+				$this->config['AllowPlayerVerbosity'] = Leelabot::parseBool($this->config['AllowPlayerVerbosity']);
+		}
 		else
 			$this->config['AllowPlayerVerbosity'] = FALSE;
 			
@@ -115,7 +132,7 @@ class PluginStats extends Plugin
 	
 	public function destroy()
 	{
-		Rcon::say("Stats : stopped.");
+		Rcon::say("Stats stopped by plugin unload.");
 		
 		Server::set('stats', NULL);
 		Server::set('statsConfig', NULL);

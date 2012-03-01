@@ -1,7 +1,7 @@
 <?php
 /**
  * \file plugins/assault.php
- * \author Deniz Eser <srwiez@gmail.com>
+ * \author Eser Deniz <srwiez@gmail.com>
  * \version 0.1
  * \brief Assault plugin for Leelabot.
  *
