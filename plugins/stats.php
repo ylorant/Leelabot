@@ -130,37 +130,82 @@ class PluginStats extends Plugin
 			
 		//Adding event listener
 		$this->_plugins->addEventListener('stats', 'Stats');
+			
+		// We browse all servers for variables initialization
+		$servers = ServerList::getList();
+		foreach($servers as $serv)
+		{
+			// Take server instance
+			$server = ServerList::getServer($serv);
 		
-		$this->_initVars();
+			// Variables needed by stats plugin
+			$this->_initVars($server);
+			
+			// Initialize players variables
+			$_stats = $server->get('stats');
+			$_statsConfig = $server->get('statsConfig');
+			$_ratioList = $server->get('ratioList');
+		
+			$players = array_keys($server->getPlayerList());
+			foreach($players as $id)
+			{
+				$_stats[$id] = array(
+					'hits' => 0,
+					'kills' => 0,
+					'deaths' => 0,
+					'streaks' => 0,
+					'curstreak' => 0,
+					'heads' => 0,
+					'caps' => 0,
+					'ratio' => 0);
+				$_ratioList[$id] = 0;
+				$_statsConfig[$id] = array('verbosity' => $this->config['StatsVerbosity']);
+			}
+				
+			$server->set('stats', $_stats);
+			$server->set('statsConfig', $_statsConfig);
+			$server->set('ratioList', $_ratioList);
+		}
 	}
 	
 	public function destroy()
 	{
-		Rcon::say("Stats stopped by plugin unload.");
-		
-		Server::set('stats', NULL);
-		Server::set('statsConfig', NULL);
-		Server::set('awards', NULL);
-		Server::set('ratioList', NULL);
-		Server::set('disableStatsReset', NULL);
+		// We browse all servers
+		$servers = ServerList::getList();
+		foreach($servers as $serv)
+		{
+			$server = ServerList::getServer($serv);
+			$rcon = ServerList::getServerRCon($serv);
+			
+			$rcon->say("Stats stopped by plugin unload.");
+			
+			$server->set('stats', NULL);
+			$server->set('statsConfig', NULL);
+			$server->set('awards', NULL);
+			$server->set('ratioList', NULL);
+			$server->set('disableStatsReset', NULL);
+		}
 	}
 	
-	private function _initVars()
+	private function _initVars($server = NULL)
 	{
+		if($server === NULL)
+			$server = Server::getInstance();
+		
 		//Stats of players
-		Server::set('stats', array());
+		$server->set('stats', array());
 		
 		//Stats config of players
-		Server::set('statsConfig', array());
+		$server->set('statsConfig', array());
 		
 		//Awards of game
-		Server::set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0)));
+		$server->set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0)));
 		
 		//Ratio list
-		Server::set('ratioList', array());
+		$server->set('ratioList', array());
 		
 		//If other plugin want to disable stats reset
-		Server::set('disableStatsReset', 0);
+		$server->set('disableStatsReset', 0);
 	}
 	
 	public function disableStatsReset()
@@ -213,20 +258,17 @@ class PluginStats extends Plugin
 		$_statsConfig = Server::get('statsConfig');
 		$_ratioList = Server::get('ratioList');
 		
-		$_stats[$id] = array();
-		$_stats[$id]['hits'] = 0;
-		$_stats[$id]['kills'] = 0;
-		$_stats[$id]['deaths'] = 0;
-		$_stats[$id]['streaks'] = 0;
-		$_stats[$id]['curstreak'] = 0;
-		$_stats[$id]['heads'] = 0;
-		$_stats[$id]['caps'] = 0;
-		$_stats[$id]['ratio'] = 0;
-		
+		$_stats[$id] = array(
+			'hits' => 0,
+			'kills' => 0,
+			'deaths' => 0,
+			'streaks' => 0,
+			'curstreak' => 0,
+			'heads' => 0,
+			'caps' => 0,
+			'ratio' => 0);
 		$_ratioList[$id] = 0;
-		
-		$_statsConfig[$id] = array();
-		$_statsConfig[$id]['verbosity'] = $this->config['StatsVerbosity'];
+		$_statsConfig[$id] = array('verbosity' => $this->config['StatsVerbosity']);
 		
 		Server::set('stats', $_stats);
 		Server::set('statsConfig', $_statsConfig);

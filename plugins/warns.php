@@ -104,14 +104,8 @@ class PluginWarns extends Plugin
 		if(!(isset($this->config['SecondsBeforeKick']) && is_numeric($this->config['SecondsBeforeKick']) && $this->config['SecondsBeforeKick'] >= 0))
 			$this->config['WarnsKick'] = 60;
 		
-		//Warns of players
-		Server::set('warns', array());
-		Server::set('forgive', array());
 		
-		//
-		//And we delete useless event
-		//
-			
+		// We delete useless event
 		if(!$this->config['TeamKills'])
 			$this->deleteServerEvent('Kill');
 			
@@ -120,27 +114,60 @@ class PluginWarns extends Plugin
 		
 		if(!$this->config['BadWords'])
 			$this->deleteServerEvent('Say');
+			
+		// We browse all servers for variables initialization
+		$servers = ServerList::getList();
+		foreach($servers as $serv)
+		{
+			// Take server instance
+			$server = ServerList::getServer($serv);
+			
+			// Initialize server variables
+			$server->set('warns', array());
+			$server->set('forgive', array());
+			
+			// Initialize players variables
+			$_warns = $server->get('warns');
+			
+			$players = array_keys($server->getPlayerList());
+			foreach($players as $id)
+				$_warns[$id] = array('num' => 0, 'last' => 0);
+			
+			$server->set('warns', $_warns);
+		}
 	}
 	
 	public function destroy()
 	{
-		Server::set('warns', NULL);
-		Server::set('forgive', NULL);
+		// We browse all servers
+		$servers = ServerList::getList();
+		foreach($servers as $server)
+		{
+			$server = ServerList::getServer($serv);
+			$server->set('warns', NULL);
+			$server->set('forgive', NULL);
+		}
 	}
 	
 	public function RoutineWarns()
 	{
-		$_warns = Server::get('warns');
-		
-		if(count($_warns))
+		// We browse all servers
+		$servers = ServerList::getList();
+		foreach($servers as $serv)
 		{
-			foreach($_warns as $player => &$warns)
+			$server = ServerList::getServer($serv);
+			$rcon = ServerList::getServerRCon($serv);
+			$_warns = $server->get('warns');
+			if(count($_warns))
 			{
-				if($warns['num'] >= $this->config['WarnsKick'] && time() >= ($warns['last']+$this->config['SecondsBeforeKick']))
+				foreach($_warns as $player => &$warns)
 				{
-					Rcon::tell($player, 'You have $warns warnings. You will be kicked', array('warns' => $warns['num']));
-					$this->_clearWarn($player);
-					Rcon::kick($player);
+					if($warns['num'] >= $this->config['WarnsKick'] && time() >= ($warns['last']+$this->config['SecondsBeforeKick']))
+					{
+						$rcon->tell($player, 'You have $warns warnings. You will be kicked', array('warns' => $warns['num']));
+						$this->_clearWarn($player, $server);
+						$rcon->kick($player);
+					}
 				}
 			}
 		}
@@ -150,7 +177,10 @@ class PluginWarns extends Plugin
 	{
 		$_warns = Server::get('warns');
 		$_warns[$warned]['num']++;
-		$_warns[$warned]['last'] = time();
+		
+		if($_warns[$warned]['num'] <= $this->config['WarnsKick'])
+			$_warns[$warned]['last'] = time();
+			
 		Server::set('warns', $_warns);
 		
 		if($victim !== FALSE)
@@ -179,7 +209,7 @@ class PluginWarns extends Plugin
 			Server::set('warns', $_warns);
 			Server::set('forgive', $_forgive);
 		
-			return $_warns[$warned]['num'];
+			return $warned;
 		}
 		else
 		{
@@ -187,10 +217,13 @@ class PluginWarns extends Plugin
 		}
 	}
 	
-	private function _clearWarn($warned)
+	private function _clearWarn($warned, $server = NULL)
 	{
-		$_warns = Server::get('warns');
-		$_forgive = Server::get('forgive');
+		if($server === NULL)
+			$server = Server::getInstance();
+		
+		$_warns = $server->get('warns');
+		$_forgive = $server->get('forgive');
 		
 		$_warns[$warned]['num'] = 0;
 		
@@ -199,13 +232,14 @@ class PluginWarns extends Plugin
 				if($badman == $warned)
 					unset($victim[$time]);
 					
-		Server::set('warns', $_warns);
-		Server::set('forgive', $_forgive);
+		$server->set('warns', $_warns);
+		$server->set('forgive', $_forgive);
 	}
 	
 	public function CommandFp($id, $cmd)
 	{
-		if($this->_forgive($id))
+		$target = $this->_forgive($id);
+		if($target !== FALSE)
 			Rcon::say($id, '$player has forgiven $target.', array('player' => Server::getPlayer($id)->name, 'target' => Server::getPlayer($target)->name));
 		else
 			RCon::tell($id, 'No one to forgive.');
