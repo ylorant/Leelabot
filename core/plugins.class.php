@@ -264,6 +264,9 @@ class PluginManager extends Events
 			}
 		}
 		
+		//Calling the destroy method to allow the plugin to shutdown gracefully
+		$this->_plugins[$plugin]['obj']->destroy();
+		
 		//Deleting routines
 		if(isset($this->_routines[$this->_plugins[$plugin]['className']]))
 		{
@@ -274,20 +277,19 @@ class PluginManager extends Events
 		//Deleting server events
 		foreach($this->getEventsNames('serverevent') as $event)
 		{
-			foreach($this->getEventCallbacks('serverevent',$event)  as $callID => $callback)
-				$this->deleteServerEvent($callID, $this->_plugins[$plugin]['obj']);
+			if(in_array($plugin, array_keys($this->getEventCallbacks('serverevent',$event))))
+				$this->deleteServerEvent($event, $this->_plugins[$plugin]['obj']);
 		}
 		
 		//Deleting commands
 		foreach($this->getEventsNames('command') as $event)
 		{
-			foreach($this->getEventCallbacks('command',$event)  as $callID => $callback)
+			if(in_array($plugin, array_keys($this->getEventCallbacks('command',$event))))
 				$this->deleteCommand($event, $this->_plugins[$plugin]['obj']);
 		}
 		
 		$dependencies = $this->_plugins[$plugin]['dependencies'];
 		
-		$this->_plugins[$plugin]['obj']->destroy();
 		unset($this->_plugins[$plugin]['obj']);
 		unset($this->_plugins[$plugin]);
 		

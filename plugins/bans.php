@@ -52,6 +52,8 @@ class PluginBans extends Plugin
 	private $_lastDisconnect; ///< Last disconnection
 	private $_bannedIP; ///< Hashtable of banned IPs
 	private $_bannedGUID; ///< Hashtable of banned GUIDs
+	private $_banlistLocation; ///< Location of the banlist
+	private $_defaultBanDuration; ///< Default ban duration, in seconds
 	private $_durations = array('second' => 1,
 								'minute' => 60,
 								'hour' => 3600,
@@ -83,7 +85,7 @@ class PluginBans extends Plugin
 		
 		//Default duration
 		if(isset($this->config['DefaultDuration']))
-			$this->config['DefaultDuration'] = $this->_parseBanDuration($this->config['DefaultDuration']);
+			$this->_defaultBanDuration = $this->_parseBanDuration($this->config['DefaultDuration']);
 		
 		//Checking banlist existence or if we can create it
 		if(!isset($this->config['Banlist']) || (!is_file($this->_main->getConfigLocation().'/'.$this->config['Banlist']) && !touch($this->_main->getConfigLocation().'/'.$this->config['Banlist'])))
@@ -93,10 +95,21 @@ class PluginBans extends Plugin
 		}
 		
 		//Loading the banlist
-		$this->config['Banlist'] = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
+		$this->_banlistLocation = $this->_main->getConfigLocation().'/'.$this->config['Banlist'];
 		$this->loadBanlist();
 		
 		return TRUE;
+	}
+	
+	/** Deleter of the plugin.
+	 * This function will be triggered when the plugin will be unloaded. It will delete the custom event handler, and save the banlist.
+	 * 
+	 * \return Nothing.
+	 */
+	public function destroy()
+	{
+		$this->saveBanlist();
+		$this->_plugins->deleteEventListener('bans');
 	}
 	
 	/** Event when player info is received.
@@ -444,8 +457,8 @@ class PluginBans extends Plugin
 		
 		//Setting default duration if not present
 		$duration = $this->_parseBanDuration(join(' ', $baninfo['for']));
-		if($duration == -1 && isset($this->config['DefaultDuration']))
-			$duration = $this->config['DefaultDuration'];
+		if($duration == -1 && $this->_defaultBanDuration !== NULL)
+			$duration = $this->_defaultBanDuration;
 		elseif($duration == -1)
 			$duration = $this->_durations['day'];
 		
@@ -628,7 +641,7 @@ class PluginBans extends Plugin
 	 */
 	public function loadBanlist()
 	{
-		$contents = file_get_contents($this->config['Banlist']);
+		$contents = file_get_contents($this->_banlistLocation);
 		
 		if($contents === FALSE)
 		{
@@ -676,7 +689,7 @@ class PluginBans extends Plugin
 	public function saveBanlist()
 	{
 		$dump = Leelabot::generateINIStringRecursive($this->_banlist);
-		return file_put_contents($this->config['Banlist'], $dump);
+		return file_put_contents($this->_banlistLocation, $dump);
 	}
 }
 

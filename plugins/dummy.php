@@ -68,7 +68,7 @@ class PluginDummy extends Plugin
 			$rcon->say('Hello '.$player->name.', it seems you like '.$target->name.' !');
 		}
 		else
-			$rcon->say('Hello '.$player->name.' !');
+			$rcon->say('Hay '.$player->name.' !');
 	}
 	
 	public function CommandSavePlayers($id, $command)
