@@ -208,9 +208,9 @@ class PluginManager extends Events
 		
 		
 		if(!isset($this->_pluginCache[$plugin]))
-			include('plugins/'.$plugin.'.php');
-		else
-			runkit_import('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
+			include('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
+		elseif(extension_loaded('runkit'))
+			runkit_import('plugins/'.$plugin.'.php');
 		
 		return $this->initPlugin($this->_pluginCache[$plugin], $manual); //Else we reload the plugin with the cached data from the first loading
 	}
