@@ -2,7 +2,7 @@
 /**
  * \file plugins/stats.php
  * \author Eser Deniz <srwiez@gmail.com>
- * \version 0.9
+ * \version 1.2
  * \brief Statistics plugin for Leelabot. It allows to have game stats for each player.
  *
  * \section LICENSE

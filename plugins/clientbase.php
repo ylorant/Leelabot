@@ -2,7 +2,7 @@
 /**
  * \file plugins/clientbase.php
  * \author Eser Deniz <srwiez@gmail.com>
- * \version 1.1
+ * \version 1.2
  * \brief Client base plugin for Leelabot. It allows to send !teams, !time, !nextmap, !help.
  *
  * \section LICENSE

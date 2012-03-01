@@ -2,7 +2,7 @@
 /**
  * \file plugins/stats.php
  * \author Eser Deniz <srwiez@gmail.com>
- * \version 1.0
+ * \version 2.0
  * \brief IRC plugin for Leelabot. It allows to have an IRC bot.
  *
  * \section LICENSE
