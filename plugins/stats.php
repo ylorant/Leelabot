@@ -125,8 +125,11 @@ class PluginStats extends Plugin
 			$this->config['AllowPlayerVerbosity'] = FALSE;
 			
 		//IRC commands level (0:all , 1:voice, 2:operator)
-		$this->_plugins->setEventLevel('irc', 'stats', 1);
-		$this->_plugins->setEventLevel('irc', 'awards', 0);
+		if($this->_plugins->listenerExists('irc'))
+		{
+			$this->_plugins->setEventLevel('irc', 'stats', 1);
+			$this->_plugins->setEventLevel('irc', 'awards', 0);
+		}
 			
 		//Adding event listener
 		$this->_plugins->addEventListener('stats', 'Stats');

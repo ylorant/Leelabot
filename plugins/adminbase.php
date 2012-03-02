@@ -66,17 +66,20 @@ class PluginAdminBase extends Plugin
 		$this->setCommandLevel('kick', 10);
 			
 		//IRC commands level (0:all , 1:voice, 2:operator)
-		$this->_plugins->setEventLevel('irc', 'kick', 2);
-		$this->_plugins->setEventLevel('irc', 'kickall', 2);
-		$this->_plugins->setEventLevel('irc', 'slap', 2);
-		$this->_plugins->setEventLevel('irc', 'mute', 2);
-		$this->_plugins->setEventLevel('irc', 'say', 2);
-		$this->_plugins->setEventLevel('irc', 'bigtext', 2);
-		$this->_plugins->setEventLevel('irc', 'map', 2);
-		$this->_plugins->setEventLevel('irc', 'nextmap', 2);
-		$this->_plugins->setEventLevel('irc', 'cyclemap', 2);
-		$this->_plugins->setEventLevel('irc', 'restart', 2);
-		$this->_plugins->setEventLevel('irc', 'reload', 2);
+		if($this->_plugins->listenerExists('irc'))
+		{
+			$this->_plugins->setEventLevel('irc', 'kick', 2);
+			$this->_plugins->setEventLevel('irc', 'kickall', 2);
+			$this->_plugins->setEventLevel('irc', 'slap', 2);
+			$this->_plugins->setEventLevel('irc', 'mute', 2);
+			$this->_plugins->setEventLevel('irc', 'say', 2);
+			$this->_plugins->setEventLevel('irc', 'bigtext', 2);
+			$this->_plugins->setEventLevel('irc', 'map', 2);
+			$this->_plugins->setEventLevel('irc', 'nextmap', 2);
+			$this->_plugins->setEventLevel('irc', 'cyclemap', 2);
+			$this->_plugins->setEventLevel('irc', 'restart', 2);
+			$this->_plugins->setEventLevel('irc', 'reload', 2);
+		}
 		
 		/* NOTE : The command list above is not in alphabetical order */
 	}
