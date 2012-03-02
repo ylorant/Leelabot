@@ -274,18 +274,17 @@ class PluginManager extends Events
 				$this->deleteRoutine($this->_plugins[$plugin]['obj'], $eventName);
 		}
 		
-		//Deleting server events
-		foreach($this->getEventsNames('serverevent') as $event)
+		//Deleting all other events
+		foreach($this->getEventListeners() as $listener)
 		{
-			if(in_array($plugin, array_keys($this->getEventCallbacks('serverevent',$event))))
-				$this->deleteServerEvent($event, $this->_plugins[$plugin]['obj']);
-		}
-		
-		//Deleting commands
-		foreach($this->getEventsNames('command') as $event)
-		{
-			if(in_array($plugin, array_keys($this->getEventCallbacks('command',$event))))
-				$this->deleteCommand($event, $this->_plugins[$plugin]['obj']);
+			foreach($this->getEventsNames($listener) as $event)
+			{
+				if(in_array($plugin, array_keys($callbacks = $this->getEventCallbacks($listener,$event))))
+				{
+					Leelabot::message('Deleting event $2, bound on $0/$1', array($listener, $event, get_class($this->_plugins[$plugin]['obj']).'::'.$callbacks[$plugin][1]), E_DEBUG);
+					$this->deleteEvent($listener, $event, $plugin);
+				}
+			}
 		}
 		
 		$dependencies = $this->_plugins[$plugin]['dependencies'];

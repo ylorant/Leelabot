@@ -64,6 +64,18 @@ class Events
 		return TRUE;
 	}
 	
+	/** Checks if an event listener exists.
+	 * This function checks if the given event listener exists.
+	 * 
+	 * \param $listener The listener to check.
+	 * 
+	 * \return TRUE if the listener exists, FALSE otherwise.
+	 */
+	public function listenerExists($listener)
+	{
+		return isset($this->_events[$listener]);
+	}
+	
 	/** Deletes an event listener.
 	 * This functions deletes an event listener from the event system. The underlying events for this listener will be deleted as well.
 	 * 
@@ -127,7 +139,7 @@ class Events
 		$this->_events[$listener][$event][$id] = $callback;
 		
 		if($this->_eventLevels[$listener][$event] < $level)
-			$this->_events[$listener][$event] = $level;
+			$this->_eventLevels[$listener][$event] = $level;
 		
 		return TRUE;
 	}
@@ -322,6 +334,16 @@ class Events
 		}
 		
 		return $this->_eventLevels[$listener][$event];
+	}
+	
+	/** Returns the list of all events listeners.
+	 * This function returns the list of all declared event listeners.
+	 * 
+	 * \return An array containing the list of the declared listeners.
+	 */
+	public function getEventListeners()
+	{
+		return array_keys($this->_events);
 	}
 	
 	/** Returns the callback for an event.
