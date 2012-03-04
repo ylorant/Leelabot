@@ -48,7 +48,7 @@ class Leelabot
 	public $root; ///< Root directory for the bot
 	public $botName; ///< Bot name.
 	
-	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
+	const VERSION = '0.5-svn-r$Revision$ "Sandy"'; ///< Current bot version
 	const DEFAULT_LOCALE = "en"; ///< Default locale
 	
 	/** Initializes the bot.
