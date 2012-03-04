@@ -75,7 +75,7 @@ class Updater
 	
 	public function checkUpdate()
 	{
-		if(!preg_match('/: ([0-9]+)\$/', Leelabot::REVISION, $matches)
+		if(!preg_match('/: ([0-9]+) \$/', Leelabot::REVISION, $matches)
 			return FALSE;
 		
 		$last = $this->getLastVersion();
