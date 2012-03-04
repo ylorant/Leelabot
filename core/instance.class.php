@@ -275,7 +275,7 @@ class ServerInstance
 		}
 		
 		//Sending startup Event for plugins
-		$this->_leelabot->plugins->callServerEvent('StartupGame');
+		$this->_leelabot->plugins->callServerEvent('StartupGame', $this->_name);
 		
 		Leelabot::message('Gathering server info...');
 		$this->serverInfo = RCon::serverInfo();
@@ -322,6 +322,7 @@ class ServerInstance
 			
 			$playerData['team'] = Server::TEAM_SPEC;
 			$playerData['begin'] = FALSE;
+			$playerData['uuid'] = Leelabot::UUID();
 			$this->players[$id] = new Storage($playerData);
 			$this->players[$id]->other = $dump;
 			$this->players[$id]->ip = &$this->players[$id]->addr;

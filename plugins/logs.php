@@ -25,7 +25,8 @@
  */
 class PluginLogs extends Plugin
 {
-	private $_logFiles;
+	private $_logFiles; ///< Log files list
+	private $_mode; ///< Log open mode
 	
 	/** Plugin initialization.
 	 * This function assures the plugin initialization when loaded. It opens the log files, and sets the behavior for the behavior of the plugin.
@@ -51,18 +52,63 @@ class PluginLogs extends Plugin
 			$this->config['LogRoot'] .= substr($this->config['LogRoot'], -1) == '/' ? '' : '/';
 		
 		if(isset($this->conig['EraseLog']) && Leelabot::parseBool($this->config['EraseLog']))
-			$mode = 'a+';
+			$this->_mode = 'a+';
 		else
-			$mode = 'w+';
+			$this->_mode = 'w+';
+	}
+	
+	/** The bot connects to a server, initialize the log.
+	 * This function is triggered when the bot is being connected to a server. The corresponding log will be open if necessary.
+	 * 
+	 * \param $server The server which is being connected.
+	 * 
+	 * \return Nothing.
+	 */
+	public function SrvEventStartupGame($server)
+	{
 		
-		if(isset($this->config['CommandLog']) && Leelabot::parseBool($this->config['CommandLog']))
-			$this->_logFiles['commands'] = fopen($this->config['LogRoot'].'commands.log', $mode);
+			
+		$logs = array();
 		
-		if(isset($this->config['ConnectionLog']) && Leelabot::parseBool($this->config['ConnectionLog']))
-			$this->_logFiles['connection'] = fopen($this->config['LogRoot'].'connections.log', $mode);
+		if(isset($this->config['CommandLog']))
+		{
+			if((!is_array($this->config['CommandLog']) && Leelabot::parseBool($this->config['CommandLog']))
+				|| (isset($this->config['CommandLog'][$server]) && Leelabot::parseBool($this->config['CommandLog'][$server])))
+				$logs['commands'] = fopen($this->config['LogRoot'].$server.'/commands.log', $this->_mode);
+		}
 		
-		if(isset($this->config['ChatLog']) && Leelabot::parseBool($this->config['CommandLog']))
-			$this->_logFiles['chat'] = fopen($this->config['LogRoot'].'chat.log', $mode);
+		if(isset($this->config['ConnectionLog']))
+		{
+			if((!is_array($this->config['ConnectionLog']) && Leelabot::parseBool($this->config['ConnectionLog']))
+				|| (isset($this->config['ConnectionLog'][$server]) && Leelabot::parseBool($this->config['ConnectionLog'][$server])))
+				$logs['connection'] = fopen($this->config['LogRoot'].$server.'/connections.log', $this->_mode);
+		}
+		
+		if(isset($this->config['ChatLog']))
+		{
+			if((!is_array($this->config['ChatLog']) && Leelabot::parseBool($this->config['ChatLog']))
+				|| (isset($this->config['ChatLog'][$server]) && Leelabot::parseBool($this->config['ChatLog'][$server])))
+				$logs['chat'] = fopen($this->config['LogRoot'].$server.'/chat.log', $this->_mode);
+		}
+		
+		if(!empty($logs))
+		{
+			if(!is_dir($this->config['LogRoot'].$server))
+			mkdir($this->config['LogRoot'].$server);
+			
+			$this->_logFiles[$server] = $logs;
+		}
+	}
+	
+	/** Plugin shutdown.
+	 * This function is triggered when the plugin shuts down, it will ensure that all the logs are properly closed.
+	 * 
+	 * \return Nothing.
+	 */
+	public function destroy()
+	{
+		foreach($this->_logFiles as &$fp)
+			fclose($fp);
 	}
 	
 	/** Client authentication : notify it in the connection log.
@@ -175,20 +221,65 @@ class PluginLogs extends Plugin
 		$this->log('connection', 'Player '.$player->name.' <'.$player->uuid.'> disconnected.');
 	}
 	
+	/** Client message : notify it in the necessary logs.
+	 * This function is triggered by the say event. It will log the message in the chat log, and if it's a command, it will log it in the
+	 * commands log.
+	 * 
+	 * \param $id The ID of the client who sent a message.
+	 * \param $message The message itself.
+	 * 
+	 * \return Nothing.
+	 */
+	public function SrvEventSay($id, $message)
+	{
+		Leelabot::message('Logging say message');
+		print_r($this->_logFiles);
+		$player = Server::getPlayer($id);
+		$this->log('chat', $player->name.' <'.$player->uuid.'>: '.$message);
+		
+		$cmd = explode(' ', $message);
+		
+		//Checking if the message is a command
+		if(strlen($cmd[0]) && $cmd[0][0] == '!')
+		{
+			if($this->_plugins->eventExists('command', substr($cmd[0], 1)))
+				$cmdlevel = $this->_plugins->getEventLevel('command', substr($cmd[0], 1));
+			else
+				$cmdlevel = '?';
+			$this->log('commands', $player->name.' <'.$player->uuid.'>: '.$message);
+			if(!empty($player->auth))
+				$this->log('commands', "\t".'Authname: '.$player->auth);
+			$this->log('commands', "\t".'Level check: '.$player->level.'/'.$cmdlevel);
+			if($cmdlevel === '?')
+				$this->log('commands', "\t".'Command not found.');
+			elseif($cmdlevel > $player->level)
+				$this->log('commands', "\t".'Access denied.');
+			else
+				$this->log('commands', "\t".'Access granted.');
+		}
+	}
+	
 	/** Logs the data into specific logs.
 	 * This function logs the specified data into the right logfile, adding the date and a line return.
 	 * 
 	 * \param $log The log to write to.
 	 * \param $text The text to write in the log.
+	 * \param $server The server on which the data will be logged. Defaults to the current server.
 	 * 
 	 * \return TRUE if the text has been correctly logged, FALSE otherwise.
 	 */
-	public function log($log, $text)
+	public function log($log, $text, $server = NULL)
 	{
-		if(!isset($this->_logFiles[$log]))
+		if($server === NULL)
+			$server = Server::getName();
+		
+		if(!isset($this->_logFiles[$server]))
 			return FALSE;
 		
-		$ret = fputs($this->_logFiles[$log], date(Locales::getDateTimeFormat()).' - '.$text."\n");
+		if(!isset($this->_logFiles[$server][$log]))
+			return FALSE;
+		
+		$ret = fputs($this->_logFiles[$server][$log], date(Locales::getDateTimeFormat()).' - '.$text."\n");
 		
 		return $ret !== FALSE;
 	}
