@@ -37,6 +37,7 @@ class LeelaBotIrc
 	
 	private $_connected = FALSE; // if bot connected to irc
 	private $_configured = FALSE; // if configured
+	private $_attempt = 0;
 	
 	private $_pseudo; // last person who spoke.
 	private $_channel; // last channel where last person who spoke.
@@ -72,11 +73,12 @@ class LeelaBotIrc
 		
 		if($instance->_configured)
 		{
-			if($instance->_socket = fsockopen($instance->config['Server'], $instance->config['Port'], $errno, $errstr, 10))
+			if($instance->_socket = fsockopen($instance->config['Server'], $instance->config['Port'], $errno, $errstr, 10) && !$instance->_connected && ($instance->_attempt+20) <= time())
 			{
 				stream_set_blocking($instance->_socket, 0);
 				
 				$instance->_connected = TRUE;
+				$instance->_attempt = time();
 				
 				$instance->send("USER".str_repeat(' '.$instance->config['User'], 4));
 				$instance->send("NICK ".$instance->config['Nick']);
@@ -131,11 +133,12 @@ class LeelaBotIrc
 			{
 				return $return;
 			}
-			elseif($return === FALSE && $instance->_connected = true)
+			elseif($return === FALSE && $instance->_connected = TRUE)
 			{
 				if(feof($instance->_socket))
 				{
-					$instance->_connected = false; 
+					$instance->_connected = FALSE; 
+					Leelabot::message('Server have close connection.');
 			    }
 			}
 		}
