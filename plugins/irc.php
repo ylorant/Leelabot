@@ -629,7 +629,7 @@ class PluginIrc extends Plugin
 					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
 		}
 		
-		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards :\002 ".join(' | ', $buffer));
+		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards ".Server::getName()." :\002 ".join(' | ', $buffer));
 	}
 	
 	/////////////////////////////////////////////
