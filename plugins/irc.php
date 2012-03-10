@@ -73,7 +73,9 @@ class LeelaBotIrc
 		
 		if($instance->_configured)
 		{
-			if($instance->_socket = fsockopen($instance->config['Server'], $instance->config['Port'], $errno, $errstr, 10) && !$instance->_connected && ($instance->_attempt+20) <= time())
+			$instance->_socket = fsockopen($instance->config['Server'], $instance->config['Port'], $errno, $errstr, 10);
+			
+			if($instance->_socket !== FALSE && !$instance->_connected && ($instance->_attempt+20) <= time())
 			{
 				stream_set_blocking($instance->_socket, 0);
 				
@@ -133,7 +135,7 @@ class LeelaBotIrc
 			{
 				return $return;
 			}
-			elseif($return === FALSE && $instance->_connected = TRUE)
+			elseif($return === FALSE)
 			{
 				if(feof($instance->_socket))
 				{
