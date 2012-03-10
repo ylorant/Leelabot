@@ -163,7 +163,7 @@ class Events
 		
 		if(!isset($this->_events[$listener][$event]))
 		{
-			Leelabot::message('Error: Undefined Event: $0', $id, E_DEBUG);
+			Leelabot::message('Error: Undefined Event: $0', $event, E_DEBUG);
 			return FALSE;
 		}
 		

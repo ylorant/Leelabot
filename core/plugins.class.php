@@ -584,7 +584,7 @@ class PluginManager extends Events
 	{
 		Leelabot::message('Deleting server event $0', array(get_class($plugin).'::'.$event), E_DEBUG);
 		
-		$this->deleteEvent('serverevent', $event, $this->getName($plugin));
+		$this->deleteEvent('serverevent', 'SrvEvent'.$event, $this->getName($plugin));
 		
 		return TRUE;
 	}

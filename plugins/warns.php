@@ -102,7 +102,7 @@ class PluginWarns extends Plugin
 			
 		// Kick player after [SecondsBeforeKick]  (must be a positive number or 0)
 		if(!(isset($this->config['SecondsBeforeKick']) && is_numeric($this->config['SecondsBeforeKick']) && $this->config['SecondsBeforeKick'] >= 0))
-			$this->config['WarnsKick'] = 60;
+			$this->config['SecondsBeforeKick'] = 60;
 		
 		
 		// We delete useless event
