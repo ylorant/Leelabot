@@ -59,6 +59,7 @@ class PluginClientBase extends Plugin
 		{
 			$this->_plugins->setEventLevel('irc', 'status', 0);
 			$this->_plugins->setEventLevel('irc', 'players', 0);
+			$this->_plugins->setEventLevel('irc', 'about', 0);
 		}
 	}
 	
@@ -314,6 +315,11 @@ class PluginClientBase extends Plugin
 		";
 	}
 	
+	
+	public function IrcAbout($pseudo, $channel, $cmd, $message)
+	{
+		LeelaBotIrc::sendMessage("Leelabot, created by linkboss and SRWieZ - ".LeelaBot::VERSION." - leelabot.com");
+	}
 	
 	public function IrcStatus($pseudo, $channel, $cmd, $message)
 	{

@@ -372,7 +372,7 @@ class PluginIrc extends Plugin
 			//IRC commands level (0:all , 1:voice, 2:operator)
 			$this->_plugins->setEventLevel('irc', 'help', 0);
 			$this->_plugins->setEventLevel('irc', 'serverlist', 0);
-			$this->_plugins->setEventLevel('irc', 'urt', 2);
+			$this->_plugins->setEventLevel('irc', 'urt', 1);
 			
 			//Irc bot main routine
 			$this->changeRoutineTimeInterval('RoutineIrcMain', 0);
