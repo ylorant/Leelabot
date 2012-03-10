@@ -159,6 +159,7 @@ class PluginWarns extends Plugin
 			$rcon = ServerList::getServerRCon($serv);
 			$_warns = $server->get('warns');
 			print_r($_warns);
+			echo $this->config['WarnsKick'];
 			if(count($_warns))
 			{
 				foreach($_warns as $player => $warns)
