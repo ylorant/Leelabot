@@ -374,8 +374,9 @@ class PluginClientBase extends Plugin
 		
 		foreach(Server::getPlayerList() as $curPlayer)
 		{
+			$serverinfo = Server::getServer()->serverInfo;
 			//Gestion de la couleur en fonction de l'équipe
-			if(Server::getServer()->serverInfo['g_gametype'] != '0')
+			if($serverinfo['g_gametype'] != '0')
 			{
 				if($curPlayer->team == 1)
 					$color = "\00304";
@@ -390,7 +391,7 @@ class PluginClientBase extends Plugin
 			++$nbplayers;
 		}
 		
-		if($nbplayers >0) LeelaBotIrc::sendMessage('List of players : '.join(', ', $playerlist));
+		if($nbplayers >0) LeelaBotIrc::sendMessage(''.$serverinfo['sv_hostname'].' : '.join(', ', $playerlist));
 		else LeelaBotIrc::sendMessage('No one.');
 	}
 }
