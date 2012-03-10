@@ -107,13 +107,13 @@ class PluginWarns extends Plugin
 		
 		// We delete useless event
 		if(!$this->config['TeamKills'])
-			$this->deleteServerEvent('Kill');
+			$this->deleteServerEvent('kill');
 			
 		if(!$this->config['TeamHits'])
-			$this->deleteServerEvent('Hit');
+			$this->deleteServerEvent('hit');
 		
 		if(!$this->config['BadWords'])
-			$this->deleteServerEvent('Say');
+			$this->deleteServerEvent('say');
 			
 		// We browse all servers for variables initialization
 		$servers = ServerList::getList();
