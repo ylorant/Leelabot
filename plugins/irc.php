@@ -649,7 +649,7 @@ class PluginIrc extends Plugin
 				$buffer[] = $award.' : nobody';
 		}
 		
-		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards ".Server::getName()." :\002 ".join(' | ', $buffer));
+		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards on ".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002 ".join(' | ', $buffer));
 	}
 	
 	/////////////////////////////////////////////
@@ -662,8 +662,10 @@ class PluginIrc extends Plugin
 		if(!isset($cmd[1])) //Si on ne demande pas une commande précise, on affiche la liste
 		{
 			$list = array();
+			$events = $this->_plugins->listEvents('irc');
+			ksort($events); // Alphabetical order
 			
-			foreach($this->_plugins->listEvents('irc') as $event => $lvl)
+			foreach($events as $event => $lvl)
 			{
 				if($level >= $lvl)
 					$list[] = $event;
