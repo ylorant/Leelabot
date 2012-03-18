@@ -734,7 +734,7 @@ class PluginStats extends Plugin
 				$buffer[] = $award.' : nobody';
 		}
 		
-		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." (awards) :\002 ".join(' - ', $buffer));
+		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." (awards) :\002 ".join(' | ', $buffer));
 	}
 	
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
