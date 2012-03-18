@@ -710,17 +710,31 @@ class PluginStats extends Plugin
 		$buffer = array();
 		$_awards = Server::get('awards');
 		
+		$serverinfo = Server::getServer()->serverInfo;
+		
 		foreach($this->config['ShowAwards'] as $award)
 		{
-			if(in_array($award, $this->config['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			$player = Server::getPlayer($_awards[$award][0]);
+			
+			if($serverinfo['g_gametype'] != '0')
 			{
-				if($_awards[$award][0] !== NULL)
-					$buffer[] = "\037".ucfirst($award)."\037".' '.Server::getPlayer($_awards[$award][0])->name;
-				else
-					$buffer[] = "\037".ucfirst($award)."\037".' nobody';
+				if($player->team == 1)
+					$color = "\00304";
+				elseif($player->team == 2)
+					$color = "\00302";
+				elseif($player->team == 3)
+					$color = "\00314";
 			}
+			else
+				$color = "\00308";
+				
+			if($player !== NULL)
+				$buffer[] = $_awards[$award][1]." ".$award.' : '.$color.$player->name."\017";
+			else
+				$buffer[] = $award.' : nobody';
 		}
-		LeelaBotIrc::sendMessage("\002".$server." (awards) :\002 ".join(' | ', $buffer));
+		
+		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." (awards) :\002 ".join(' - ', $buffer));
 	}
 	
 	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']

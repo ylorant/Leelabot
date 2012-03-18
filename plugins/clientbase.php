@@ -378,9 +378,10 @@ class PluginClientBase extends Plugin
 		$playerlist = array();
 		$nbplayers = 0;
 		
+		$serverinfo = Server::getServer()->serverInfo;
+		
 		foreach(Server::getPlayerList() as $curPlayer)
 		{
-			$serverinfo = Server::getServer()->serverInfo;
 			//Gestion de la couleur en fonction de l'équipe
 			if($serverinfo['g_gametype'] != '0')
 			{
