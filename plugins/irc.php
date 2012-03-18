@@ -623,15 +623,31 @@ class PluginIrc extends Plugin
 	{
 		$buffer = array();
 		
+		$serverinfo = Server::getServer()->serverInfo;
+		
 		foreach($awards as $award => $player)
 		{
-				if($player !== NULL)
-					$buffer[] = "\037".ucfirst($award)."\037".' : '.Server::getPlayer($player)->name;
-				else
-					$buffer[] = "\037".ucfirst($award)."\037".' : nobody';
+			$player = Server::getPlayer($player[0]);
+			
+			if($serverinfo['g_gametype'] != '0')
+			{
+				if($player->team == 1)
+					$color = "\00304";
+				elseif($player->team == 2)
+					$color = "\00302";
+				elseif($player->team == 3)
+					$color = "\00314";
+			}
+			else
+				$color = "\00308";
+				
+			if($player !== NULL)
+				$buffer[] = $player[1]." ".$award.' : '.$color.$player->name."\017";
+			else
+				$buffer[] = $award.' : nobody';
 		}
 		
-		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards ".Server::getName()." :\002 ".join(' | ', $buffer));
+		LeelaBotIrc::privmsg($this->config['MainChannel'], "\002Awards ".Server::getName()." |\002 ".join(' - ', $buffer));
 	}
 	
 	/////////////////////////////////////////////

@@ -590,7 +590,7 @@ class PluginStats extends Plugin
 				else
 					$buffer[] = ucfirst($award).' : ^7Personne';
 				
-				$eventAwards[$award] = $_awards[$award][0];
+				$eventAwards[$award] = $_awards[$award];
 			}
 		}
 		
@@ -622,7 +622,7 @@ class PluginStats extends Plugin
 		$aratio = round($_awards['ratio'][1], 2);
 		
 		//Gestion du ratio (changement de couleur selon le ratio)
-		$ratio = round($ratio,2);
+		$ratio = round($ratio, 2);
 		if($ratio >=1)
 			$ratioColor = '^2';
 		else
@@ -642,6 +642,8 @@ class PluginStats extends Plugin
 					$statAward = '^4/'.$_awards[$stat][1];
 				else
 					$statAward = '';
+					
+				// TODO : refaire cette condition et inclure $aratio
 				if($stat != 'ratio' && ($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7))
 					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
 				elseif($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)

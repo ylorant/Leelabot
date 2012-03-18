@@ -90,6 +90,7 @@ class PluginClientBase extends Plugin
 					// No balance and force player in his team
 					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
 					Rcon::forceteam($player->id, $teams[$player->team]);
+					Rcon::tell($player->id, 'Please stay in your team.');
 					return TRUE; 			
 				}
 				else
@@ -321,7 +322,7 @@ class PluginClientBase extends Plugin
 		LeelaBotIrc::sendMessage("Leelabot, created by linkboss and SRWieZ - ".LeelaBot::VERSION." - leelabot.com");
 	}
 	
-	public function IrcStatus($pseudo, $channel, $cmd, $message)
+	public function IrcInfos($pseudo, $channel, $cmd, $message)
 	{
 		$serverlist = ServerList::getList();
 		$actual = Server::getName();
@@ -346,8 +347,7 @@ class PluginClientBase extends Plugin
 	private function _printServerInfo($server)
 	{
 		$serverinfo = Server::getServer()->serverInfo;
-		LeelaBotIrc::sendMessage("\037Server :\037 ".LeelaBotIrc::rmColor($serverinfo['sv_hostname']));
-		LeelaBotIrc::sendMessage("\037Map :\037 ".$serverinfo['mapname']." - \037Mode :\037 ".Server::getGametype($serverinfo['g_gametype'])." - \037Players :\037 ".count(Server::getPlayerList()));
+		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])."\002 : ".$serverinfo['mapname']." | ".Server::getGametype($serverinfo['g_gametype'])." | ".count(Server::getPlayerList())." players");
 	}
 	
 	public function IrcPlayers($pseudo, $channel, $cmd, $message)
@@ -397,8 +397,8 @@ class PluginClientBase extends Plugin
 			++$nbplayers;
 		}
 		
-		if($nbplayers >0) LeelaBotIrc::sendMessage(''.$serverinfo['sv_hostname'].' : '.join(', ', $playerlist));
-		else LeelaBotIrc::sendMessage('No one.');
+		if($nbplayers >0) LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002  : ".join(', ', $playerlist));
+		else LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002 No one.");
 	}
 }
 

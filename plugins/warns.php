@@ -295,7 +295,7 @@ class PluginWarns extends Plugin
 		if($killer->team == $killed->team && !in_array($type, array('1', '3', '6', '7', '9', '10', '31', '32', '34')))
 		{
 			$warns = $this->_addWarn($killer->id, $killed->id);
-			Rcon::say('Warning : $killer was team killed $killed ! (He has $warns warnings)', array('killer' => $killer->name, 'killed' => $killed->name, 'warns' => $warns));
+			Rcon::say('Warning : $killer has team killed $killed ! (He has $warns warnings)', array('killer' => $killer->name, 'killed' => $killed->name, 'warns' => $warns));
 			Rcon::tell($killed->id, 'Please type !fp if you want to forgive him.');
 		}
 	}
