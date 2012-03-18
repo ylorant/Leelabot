@@ -714,22 +714,25 @@ class PluginStats extends Plugin
 		
 		foreach($this->config['ShowAwards'] as $award)
 		{
-			$player = Server::getPlayer($_awards[$award][0]);
-			
-			if($serverinfo['g_gametype'] != '0')
-			{
-				if($player->team == 1)
-					$color = "\00304";
-				elseif($player->team == 2)
-					$color = "\00302";
-				elseif($player->team == 3)
-					$color = "\00314";
-			}
-			else
-				$color = "\00308";
 				
-			if($player !== NULL)
+			if($_awards[$award][0] !== NULL)
+			{
+				$player = Server::getPlayer($_awards[$award][0]);
+				
+				if($serverinfo['g_gametype'] != '0')
+				{
+					if($player->team == 1)
+						$color = "\00304";
+					elseif($player->team == 2)
+						$color = "\00302";
+					elseif($player->team == 3)
+						$color = "\00314";
+				}
+				else
+					$color = "\00308";
+				
 				$buffer[] = $_awards[$award][1]." ".$award.' : '.$color.$player->name."\017";
+			}
 			else
 				$buffer[] = $award.' : nobody';
 		}

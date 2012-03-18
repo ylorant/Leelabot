@@ -627,22 +627,24 @@ class PluginIrc extends Plugin
 		
 		foreach($awards as $award => $player)
 		{
-			$player = Server::getPlayer($player[0]);
-			
-			if($serverinfo['g_gametype'] != '0')
-			{
-				if($player->team == 1)
-					$color = "\00304";
-				elseif($player->team == 2)
-					$color = "\00302";
-				elseif($player->team == 3)
-					$color = "\00314";
-			}
-			else
-				$color = "\00308";
-				
 			if($player !== NULL)
+			{
+				$player = Server::getPlayer($player[0]);
+				
+				if($serverinfo['g_gametype'] != '0')
+				{
+					if($player->team == 1)
+						$color = "\00304";
+					elseif($player->team == 2)
+						$color = "\00302";
+					elseif($player->team == 3)
+						$color = "\00314";
+				}
+				else
+					$color = "\00308";
+				
 				$buffer[] = $player[1]." ".$award.' : '.$color.$player->name."\017";
+			}
 			else
 				$buffer[] = $award.' : nobody';
 		}
