@@ -42,6 +42,7 @@ class Leelabot
 	public $config; ///< Configuration data (for all objects : servers, plugins...)
 	public $servers; ///< Server instances objects
 	public $plugins; ///< Plugin manager
+	public $update; ///< Update manager
 	public $outerAPI; ///< Outer API class
 	public $maxServers; ///< Max servers for the bot
 	public $system; ///< Name of the system where the bot is executed (equivalent to uname -a on UN*X)
@@ -220,6 +221,13 @@ class Leelabot
 		}
 		else
 			$this->outerAPI = NULL;
+			
+		//Loading Update class if needed.
+		if(isset($this->config['Update']) && isset($this->config['Update']['Enabled']) && Leelabot::parseBool($this->config['Update']['Enabled']))
+		{
+			include('core/update.class.php');
+			$this->update = new Updater($this->config['Update'], $this->plugins);
+		}
 		
 		//Loading plugins (throws a warning if there is no plugin general config, because using leelabot without plugins is as useful as eating corn flakes hoping to fly)
 		if(isset($this->config['Plugins']) && isset($this->config['Plugins']['AutoLoad']) && $this->config['Plugins']['AutoLoad'])
@@ -983,7 +991,7 @@ class Storage
 	public function toArray()
 	{
 		$return = array();
-		foreach($object as $var => $val)
+		foreach($this as $var => $val)
 			$return[$var] = $val;
 		
 		return $return;

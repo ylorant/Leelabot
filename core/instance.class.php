@@ -239,6 +239,8 @@ class ServerInstance
 					break;
 				case 'UsePlugins':
 					$this->_plugins = explode(',', str_replace(', ', ',', $value));
+					if(!in_array('core', $this->_plugins))
+						$this->_plugins[] = 'core';
 					break;
 				case 'DefaultLevel':
 					$this->_defaultLevel = $value;
@@ -660,7 +662,7 @@ class ServerInstance
 				elseif($this->_logfile['state'] == FTP_FAILED) //Precedent reading has failed
 				{
 					Leelabot::message('Can\'t read the remote FTP log anymore.', array(), E_WARNING);
-					$this->openLogFile();
+					$this->openLogFile(TRUE);
 					return FALSE;
 				}
 				else
@@ -685,7 +687,7 @@ class ServerInstance
 	 * 
 	 * \return TRUE if log loaded correctly, FALSE otherwise.
 	 */
-	public function openLogFile()
+	public function openLogFile($resume = FALSE)
 	{
 		switch($this->_logfile['type'])
 		{
@@ -696,8 +698,9 @@ class ServerInstance
 					Leelabot::message('Can\'t open local log file : $0.', array($this->_logfile['location']), E_WARNING);
 					return FALSE;
 				}
-		
-				fseek($this->_logfile['fp'], 0, SEEK_END);
+				
+				if(!$resume)
+					fseek($this->_logfile['fp'], 0, SEEK_END);
 				break;
 			case 'ftp':
 				Leelabot::message('Connecting to FTP server...');
@@ -721,27 +724,30 @@ class ServerInstance
 					return FALSE;
 				}
 				
-				//Creating the buffer and getting end of remote log (to avoid entire log download)
-				Leelabot::message('Initializing online log read...');
-				$this->_logfile['fp'] = fopen('php://memory', 'r+');
-				$this->_logfile['state'] = FTP_FINISHED;
-				if(!($this->_logfile['origpointer'] = ftp_size($this->_logfile['ftp'], $this->_logfile['location'])))
+				if(!$resume)
 				{
-					//If we can't get the size, we try to download the whole file into another temp file, and check its size
-					Leelabot::message('Can\'t get actual log size. Trying to download whole file (might be slow)...');
-					
-					$tmpfile = fopen('php://memory', 'r+');
-					if(!ftp_get($this->_logfile['ftp'], $tmpfile, $this->_logfile['location'], FTP_BINARY))
+					//Creating the buffer and getting end of remote log (to avoid entire log download)
+					Leelabot::message('Initializing online log read...');
+					$this->_logfile['fp'] = fopen('php://memory', 'r+');
+					$this->_logfile['state'] = FTP_FINISHED;
+					if(!($this->_logfile['origpointer'] = ftp_size($this->_logfile['ftp'], $this->_logfile['location'])))
 					{
-						Leelabot::message('Can\'t download log file.', array(), E_WARNING);
-						return FALSE;
+						//If we can't get the size, we try to download the whole file into another temp file, and check its size
+						Leelabot::message('Can\'t get actual log size. Trying to download whole file (might be slow)...');
+						
+						$tmpfile = fopen('php://memory', 'r+');
+						if(!ftp_get($this->_logfile['ftp'], $tmpfile, $this->_logfile['location'], FTP_BINARY))
+						{
+							Leelabot::message('Can\'t download log file.', array(), E_WARNING);
+							return FALSE;
+						}
+						
+						$stat = stat($tmpfile);
+						$this->_logfile['origpointer'] = $stat['size'];
+						fclose($tmpfile);
 					}
-					
-					$stat = stat($tmpfile);
-					$this->_logfile['origpointer'] = $stat['size'];
-					fclose($tmpfile);
+					$this->_logfile['pointer'] = 0;
 				}
-				$this->_logfile['pointer'] = 0;
 				break;
 		}
 		

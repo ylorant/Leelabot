@@ -30,6 +30,7 @@
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<meta name="generator" content="Geany 0.20" />
 	<script type="text/javascript" src="/admin/js/jquery.js"></script>
+	<script type="text/javascript" src="/admin/js/phpjs.js"></script>
 	<script type="text/javascript" src="/admin/js/{$category}{if="!empty($subcategory)"}/{$subcategory}{/if}.js"></script>
 	<link rel="stylesheet" media="screen" type="text/css" title="Design" href="/admin/style/design/design.css" />
 	<link rel="stylesheet" media="screen" type="text/css" title="Design" href="/admin/style/{$category}{if="!empty($subcategory)"}/{$subcategory}{/if}.css" />
@@ -71,4 +72,4 @@
 			{/if}
 			
 		</div>
-		<div class="content">	
+		<div class="content" id="page-content">	

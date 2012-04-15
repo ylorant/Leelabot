@@ -419,7 +419,10 @@ class PluginManager extends Events
 	 */
 	public function getLoadedPlugins()
 	{
-		return array_keys($this->_plugins);
+		$list = array_keys($this->_plugins);
+		array_push($list, 'core');
+		
+		return $list;
 	}
 	
 	/** Returns the object of a plugin.
@@ -443,10 +446,11 @@ class PluginManager extends Events
 	 * \param $plugin A reference to the plugin's class where the method is.
 	 * \param $method The name of the method to be executed.
 	 * \param $time The time interval between 2 executions of the routine. Defaults to 1 second.
+	 * \param $global TRUE if the routine is set to a global level, and executes for every server. Defaults to FALSE.
 	 * 
 	 * \return TRUE if method registered correctly, FALSE otherwise.
 	 */
-	public function addRoutine(&$plugin, $method, $time = 1)
+	public function addRoutine(&$plugin, $method, $time = 1, $global = FALSE)
 	{
 		Leelabot::message('Adding routine $0, executed every $1s', array(get_class($plugin).'::'.$method, $time), E_DEBUG);
 		
@@ -456,7 +460,7 @@ class PluginManager extends Events
 			return FALSE;
 		}
 		
-		$this->_routines[get_class($plugin)][$method] = array($plugin, $time, array());
+		$this->_routines[get_class($plugin)][$method] = array($plugin, $time, array(), $global);
 		
 		return TRUE;
 	}
@@ -680,7 +684,7 @@ class PluginManager extends Events
 			{
 				if($force || !isset($routine[2][$serverName]) || (time() >= $routine[2][$serverName] + $routine[1] /*&& time() != $routine[2][$serverName] */))
 				{
-					if(in_array($this->_pluginClasses[$className], $serverPlugins))
+					if(in_array($this->_pluginClasses[$className], $serverPlugins) || $routine[3])
 					{
 						$routine[0]->$name();
 						$routine[2][$serverName] = time();
@@ -723,6 +727,7 @@ class PluginManager extends Events
 	{
 		$player = Server::getPlayer($player);
 		$ret = $this->callEvent('command', $event, $player->level, Server::getPlugins(), $player->id, $params);
+		var_dump(Server::getPlugins());
 		
 		if($ret !== TRUE)
 		{
@@ -859,9 +864,9 @@ class Plugin
 	/** Shortcut to PluginManager::addRoutine.
 	 * \see PluginManager::addRoutine
 	 */
-	public function addRoutine($method, $time = 1)
+	public function addRoutine($method, $time = 1, $global)
 	{
-		return $this->_plugins->addRoutine($this, $method, $time);
+		return $this->_plugins->addRoutine($this, $method, $time, $global);
 	}
 	
 	/** Shortcut to PluginManager::addWSMethod
