@@ -803,22 +803,6 @@ class Server
 		return $return;
 	}
 	
-	/** Set player data for an ID.
-	 * This function set key of player Storage object.
-	 * 
-	 * \param $id The ID of the player.
-	 * \param $key The key you want to update.
-	 * \param $value The value of the key you want to update.
-	 * 
-	 * \return The set value.
-	 */
-	public static function setPlayerKey($id, $key, $value)
-	{
-		$server = self::getInstance();
-		return $server->_server->players[$id]->{$key} = $value;
-		return TRUE;
-	}
-	
 	/** Returns the scores of teams.
 	 * This function returns the scores data list for the server, or for only a team.
 	 * 

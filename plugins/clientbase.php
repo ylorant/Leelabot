@@ -35,6 +35,7 @@
 class PluginClientBase extends Plugin
 {
 	private $_ClientUserinfoChangedIgnore = array();
+	private $_BalanceNeeded = array();
 	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
@@ -65,6 +66,28 @@ class PluginClientBase extends Plugin
 			$this->_plugins->setEventLevel('irc', 'players', 0);
 			$this->_plugins->setEventLevel('irc', 'about', 0);
 		}
+	}
+	
+	public function RoutineBalance()
+	{
+		$serverlist = ServerList::getList();
+		$actual = Server::getName();
+		
+		// 1 config per server
+		foreach($serverlist as $server)
+		{
+			if(isset($this->_BalanceNeeded[$server]) && $this->_BalanceNeeded[$server] === TRUE)
+			{
+				Server::setServer($this->_main->servers[$server]);
+				Rcon::setServer($this->_main->servers[$server]);
+				$this->_balance();
+				$this->_BalanceNeeded[$server] === FALSE;
+			}
+		}
+		
+		// We fix actual server
+		Server::setServer($this->_main->servers[$actual]);
+		Rcon::setServer($this->_main->servers[$actual]);
 	}
 	
 	/** ClientUserinfo event. Perform team balance if needed.
@@ -127,11 +150,7 @@ class PluginClientBase extends Plugin
 				}
 				else // If few players of the same team go to spec, we need to balance.
 				{
-					// we need to update user info else _balance can't see difference and he don't make his job
-					$player = Server::setPlayerKey($id, 'team', $data['t']);
-					
-					// balance !
-					$this->_balance();
+					$this->_BalanceNeeded[$servername] = TRUE;
 				}
 			}
 			else
@@ -342,7 +361,12 @@ class PluginClientBase extends Plugin
 	 */
 	public function WSMethodBalanceTeams($server)
 	{
+		$actual = Server::getName();
+		Server::setServer($this->_main->servers[$server]);
+		Rcon::setServer($this->_main->servers[$server]);
 		$this->_balance();
+		Server::setServer($this->_main->servers[$actual]);
+		Rcon::setServer($this->_main->servers[$actual]);
 	}
 	
 	public function WAPageIndex()
