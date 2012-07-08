@@ -128,7 +128,7 @@ class PluginClientBase extends Plugin
 				else // If few players of the same team go to spec, we need to balance.
 				{
 					// we need to update user info else _balance can't see difference and he don't make his job
-					$player = Server::setPlayerKey($id, team, $data['t']);
+					$player = Server::setPlayerKey($id, 'team', $data['t']);
 					
 					// balance !
 					$this->_balance();
