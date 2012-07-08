@@ -321,7 +321,7 @@ class ServerInstance
 			$playerData['name'] = preg_replace('#^[0-9]#', '', $dump['name']);
 			$playerData['id'] = $id;
 			$playerData['level'] = $this->_defaultLevel;
-			
+			$playerData['time'] = time();
 			$playerData['team'] = Server::TEAM_SPEC;
 			$playerData['begin'] = FALSE;
 			$playerData['uuid'] = Leelabot::UUID();
