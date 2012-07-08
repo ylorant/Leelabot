@@ -116,7 +116,7 @@ class PluginClientBase extends Plugin
 						$otherteam = Server::TEAM_BLUE;
 					
 					// If the player wants to go to the team with the highest number of players.
-					if($teams_count[$otherteam] > $teams_count[$player->team])
+					if($teams_count[$otherteam] >= $teams_count[$player->team])
 					{
 						// No balance and force player in his team
 						$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
