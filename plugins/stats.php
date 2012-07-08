@@ -639,7 +639,7 @@ class PluginStats extends Plugin
 					$statColor = '^3';
 			
 				if(in_array($stat, $this->config['ShowAwards']))
-					$statAward = '^4/'.$_awards[$stat][1];
+					$statAward = '^4/'.round($_awards[$stat][1], 2);
 				else
 					$statAward = '';
 					

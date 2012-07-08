@@ -219,7 +219,7 @@ class PluginClientBase extends Plugin
 	{
 		$nextmap = Rcon::g_nextmap();
 		$nextmap = explode('"', $nextmap);
-		$nextmap = trim(str_replace('^7', '', $nextmap[3]));
+		$nextmap = trim(str_replace('^7', '', $nextmap[2]));
 		
 		if($nextmap != '')
 		{
@@ -236,7 +236,7 @@ class PluginClientBase extends Plugin
 		        if($content !== FALSE)
 		        {
 			    	$tab_maps = explode("\n",$content);        
-			    	$current_map = $server->serverInfo['mapname'];    
+			    	$current_map = Server::getServer()->serverInfo['mapname'];    
 			    	$index = 0;
 			        
 			    	while ($index <= count($tab_maps) - 1)

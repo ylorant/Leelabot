@@ -626,7 +626,7 @@ class PluginIrc extends Plugin
 		
 		foreach($awards as $award => $infos)
 		{
-			if($player !== NULL)
+			if($infos !== NULL)
 			{
 				$player = Server::getPlayer($infos[0]);
 				
