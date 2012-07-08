@@ -54,8 +54,8 @@ class PluginClientBase extends Plugin
 				if(isset($this->config[$server]['AutoTeams']))
 					$this->config[$server]['AutoTeams'] = Leelabot::parseBool($this->config[$server]['AutoTeams']);
 			
-				if(!isset($this->config[$server]['CycleMapFile']) OR !file_exists($this->config[$server]['CycleMapFile']))
-					$this->config[$server]['CycleMapFile'] = FALSE;
+				if(!empty($this->config[$server]['CycleMapFile']))
+					$this->config[$server]['CycleMapFile'] = NULL;
 			}
 		}
 			

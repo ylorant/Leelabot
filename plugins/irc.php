@@ -624,11 +624,11 @@ class PluginIrc extends Plugin
 		
 		$serverinfo = Server::getServer()->serverInfo;
 		
-		foreach($awards as $award => $player)
+		foreach($awards as $award => $infos)
 		{
 			if($player !== NULL)
 			{
-				$player = Server::getPlayer($player[0]);
+				$player = Server::getPlayer($infos[0]);
 				
 				if($serverinfo['g_gametype'] != '0')
 				{
@@ -642,7 +642,7 @@ class PluginIrc extends Plugin
 				else
 					$color = "\00308";
 				
-				$buffer[] = $player[1]." ".$award.' : '.$color.$player->name."\017";
+				$buffer[] = $infos[1]." ".$award.' : '.$color.$player->name."\017";
 			}
 			else
 				$buffer[] = $award.' : nobody';
