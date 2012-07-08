@@ -103,6 +103,10 @@ class PluginWarns extends Plugin
 		// Kick player after [SecondsBeforeKick]  (must be a positive number or 0)
 		if(!(isset($this->config['SecondsBeforeKick']) && is_numeric($this->config['SecondsBeforeKick']) && $this->config['SecondsBeforeKick'] >= 0))
 			$this->config['SecondsBeforeKick'] = 60;
+			
+		// Level where we can't take warning. (ex: 100 = super op can't take warning)
+		if(!(isset($this->config['Level']) && is_numeric($this->config['Level']) && $this->config['Level'] >= 0))
+			$this->config['Level'] = 100;
 		
 		
 		// We delete useless event
@@ -176,19 +180,24 @@ class PluginWarns extends Plugin
 	
 	private function _addWarn($warned, $victim = FALSE)
 	{
+		$player = Server::getPlayer($warned);
 		$_warns = Server::get('warns');
-		$_warns[$warned]['num']++;
 		
-		if($_warns[$warned]['num'] <= $this->config['WarnsKick'])
-			$_warns[$warned]['last'] = time();
-			
-		Server::set('warns', $_warns);
-		
-		if($victim !== FALSE)
+		if($player->level < $this->config['Level'])
 		{
-			$_forgive = Server::get('forgive');
-			$_forgive[$victim][time()] = $warned;
-			Server::set('forgive', $_forgive);
+			$_warns[$warned]['num']++;
+			
+			if($_warns[$warned]['num'] <= $this->config['WarnsKick'])
+				$_warns[$warned]['last'] = time();
+				
+			Server::set('warns', $_warns);
+			
+			if($victim !== FALSE)
+			{
+				$_forgive = Server::get('forgive');
+				$_forgive[$victim][time()] = $warned;
+				Server::set('forgive', $_forgive);
+			}
 		}
 		
 		return $_warns[$warned]['num'];
