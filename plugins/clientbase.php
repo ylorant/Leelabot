@@ -79,29 +79,53 @@ class PluginClientBase extends Plugin
 		$player = Server::getPlayer($id);
 		
 		$servername =  Server::getName();
+		
+		// Only if is a team change userInfoChanged
 		if($this->config[$servername]['AutoTeams'] && $data['t'] != $player->team)
 		{
 			if(!array_key_exists($servername, $this->_ClientUserinfoChangedIgnore))
 				$this->_ClientUserinfoChangedIgnore[$servername] = array();
 			
-			if(!in_array($id, $this->_ClientUserinfoChangedIgnore[$servername]))
+			// Only if _balance() haven't add this player in ignore list
+			if(!in_array($id, $this->_ClientUserinfoChangedIgnore[$servername])) 
 			{
 				$teams_count = Server::getTeamCount();
 				
-				if($player->team == Server::TEAM_BLUE)
-					$otherteam = Server::TEAM_RED;
-				elseif($player->team == Server::TEAM_RED)
-					$otherteam = Server::TEAM_BLUE;
-				
-				if($teams_count[$player->team] <= $teams_count[$otherteam])
+				if($player->team == Server::TEAM_SPEC) // If he join the game
 				{
-					// No balance and force player in his team
-					$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
-					Rcon::forceteam($player->id, $teams[$player->team]);
-					Rcon::tell($player->id, 'Please stay in your team.');
-					return TRUE; 			
+					if($data['t'] == Server::TEAM_BLUE)
+						$otherteam = Server::TEAM_RED;
+					elseif($data['t'] == Server::TEAM_RED)
+						$otherteam = Server::TEAM_BLUE;
+					
+					// if player haven't use auto join and go to wrong team
+					if($teams_count[$data['t']] > $teams_count[$otherteam])
+					{
+						$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
+						Rcon::forceteam($player->id, $teams[$otherteam]);
+						Rcon::tell($player->id, 'Please use autojoin.');
+						return TRUE;
+					}
+					
 				}
-				else
+				elseif($player->team != Server::TEAM_SPEC && $data['t'] != Server::TEAM_SPEC) // If he change team (and don't go to spectator)
+				{
+					if($player->team == Server::TEAM_BLUE)
+						$otherteam = Server::TEAM_RED;
+					elseif($player->team == Server::TEAM_RED)
+						$otherteam = Server::TEAM_BLUE;
+					
+					// If the player wants to go to the team with the highest number of players.
+					if($teams_count[$otherteam] > $teams_count[$player->team])
+					{
+						// No balance and force player in his team
+						$teams = array(1 => 'red', 2 => 'blue', 3 => 'spectator');
+						Rcon::forceteam($player->id, $teams[$player->team]);
+						Rcon::tell($player->id, 'Please stay in your team.');
+						return TRUE; 			
+					}
+				}
+				else // If few players of the same team go to spec, we need to balance.
 				{
 					$this->_balance();
 				}
