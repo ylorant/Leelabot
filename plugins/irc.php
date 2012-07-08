@@ -395,7 +395,6 @@ class PluginIrc extends Plugin
 			return;
 		}
 			
-		$serverlist = ServerList::getList();
 		$autospeak = array();
 		foreach($this->config['AutoSpeak'] as $name => $server)
 		{

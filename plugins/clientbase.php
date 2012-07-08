@@ -34,8 +34,6 @@
  */
 class PluginClientBase extends Plugin
 {
-	private $_autoteams = TRUE; // AutoTeams toggle.
-	private $_cyclemapfile = NULL; // Cyclemap file destination.
 	private $_ClientUserinfoChangedIgnore = array();
 	
 	/** Init function. Loads configuration.
@@ -47,11 +45,17 @@ class PluginClientBase extends Plugin
 	{
 		if($this->config)
 		{
-			if(isset($this->config['AutoTeams']))
-				$this->_autoteams = Leelabot::parseBool($this->config['AutoTeams']);
+			$serverlist = ServerList::getList();
 			
-			if(isset($this->config['CycleMapFile']))
-				$this->_cyclemapfile = $this->config['CycleMapFile'];
+			// 1 config per server
+			foreach($serverlist as $server)
+			{
+				if(isset($this->config[$server]['AutoTeams']))
+					$this->config[$server]['AutoTeams'] = Leelabot::parseBool($this->config[$server]['AutoTeams']);
+			
+				if(!isset($this->config[$server]['CycleMapFile']) OR !file_exists($this->config[$server]['CycleMapFile']))
+					$this->config[$server]['CycleMapFile'] = FALSE;
+			}
 		}
 			
 		//IRC commands level (0:all , 1:voice, 2:operator)
@@ -74,9 +78,13 @@ class PluginClientBase extends Plugin
 	{
 		$player = Server::getPlayer($id);
 		
-		if($this->_autoteams && $data['t'] != $player->team)
+		$servername =  Server::getName();
+		if($this->config[$servername]['AutoTeams'] && $data['t'] != $player->team)
 		{
-			if(!in_array($id, $this->_ClientUserinfoChangedIgnore))
+			if(!array_key_exists($servername, $this->_ClientUserinfoChangedIgnore))
+				$this->_ClientUserinfoChangedIgnore[$servername] = array();
+			
+			if(!in_array($id, $this->_ClientUserinfoChangedIgnore[$servername]))
 			{
 				$teams_count = Server::getTeamCount();
 				
@@ -100,7 +108,7 @@ class PluginClientBase extends Plugin
 			}
 			else
 			{
-				unset($this->_ClientUserinfoChangedIgnore[$id]);
+				unset($this->_ClientUserinfoChangedIgnore[$servername][$id]);
 			}
 		}
 	}
@@ -173,9 +181,10 @@ class PluginClientBase extends Plugin
 		}
 		else
 		{
-			if($this->_cyclemapfile !== NULL)
+			$servername =  Server::getName();
+			if($this->config[$servername]['CycleMapFile'] !== NULL)
 			{
-		    	$content = Server::fileGetContents($this->_cyclemapfile);
+		    	$content = Server::fileGetContents($this->config[$servername]['CycleMapFile']);
 		        
 		        if($content !== FALSE)
 		        {
