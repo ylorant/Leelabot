@@ -72,10 +72,10 @@ h2
 	top:0px;
 	margin:0px;
 	margin-top:0px;
-	padding-top:25px;
 /*
-	width:80%;
+	padding-top:25px;
 */
+	width:80%;
 	height:40px;
 	
 	padding-left:0px;
@@ -87,13 +87,11 @@ h2
 {
 	text-align:right;
 	font-weight:bold;
-	display:inline;
-	height:60px;
-	padding-bottom:25px;
-	padding-top:30px;
+	float:left;
+	height:40px;
+	padding-top:25px;
 	padding-left:15px;
 	padding-right:15px;
-	margin:0px -2px;
 	color:white;
 }
 

@@ -479,7 +479,8 @@ class Server
 	const TEAM_SPEC = 3; ///< Spectators' ID
 	
 	//Gametypes IDs
-	const GAME_FFA = 1; ///< Free For All
+	const GAME_FFA = 0; ///< Free For All
+	const GAME_LMS = 1; ///< Last Man Standing
 	const GAME_TDM = 3; ///< Team Deathmatch
 	const GAME_TS = 4; ///< Team Survivor
 	const GAME_FTL = 5; ///< Follow The Leader
