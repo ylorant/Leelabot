@@ -36,6 +36,7 @@ class Quake3RCon
 	private $_port; ///< Current server port.
 	private $_compactBuffer; ///< Compacting method activity.
 	private $_password; ///< RCon password.
+	private $_recoverPassword; ///< RCon recover password.
 	private $_valid; ///< Indicates the servers where the connection has already been verified.
 	private $_socket; ///< UDP socket for handling connection to the server.
 	private $_lastRConTime; ///< Temps auquel à été envoyé la dernière commande RCon
@@ -98,9 +99,28 @@ class Quake3RCon
 		return TRUE;
 	}
 	
+	/** Sets the RCon password.
+	 * This function sets the RCon password which will be used for server commands.
+	 * 
+	 * \param $password The password.
+	 * 
+	 * \return Nothing.
+	 */
 	public function setRConPassword($password)
 	{
 		$this->_password = $password;
+	}
+	
+	/** Sets the RCon recover password.
+	 * This function sets the RCon recover password which will be used to recover the real RCon password if it has been lost.
+	 * 
+	 * \param $password The password.
+	 * 
+	 * \return Nothing.
+	 */
+	public function setRecoverPassword($password)
+	{
+		$this->_recoverPassword = $password;
 	}
 	
 	/** Tests the connectivity between the server and the bot.

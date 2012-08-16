@@ -215,10 +215,14 @@ class NginyUS extends NginyUS_Framework
 			{
 				case 'POST':
 					parse_str($query[1], $_POST);
-					NginyUS::message("Received POST data : $0", array($this->dumpArray($_POST)), E_DEBUG);
+					if(is_array($_POST))
+						NginyUS::message("Received POST data : $0", array($this->dumpArray($_POST)), E_DEBUG);
+					else
+						NginyUS::message("Received POST data : $0", array($data['rawPOST']), E_DEBUG);
 					$data['rawPOST'] = $query[1];
-					$_SERVER['REQUEST_METHOD'] = $data['query'] = 'POST';
+				case 'OPTIONS':
 				case 'GET': //It's a GET request (main parameter)
+					$_SERVER['REQUEST_METHOD'] = $data['query'] = $row[0];
 					$data['page'] = explode(' ', $row[1]);
 					$data['page'] = $data['page'][0];
 					NginyUS::message('Requested page : $0', array($data['page']), E_DEBUG);

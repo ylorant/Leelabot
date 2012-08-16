@@ -960,6 +960,18 @@ class Leelabot
 		$uuid .= substr($chars,20,12);
 		return $prefix . $uuid;
 	}
+	
+	/** Gives the string equivalent for a boolean value.
+	 * This function returns the string equivalent of a boolean, "true" or "false". If $bool is not a boolean, it will be casted to it.
+	 * 
+	 * \param $bool The boolean to transform.
+	 * 
+	 * \returns The string representation of the given boolean.
+	 */
+	public static function boolString($bool)
+	{
+		return $bool == true ? 'true' : 'false';
+	}
 }
 
 /**

@@ -75,8 +75,8 @@ class OuterAPI
 			$this->_WSEnabled = TRUE;
 			$WSConfig = $config['Webservice'];
 			
-			//Including the MOAP Webservice class
-			include('lib/moap/moapserver.php');
+			//Including the MLPFIM Webservice class
+			include('lib/mlpfim/mlpfimserver.php');
 			
 			//If there is aliases, we update them to add the API path to them
 			if(!empty($WSConfig['Aliases']))
@@ -103,7 +103,7 @@ class OuterAPI
 			{
 				$this->_WSAuth = TRUE;
 				$WSConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile'];
-				$this->_WSAuthFile = $WSConfig['AuthFile'];
+				$this->_WSAuthFile = '../'.$WSConfig['AuthFile'];
 			}
 			else
 				Leelabot::message('Using Webservice without authentication is not secure !', array(), E_WARNING, TRUE);

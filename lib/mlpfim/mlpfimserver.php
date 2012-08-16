@@ -1,9 +1,9 @@
 <?php
 /**
- * \file lib/moap/moapserver.php
+ * \file lib/mlpfim/mlpfimserver.php
  * \author Yohann Lorant <linkboss@gmail.com>
  * \version 0.5
- * \brief MOAPServer class file.
+ * \brief MLPFIMServer class file.
  *
  * \section LICENSE
  *
@@ -20,15 +20,16 @@
  *
  * \section DESCRIPTION
  *
- * This is the file containing the MOAP server class.
+ * This is the file containing the MLPFIM server class.
  */
  
 /**
- * \brief MOAP Server class.
+ * \brief MLPFIM Server class.
  * 
- * This class allows the user to create easily a MOAP server (stands for Minimalist Object Access Protocol), a subset of SOAP, but really easier.
+ * This class allows the user to create easily a MLPFIM server (stands for Minimalist and Lightweight Protocol For Interface Modularity),
+ * inspired from XML-RPC and SOAP, but easier.
  */
-class MOAPServer
+class MLPFIMServer
 {
 	private $_call; ///< The class name/The object to call when a query is received
 	private $_defaultMethod = 'default'; ///< The default method to fall back where a request does not success.
@@ -67,47 +68,50 @@ class MOAPServer
 	}
 	
 	/** Handles a MOAP request.
-	 * This functions handles a MOAP request, from the parameters given in the $post parameter or, if not given, in the $_POST Superglobal.
+	 * This functions handles a MOAP request, from the parameters given in the $post parameter.
 	 * 
-	 * \param $post The POST data to be processed
+	 * \param $data The JSON data to be processed
 	 * 
-	 * \return Nothing.
+	 * \return TRUE if the request handled correctly, FALSE otherwise.
 	 */
-	public function handle($post = NULL)
+	public function handle($data)
 	{
-		if($post == NULL)
-			$post = $_POST;
+		$data = json_decode($data);
+		
+		if(!isset($data->request) || !isset($data->parameters))
+			return FALSE;
+		
+		foreach($data->parameters as $i => $par)
+		{
+			if($par === "")
+				unset($data->parameters[$i]);
+		}
 		
 		//If there is no method specified, the default method is called (if it exists, else, nothing happens)
-		if(empty($post['request']))
+		if(empty($data->request))
 		{
 			if(method_exists($this->_call, $this->_defaultMethod))
-				$this->_callMethod($this->_defaultMethod, $post);
-			
-			return NULL;
+				$this->_callMethod($this->_defaultMethod, $data->parameters);
 		}
 		else //A method to query is specified
-			$this->_callMethod($post['request'], $post);
+			$this->_callMethod($data->request, $data->parameters);
+		
+		return TRUE;
 	}
 	
 	/** Calls a method, with given data.
 	 * This function calls the method $method, and gives in parameter the data in $post.
 	 * 
 	 * \param $method The method to call.
-	 * \param $post The POST data from where extract the method's arguments.
+	 * \param $args the arguments to the method.
 	 * 
 	 * \returns Nothing.
 	 */
-	private function _callMethod($method, $post)
+	private function _callMethod($method, $args)
 	{
-		$args = array();
-		foreach($post as $parname => $param)
-		{
-			if(preg_match('#param([0-9]+)#', $parname, $match)) //Check if it's a parameter
-				$args[$match[1]] = $param;
-		}
-		
 		$result = call_user_func_array(array($this->_call, $method), $args);
-		call_user_func($this->_replyCallback, $result);
+		$result = array('query' => array('request' => $method, 'parameters' => $args), 'response' => $result);
+		
+		call_user_func($this->_replyCallback, json_encode($result));
 	}
 }

@@ -26,11 +26,11 @@
 
 class PluginAdminBase extends Plugin
 {
-
-	private $_mapUt4List = array('casa', 'kingdom', 'turnpike', 'abbey', 'prague', 'mandolin', 'uptown', 'algiers', 'austria', 'maya', 'tombs', 'elgin', 'oildepot', 'swim', 'harbortown', 'ramelle', 'toxic', 'sanc', 'riyadh', 'ambush', 'eagle', 'suburbs', 'crossing', 'subway', 'tunis', 'thingley');
+	
+	private $_mapUt4List = array('casa', 'kingdom', 'turnpike', 'abbey', 'prague', 'mandolin', 'uptown', 'algiers', 'austria', 'maya', 'tombs', 'elgin', 'oildepot', 'swim', 'harbortown', 'ramelle', 'toxic', 'sanc', 'riyadh', 'ambush', 'eagle', 'suburbs', 'crossing', 'subway', 'tunis', 'thingley'); ///< List of common urban terror maps
 	
 	/** Init function. Loads configuration.
-	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
+	 * This function is called at the plugin's initialization, and loads the config from main config data (in Leelabot::$config).
 	 * 
 	 * \return Nothing.
 	 */
@@ -84,6 +84,14 @@ class PluginAdminBase extends Plugin
 		/* NOTE : The command list above is not in alphabetical order */
 	}
 	
+	/** Sysinfo command. Returns data about PHP.
+	 * This function returns informations about current memory consumption of the bot, and the current PHP version.
+	 * 
+	 * \param $id The game ID of the player who executed the command.
+	 * \param $command The command parameters.
+	 * 
+	 * \return Nothing.
+	 */
 	public function CommandSysinfo($id, $command)
 	{
 		RCon::tell($id, "Memory consumption: $0/$1 KB", array(memory_get_usage()/1000, memory_get_usage(TRUE)/1000));
@@ -91,8 +99,9 @@ class PluginAdminBase extends Plugin
 		
 	}
 	
-	/** Bigtext command. Send a message for all.
-	 * This function is bound to the !bigtext command. It sends a message for all, displayed on the center of screen, like flag captures.
+	/** Bigtext command. Sends a message for all players.
+	 * This function is bound to the !bigtext command. It sends a message for all players, displayed on the center of screen, 
+	 * like flag captures.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -112,8 +121,8 @@ class PluginAdminBase extends Plugin
 		}
 	}
 	
-	/** Exec command. Execute an configuration.
-	 * This function is bound to the !cfg command. It execute and .cfg file
+	/** Exec command. Executes a configuration file.
+	 * This function is bound to the !cfg command. It executes a .cfg file on the server.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -124,16 +133,12 @@ class PluginAdminBase extends Plugin
 	public function CommandCfg($id, $command)
 	{
 		if(!empty($command[0]))
-		{
 			RCon::exec($command[0]);
-		}
 		else
-		{
 			Rcon::tell($id, 'Missing parameters.');
-		}
 	}
 	
-	/** Cyclemap command. Go to nextmap.
+	/** Cyclemap command. Go to the next map.
 	 * This function is bound to the !cyclemap command. It changes the map, usually following the cyclemap file.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
@@ -156,12 +161,12 @@ class PluginAdminBase extends Plugin
 	 */
 	public function CommandDie($id, $command)
 	{
-		Rcon::bigtext('Shutting Down...');
-		$this->_main->stop();
+		foreach(ServerList::getList() as $server)
+			ServerList::getServerRCon($server)->bigtext('Shutting Down...');
 	}
 	
-	/** Forceteam command. Force a player on the other team.
-	 * This function is bound to the !force command. Force a player on the other team. Available teams : red, blue, spectator.
+	/** Forceteam command. Force a player in a team.
+	 * This function is bound to the !force command. Forces a player to join a defined team. Available teams are : red, blue, spectator.
 	 * 	 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -194,14 +199,13 @@ class PluginAdminBase extends Plugin
 			}
 		}
 		else
-		{
 			Rcon::tell($id, 'Missing parameters.');
-		}
 	}
 	
 	/** Kick command. Kicks a player from the server.
-	 * This function is bound to the !kick command. It kicks a player from the server, according to the name given in first parameter. It does not needs the complete
-	 * in-game name to work, a search is performed with the given data. It will ail if there is more than 1 person on the server corresponding with the given mask.
+	 * This function is bound to the !kick command. It kicks a player from the server, according to the name given in first parameter.
+	 * It does not needs the complete in-game name to work, a search is performed with the given data.
+	 * It will fail if there is more than 1 person on the server corresponding to the given mask.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -231,7 +235,7 @@ class PluginAdminBase extends Plugin
 		}
 	}
 	
-	/** Kick command. Kick players from the server.
+	/** Kickall command. Kick players from the server.
 	 * This function is bound to the !kickall command. It kick all players who match the characters sent. It does not needs the complete
 	 * in-game name to work, a search is performed with the given data.
 	 * 
@@ -262,8 +266,8 @@ class PluginAdminBase extends Plugin
 		}
 	}
 	
-	/** Take the list of players.
-	 * This function is bound to the !list command. This function send the list of players with their id.
+	/** Gives the list of players on the server.
+	 * This function is bound to the !list command. This function shows the list of players with their id.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -283,7 +287,7 @@ class PluginAdminBase extends Plugin
 		Rcon::tell($id, '$listofplayers', array('listofplayers' => $list));
 	}
 	
-	/** mute command. Mute a player in the server.
+	/** Mute command. Mutes a player in the server.
 	 * This function is bound to the !mute command. It mute a player from the server, according to the name given in first parameter. It does not needs the complete
 	 * in-game name to work, a search is performed with the given data. It will ail if there is more than 1 person on the server corresponding with the given mask.
 	 * 
@@ -310,9 +314,7 @@ class PluginAdminBase extends Plugin
 				RCon::mute($target);
 		}
 		else
-		{
 			Rcon::tell($id, 'Missing parameters.');
-		}
 	}
 	
 	/** Map command. Change the actual map. (reload the server)
@@ -333,9 +335,7 @@ class PluginAdminBase extends Plugin
 				RCon::map('"'.$command[0].'"');
 		}
 		else
-		{
 			Rcon::tell($id, 'Missing parameters.');
-		}
 	}
 	
 	/** Set g_nextmap command. Change the next map.
@@ -501,7 +501,7 @@ class PluginAdminBase extends Plugin
 		if(!empty($command[0]))
 		{
 			$text = implode(' ', $command);
-			RCon::say('"'.$text.'"');
+			RCon::say($text);
 		}
 		else
 		{
@@ -558,27 +558,7 @@ class PluginAdminBase extends Plugin
 	 */
 	public function CommandShuffle($id, $command)
 	{
-		$players = Server::getPlayerList();
-		$lastTeam = rand(Server::TEAM_BLUE, Server::TEAM_RED);
-		
-		shuffle($players);
-		
-		foreach($players as $player)
-		{
-			if($player->team != Server::TEAM_SPEC)
-			{
-				if($lastTeam == Server::TEAM_RED)
-				{
-					RCon::forceteam($player->id.' red');
-					$lastTeam = Server::TEAM_BLUE;
-				}
-				elseif($lastTeam == Server::TEAM_BLUE)
-				{
-					RCon::forceteam($player->id.' blue');
-					$lastTeam = Server::TEAM_RED;
-				}
-			}
-		}
+		RCon::shuffle();
 	}
 	
 	/** Slap command. Slaps a player from the server.
@@ -640,8 +620,8 @@ class PluginAdminBase extends Plugin
 	}
 	
 	
-	/** Take information about an players
-	 * This function is bound to the !whois command. It give name, ip, level, hote oh one player.
+	/** Gives information about a player
+	 * This function is bound to the !whois command. It gives the name, ip, level, host of the player specified in argument.
 	 * 
 	 * \param $id The game ID of the player who executed the command.
 	 * \param $command The command parameters.
@@ -674,6 +654,257 @@ class PluginAdminBase extends Plugin
 		}
 	}
 	
+	
+	// Webservice methods //
+	
+	public function WSMethodKick($server, $id)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if(ServerList::getServer($server)->getPlayer($id) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->kick($id)));
+	}
+	
+	public function WSMethodCfg($server, $cfg)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->exec($cfg)));
+	}
+	
+	public function WSMethodCyclemap($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->cyclemap()));
+	}
+	
+	public function WSMethodDie()
+	{
+		foreach(ServerList::getList() as $server)
+			ServerList::getServerRCon($server)->bigtext('Shutting Down...');
+		$this->_main->stop();
+		
+		return array('success' => 'true');
+	}
+	
+	public function WSMethodForce($server, $player, $team)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		$target = ServerList::getServer($server)->getPlayer($player);
+		if($target == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		else
+		{
+			if(in_array($team, array('spec', 'spect')))
+				$team = 'spectator';
+			
+			if(in_array($team, array('red', 'blue', 'spectator'))) 
+				return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->forceteam($target->id.' '.$team)));
+			else
+				return array('success' => false, 'error' => 'Invalid parameter. Available teams : red, blue, spectator.');
+		}
+	}
+	
+	public function WSMethodKickAll($server, $mask)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		$server = ServerList::getServer($server);
+		$target = $server->searchPlayer($mask);
+		if($target === FALSE)
+			return array('success' => false, 'error' => 'No player found.');
+		elseif(is_array($target))
+		{
+			$players = array();
+			$kick = true;
+			foreach($target as $p)
+				$kick = $kick && RCon::kick($p);
+			
+			return array('success' => Leelabot::boolString($kick), 'data' => $target);
+		}
+		else
+			return array('success' => Leelabot::boolString(RCon::kick($target)));
+	}
+	
+	public function WSMethodPlayerList($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		$list = array();
+		$server = ServerList::getServer($server);
+		$players = $server->getPlayerList();
+		
+		foreach($players as $p)
+			$list[] = array('id' => $p->id, 'name' => $p->name, 'team' => $p->team);
+		
+		return array('success' => true, 'data' => $list);
+	}
+	
+	public function WSMethodMap($server, $map)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->map($map)));
+	}
+	
+	public function WSMethodMode($server, $mode)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if($mode > 8 || $mode < 0)
+			return array('success' => false, 'error' => 'Invalid gametype');
+		
+		ServerList::getServerRCon($server)->set('g_gametype', intval($mode));
+	}
+	
+	public function WSMethodMute($server, $id)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if(ServerList::getServer($server)->getPlayer($id) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->mute($id)));
+	}
+	
+	public function WSMethodNextmap($server)
+	{
+		if(!($server = ServerList::serverExists($server)))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if($server->getPlayer($id) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->nextmap()));
+	}
+	
+	public function WSMethodNuke($server, $id)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if(ServerList::getServer($server)->getPlayer($id) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->nuke($id)));
+	}
+	
+	public function WSMethodPause($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->pause()));
+	}
+	
+	public function WSMethodReload($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->reload()));
+	}
+	
+	public function WSMethodRestart($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->restart()));
+	}
+	
+	public function WSMethodSay($server, $message)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->say($message)));
+	}
+	
+	public function WSMethodSet($server, $var, $value)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->set($var, $value)));
+	}
+	
+	public function WSMethodShuffleTeams($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle(TRUE)));
+	}
+	
+	public function WSMethodShuffle($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle()));
+	}
+	
+	public function WSMethodSlap($server, $id)
+	{
+		
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if(ServerList::getServer($server)->getPlayer($id) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->slap($id)));
+	}
+	
+	public function WSMethodSwap($server)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->swapteams()));
+	}
+	
+	public function WSMethodVeto($server)
+	{
+		
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->veto()));
+	}
+	
+	public function WSMethodWhois($server, $id)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		if(($player = ServerList::getServer($server)->getPlayer($id)) == NULL)
+			return array('success' => false, 'error' => 'No player found');
+		
+		$data = array(	'name' => $player->name,
+						'addr' => $player->addr,
+						'level' => $player->level,
+						'host' => gethostbyaddr($player->addr)
+					);
+		
+		return array('success' => true, 'data' => $data);
+	}
+	
+	// IRC STUFF //
 	
 	public function IrcKick($pseudo, $channel, $cmd, $message)
 	{

@@ -270,9 +270,52 @@ class RCon
 			return self::send($message);
 	}
 	
+	
+	/** Shuffles the teams.
+	 * This function shuffles the teams, and restarts the map or not.
+	 * If the map is restarted after shuffling, then the game function is used. If not, the bot shuffles the players itself.
+	 * 
+	 * \param $reload Boolean indicating if the map will be restarted or not.
+	 * 
+	 * \return Nothing.
+	 */
+	public static function shuffle($reload = FALSE)
+	{
+		$self = self::getInstance();
+		
+		if($reload)
+			$self->shuffleteams();
+		else
+		{
+			$server = self::getServer();
+			$players = $server->getPlayerList();
+			$lastTeam = rand(Server::TEAM_BLUE, Server::TEAM_RED);
+			
+			shuffle($players);
+			
+			foreach($players as $player)
+			{
+				if($player->team != Server::TEAM_SPEC)
+				{
+					if($lastTeam == Server::TEAM_RED)
+					{
+						$self->forceteam($player->id.' red');
+						$lastTeam = Server::TEAM_BLUE;
+					}
+					elseif($lastTeam == Server::TEAM_BLUE)
+					{
+						$self->forceteam($player->id.' blue');
+						$lastTeam = Server::TEAM_RED;
+					}
+				}
+			}
+		}
+	}
+	
 	/** Shortcut to all RCon commands.
-	 * This method is called when an inexistent method is called. Its sole action is to send as RCon command the method name called, with the arguments joined, to
-	 * make a coherent RCon query. It is a shortcut made to avoid the creation of many methods with the same body.
+	 * This method is called when an inexistent method is called. Its sole action is to send as RCon command the method name called,
+	 * with the arguments joined, to make a coherent RCon query.
+	 * It is a shortcut made to avoid the creation of many methods with the same body.
 	 * 
 	 * \param $command The RCon command that will be sended (the called method's name).
 	 * \param $arguments The list of arguments to that command (the called method's arguments).
@@ -281,6 +324,12 @@ class RCon
 	 */
 	public static function __callStatic($command, $arguments)
 	{
+		foreach($arguments as &$arg)
+		{
+			if(is_string($arg) && strpos($arg, ' ') !== FALSE)
+				$arg = '"'.$arg.'"';
+		}
+		
 		return self::send($command.' '.join(' ', $arguments));
 	}
 	
@@ -295,12 +344,18 @@ class RCon
 	 */
 	public function __call($command, $arguments)
 	{
+		foreach($arguments as &$arg)
+		{
+			if(is_string($arg) && strpos($arg, ' ') !== FALSE)
+				$arg = '"'.$arg.'"';
+		}
+		
 		return $this->send($command.' '.join(' ', $arguments));
 	}
 	
 	/** Lists the player in the blue team.
-	 * This function lists the players in the blue team, by reading the content of the g_blueteamlist var. If nobody has been in the blue team yet (since the map
-	 * start), this command will fail.
+	 * This function lists the players in the blue team, by reading the content of the g_blueteamlist var.
+	 * If nobody has been in the blue team yet (since the map start), this command will fail.
 	 * 
 	 * \return An array containing the IDs of the blue team's players.
 	 * \see RCon::redTeamList()
@@ -971,12 +1026,30 @@ class ServerList
 	}
 	
 	
+	/** Returns the list of the connected servers.
+	 * This function returns the list of the servers which are currently managed by leelabot, and currently accessible.
+	 * 
+	 * \return An array containing the names of all the currently connected servers.
+	 */
 	public static function getList()
 	{
 		$self = self::getInstance();
 		
 		return array_keys($self->_leelabot->servers);
 	}
+	
+	/** Checks if a server is available to manage.
+	 * This function checks if the given server name exists in the server list.
+	 * 
+	 * \param $server The server name to check.
+	 * 
+	 * \return TRUE if the server is available, FALSE if not.
+	 */
+	 public static function serverExists($server)
+	 {
+		$self = self::getInstance();
+		return isset($self->_leelabot->servers[$server]);
+	 }
 }
 
 /**

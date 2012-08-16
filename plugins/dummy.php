@@ -96,12 +96,9 @@ class PluginDummy extends Plugin
 	
 	public function WSMethodPlayer($id)
 	{
-		return serialize(Server::getPlayer($id)->toArray());
-	}
-	
-	public function WSMethodKick($server, $id)
-	{
-		return ServerList::getServerRCon($server)->kick($id);
+		if(!is_null($player = Server::getPlayer($id)))
+			return array('success' => true, 'data' => $player->toArray());
+		return array('success' => false, 'error' => 'Unknown player ID');
 	}
 	
 	public function WAPageIndex()

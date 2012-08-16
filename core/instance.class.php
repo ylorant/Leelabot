@@ -35,6 +35,7 @@ class ServerInstance
 	private $_addr; ///< Server address.
 	private $_port; ///< Server port.
 	private $_rconpassword; ///< Server RCon password.
+	private $_recoverPassword; ///< Server recover password.
 	private $_name; ///< Server name, for easier recognition in commands or log.
 	private $_logfile; ///< Log file info (address, logins for FTP/SSH, and other info).
 	private $_plugins; ///< List of plugins used by the server, may differ from global list.
@@ -105,6 +106,16 @@ class ServerInstance
 	public function getRConPassword()
 	{
 		return $this->_rconpassword;
+	}
+	
+	/** Get the RCon recover password for the current server.
+	 * This returns the RCon recover password for the current server.
+	 * 
+	 * \return The current server's RCon recover password.
+	 */
+	public function getRecoverPassword()
+	{
+		return $this->_recoverPassword;
 	}
 	
 	/** Gets the Quake3RCon object for the current server.
@@ -233,6 +244,9 @@ class ServerInstance
 				case 'RConPassword':
 					$this->_rconpassword = $value;
 					break;
+				case 'RConRecoverPassword':
+					$this->_recoverPassword = $value;
+					break;
 				case 'Logfile':
 					if(!$this->setLogFile($value))
 						return FALSE;
@@ -269,6 +283,7 @@ class ServerInstance
 		Leelabot::message('Connecting to server...');
 		$this->_rcon->setServer($this->_addr, $this->_port);
 		$this->_rcon->setRConPassword($this->_rconpassword);
+		$this->_rcon->setRecoverPassword($this->_recoverPassword);
 		
 		if(!RCon::test())
 		{
