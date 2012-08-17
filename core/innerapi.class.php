@@ -665,6 +665,8 @@ class Server
 				return 'Capture The Flag';
 			case self::GAME_BOMB:
 				return 'Bomb';
+			case self::GAME_LMS:
+				return 'Last Man Standing';
 			default:
 				return 'Free for All';
 		}
