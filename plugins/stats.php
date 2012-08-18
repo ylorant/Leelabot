@@ -72,7 +72,7 @@ class PluginStats extends Plugin
 				$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
 		}
 		else
-			$this->config['ShowStats'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
+			$this->config['ShowStats'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio', 'round');
 		
 		// What kind of awards will be displayed
 		if(isset($this->config['ShowAwards']))
@@ -81,7 +81,7 @@ class PluginStats extends Plugin
 				$this->config['ShowAwards'] = explode(',', $this->config['ShowAwards']);
 		}
 		else
-			$this->config['ShowAwards'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
+			$this->config['ShowAwards'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio', 'round');
 			
 		// Display flag captures on top
 		if(isset($this->config['DisplayCaps']))
@@ -160,7 +160,8 @@ class PluginStats extends Plugin
 					'curstreak' => 0,
 					'heads' => 0,
 					'caps' => 0,
-					'ratio' => 0);
+					'ratio' => 0,
+					'round' => 0);
 				$_ratioList[$id] = 0;
 				$_statsConfig[$id] = array('verbosity' => $this->config['StatsVerbosity']);
 			}
@@ -202,7 +203,7 @@ class PluginStats extends Plugin
 		$server->set('statsConfig', array());
 		
 		//Awards of game
-		$server->set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0)));
+		$server->set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0) 'round' => array(NULL,0));
 		
 		//Ratio list
 		$server->set('ratioList', array());
@@ -269,7 +270,8 @@ class PluginStats extends Plugin
 			'curstreak' => 0,
 			'heads' => 0,
 			'caps' => 0,
-			'ratio' => 0);
+			'ratio' => 0,
+			'round' => 0);
 		$_ratioList[$id] = 0;
 		$_statsConfig[$id] = array('verbosity' => $this->config['StatsVerbosity']);
 		
@@ -288,9 +290,9 @@ class PluginStats extends Plugin
 		unset($_stats[$id]);
 		unset($_ratioList[$id]);
 		
-		$awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0));
+		$awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0), 'round' => array(NULL,0));
 		
-		$stat = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio');
+		$stat = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio', 'round');
 		
 		foreach($_stats as $id => $player)
 		{
@@ -677,7 +679,7 @@ class PluginStats extends Plugin
 		}
 		
 		//Awards to zero
-		$_awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0));
+		$_awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0), 'round' => array(NULL,0));
 		
 		Server::set('stats', $_stats);
 		Server::set('awards', $_awards);
