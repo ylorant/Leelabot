@@ -57,8 +57,6 @@ class LeelabotWebservice
 	
 	public function Webservice($id, $data)
 	{
-		var_dump($data);
-		
 		$this->_id = $id;
 		if(isset($data['Origin']))
 			$this->_main->BufferAddHeader($id, 'Access-Control-Allow-Origin', '*');
