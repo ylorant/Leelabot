@@ -422,7 +422,7 @@ class PluginStats extends Plugin
 		$shooter = Server::getPlayer($shooter);
 		
 		//Si les 2 joueurs sont pas dans la même équipe.
-		if($player->team != $shooter->team)
+		if($player->team != $shooter->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS)) AND $shooter->team == Server::TEAM_FREE AND $player->team == Server::TEAM_FREE))
 		{
 			$_stats = Server::get('stats');
 			$_awards = Server::get('awards');
