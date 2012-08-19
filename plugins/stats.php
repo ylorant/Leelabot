@@ -175,6 +175,9 @@ class PluginStats extends Plugin
 			$server->set('stats', $_stats);
 			$server->set('statsConfig', $_statsConfig);
 			$server->set('ratioList', $_ratioList);
+			
+			//To retrive who win the round on LMS
+			$server->set('lastKiller', NULL);
 		}
 	}
 	
@@ -199,6 +202,7 @@ class PluginStats extends Plugin
 			$server->set('awards', NULL);
 			$server->set('ratioList', NULL);
 			$server->set('disableStatsReset', NULL);
+			$server->set('lastKiller', NULL);
 		}
 	}
 	
@@ -228,6 +232,9 @@ class PluginStats extends Plugin
 		
 		//If other plugins want to disable stats reset
 		$server->set('disableStatsReset', 0);
+		
+		//To retrive who win the round on LMS
+		$server->set('lastKiller', NULL);
 	}
 	
 	/** Disables stats reinitialization.
@@ -279,6 +286,14 @@ class PluginStats extends Plugin
 			$this->_statsInit();
 	}
 	
+	
+	public function SrvEventInitRound($serverinfo)
+	{
+		//Round stats on LMS game
+		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
+			$this->_setRoundWinner();
+	}
+	
 	/** Performs map end actions.
 	 * This function performs map end actions, like showing stats to each player, showing awards, and reinit stats.
 	 * 
@@ -287,6 +302,10 @@ class PluginStats extends Plugin
 	 */
 	public function SrvEventExit()
 	{
+		// Round stats on LMS game
+		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
+			$this->_setRoundWinner();
+		
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
 		
@@ -300,6 +319,7 @@ class PluginStats extends Plugin
 		{
 			$this->_showAwardsMsg();
 		}
+		
 		//Stats to zero except if the other plugins don't want.
 		//TODO Check if really necessary
 		if(!Server::get('disableStatsReset'))
@@ -450,9 +470,8 @@ class PluginStats extends Plugin
 	 * 
 	 * \return Nothing.
 	 */
-	public function SrvEventKill($killer, $killed, $type, $weapon = NULL)
+	public function SrvEventKill($killer, $killed, $type)
 	{
-		//TODO Why $weapon is NULL by default ? Sometimes the server doesn't send weapcode ? Or sometimes it sends that 4th parameter ?
 		$_stats = Server::get('stats');
 		
 		$killer = Server::getPlayer($killer);
@@ -480,7 +499,7 @@ class PluginStats extends Plugin
 			default:
 		
 				//Si les 2 joueurs sont pas dans la même équipe.
-				if($killer->team != $killed->team)
+				if($killer->team != $killed->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS)) AND $killer->team == Server::TEAM_FREE AND $killed->team == Server::TEAM_FREE))
 				{
 					$_awards = Server::get('awards');
 					$_ratioList = Server::get('ratioList');
@@ -551,6 +570,8 @@ class PluginStats extends Plugin
 						
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
+					
+					$server->set('lastKiller', $killer->id); // set id of the last killer
 				}
 				
 			break;
@@ -676,7 +697,7 @@ class PluginStats extends Plugin
 		//On affiche l'award uniquement si il est activé dans la config
 		foreach($this->config['ShowAwards'] as $award)
 		{
-			if(in_array($award, $this->config['ShowAwards']) && ($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)) //On affiche les hits uniquement si la config des stats le permet
+			if(in_array($award, $this->config['ShowAwards']) && (($award != 'caps' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award != 'round' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS))) //On affiche les hits uniquement si la config des stats le permet
 			{
 				if($_awards[$award][0] !== NULL)
 					$buffer[] = ucfirst($award).' : ^2'.Server::getPlayer($_awards[$award][0])->name;
@@ -737,7 +758,7 @@ class PluginStats extends Plugin
 					$statAward = '';
 					
 				//TODO : refaire cette condition et inclure $aratio
-				if($stat != 'ratio' && ($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7))
+				if($stat != 'ratio' && (($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award != 'round' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)))
 					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
 				elseif($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)
 					$buffer[] = $statColor.ucfirst($stat).' : '.$ratioColor.$ratio.$statAward;
@@ -771,6 +792,26 @@ class PluginStats extends Plugin
 		
 		//Awards to zero
 		$_awards = array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0), 'round' => array(NULL,0));
+		
+		Server::set('stats', $_stats);
+		Server::set('awards', $_awards);
+	}
+	
+	private function _setRoundWinner()
+	{
+		$_stats = Server::get('stats');
+		$_awards = Server::get('awards');
+		
+		$player = Server::getPlayer(Server::get('lastKiller'));
+		
+		$_stats[$player->id]['round']++;
+		
+		//Gestion des awards
+		if($_stats[$player->id]['round'] > $_awards['round'][1])
+		{
+			$_awards['round'][0] = $player->id;
+			$_awards['round'][1] = $_stats[$player->id]['round'];
+		}
 		
 		Server::set('stats', $_stats);
 		Server::set('awards', $_awards);

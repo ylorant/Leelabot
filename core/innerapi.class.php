@@ -529,6 +529,7 @@ class Server
 	private static $_instance; ///< Auto-reference for static singleton
 	
 	//Teams ID
+	const TEAM_FREE = 0; ///< In FFA and LMS
 	const TEAM_RED = 1; ///< Red team ID
 	const TEAM_BLUE = 2; ///< Blue team ID
 	const TEAM_SPEC = 3; ///< Spectators' ID

@@ -678,8 +678,8 @@ class PluginIrc extends Plugin
 			
 			if($this->_plugins->eventExists('irc', $cmd[1]))
 			{
-				LeelaBotIrc::sendMessage('!'.$cmd[1].' : euh..');
-				// TODO : find help.
+				LeelaBotIrc::sendMessage('!'.$cmd[1].' : '.Locales::translate('help_irc_'.$cmd[1]));
+				//TODO : check if help of $cmd[1] command exist.
 			}
 			else
 			{
