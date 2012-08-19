@@ -29,21 +29,26 @@
  */
 
 /*
-Infos sur les kills/hits/flags dans le log :
-Numéros des types de hits dans le log :
+Identification numbers for Kills/Hits/Flags actions :
+
+Hits - Body parts :
 0 = HS					1 = Helmet				2 = Torso
 3 = Kevlar				4 = Arms				5 = Legs
 6 = Body
-Numéros des types de Flags dans le log :
-1 = Flag retourné		2 = Capture flag		0 = Flag laché
-Numéros des types de Kills dans le log :
+
+//TODO Get all the weapon codes for hits. And maybe put all that in the inner API (that will make big files but heh).
+
+Flags :
+1 = Flag return			2 = Flag capture		0 = Flag drop
+
+Kills - Weapon type :
 1 = Water				3 = Lava				6 = Lemming
-7 = Suicide (/kill)		9 = Hurt				10 = Change team
-12 = knife				13 = lancer de knife	14 = Berreta
+7 = Suicide (/kill)		9 = Hurt				10 = Team change
+12 = knife				13 = knife throwing		14 = Berreta
 15 = DE					16 = Spas				17 = UMP
 18 = MP5K				19 = lr300				20 = G36
-21 = PSG1				22 = HK69 explosion		23 = Bled
-24 = Boot O'f Passion	25 = HE					28 = SR8
+21 = PSG1				22 = HK69 explosion		23 = Bleeding
+24 = Boot O' Passion	25 = HE					28 = SR8
 30 = AK103				31 = HE Sploded			32 = Slap
 35 = Negev				34 = Nuke				37 = HK69 hit
 38 = M4					40 = Stomped
@@ -52,11 +57,12 @@ Numéros des types de Kills dans le log :
 
 /**
  * \brief Plugin stats class.
- * This class contains the methods and properties needed by the stats plugin. It contains all the statistics system to players on the server.
+ * This class contains the methods and properties needed by the stats plugin.
+ * It allows the bot to keep statistics on players during a map.
  */
 class PluginStats extends Plugin
 {
-	private $_awards = TRUE; // Awards toggle.
+	private $_awards = TRUE; ///< Awards toggle.
 	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
@@ -65,60 +71,60 @@ class PluginStats extends Plugin
 	 */
 	public function init()
 	{
-		// What kind of stats will be displayed
+		//What kind of stats will be displayed
 		if(isset($this->config['ShowStats']))
 		{
-			if(!is_array($this->config['ShowStats'])) // Only if is the first load of plugin
+			if(!is_array($this->config['ShowStats'])) //Only if is the first load of plugin
 				$this->config['ShowStats'] = explode(',', $this->config['ShowStats']);
 		}
 		else
 			$this->config['ShowStats'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio', 'round');
 		
-		// What kind of awards will be displayed
+		//What kind of awards will be displayed
 		if(isset($this->config['ShowAwards']))
 		{
-			if(!is_array($this->config['ShowAwards'])) // Only if is the first load of plugin
+			if(!is_array($this->config['ShowAwards'])) //Only if is the first load of plugin
 				$this->config['ShowAwards'] = explode(',', $this->config['ShowAwards']);
 		}
 		else
 			$this->config['ShowAwards'] = array('hits', 'kills', 'deaths', 'streaks', 'heads', 'caps', 'ratio', 'round');
 			
-		// Display flag captures on top
+		//Displays flag captures on top
 		if(isset($this->config['DisplayCaps']))
 		{
-			if(!is_bool($this->config['DisplayCaps'])) // Only if is the first load of plugin
+			if(!is_bool($this->config['DisplayCaps'])) //Only if is the first load of plugin
 				$this->config['DisplayCaps'] = Leelabot::parseBool($this->config['DisplayCaps']);
 		}
 		else
 			$this->config['DisplayCaps'] = TRUE;
 			
-		// Display headshots on top (every 5 heads)
+		//Displays headshots on top (every 5 heads)
 		if(isset($this->config['DisplayHeads']))
 		{
-			if(!is_bool($this->config['DisplayHeads'])) // Only if is the first load of plugin
+			if(!is_bool($this->config['DisplayHeads'])) //Only if is the first load of plugin
 				$this->config['DisplayHeads'] = Leelabot::parseBool($this->config['DisplayHeads']);
 		}
 		else
 			$this->config['DisplayHeads'] = TRUE;
 			
-		// Display streaks on top (only if is the best streaks)
+		//Displays streaks on top (only if is the best streaks)
 		if(isset($this->config['DisplayStreaks']))
 		{
-			if(!is_bool($this->config['DisplayStreaks'])) // Only if is the first load of plugin
+			if(!is_bool($this->config['DisplayStreaks'])) //Only if is the first load of plugin
 				$this->config['DisplayStreaks'] = Leelabot::parseBool($this->config['DisplayStreaks']);
 		}
 		else
 			$this->config['DisplayStreaks'] = TRUE;
 			
-		// Default verbosity for the players and only if is the first load of plugin
+		//Default verbosity for the players and only if is the first load of plugin
 		if(!(isset($this->config['StatsVerbosity']) && is_numeric($this->config['StatsVerbosity']) && in_array(intval($this->config['StatsVerbosity']), array(0,1,2,3))))
 			$this->config['StatsVerbosity'] = 2;
 		
 		
-		// Allow player to change their verbosity 
+		//Allows player to change their verbosity 
 		if(isset($this->config['AllowPlayerVerbosity']))
 		{
-			if(!is_bool($this->config['AllowPlayerVerbosity'])) // Only if is the first load of plugin
+			if(!is_bool($this->config['AllowPlayerVerbosity'])) //Only if is the first load of plugin
 				$this->config['AllowPlayerVerbosity'] = Leelabot::parseBool($this->config['AllowPlayerVerbosity']);
 		}
 		else
@@ -134,17 +140,17 @@ class PluginStats extends Plugin
 		//Adding event listener
 		$this->_plugins->addEventListener('stats', 'Stats');
 			
-		// We browse all servers for variables initialization
+		//We browse all servers for variables initialization
 		$servers = ServerList::getList();
 		foreach($servers as $serv)
 		{
-			// Take server instance
+			//Take server instance
 			$server = ServerList::getServer($serv);
 		
-			// Variables needed by stats plugin
+			//Variables needed by stats plugin
 			$this->_initVars($server);
 			
-			// Initialize players variables
+			//Initialize players variables
 			$_stats = $server->get('stats');
 			$_statsConfig = $server->get('statsConfig');
 			$_ratioList = $server->get('ratioList');
@@ -172,9 +178,14 @@ class PluginStats extends Plugin
 		}
 	}
 	
+	/** Destroy function. Unloads the plugin properly.
+	 * This function cleans properly the plugin when it is unloaded.
+	 * 
+	 * \return Nothing.
+	 */
 	public function destroy()
 	{
-		// We browse all servers
+		//We browse all servers
 		$servers = ServerList::getList();
 		foreach($servers as $serv)
 		{
@@ -191,6 +202,13 @@ class PluginStats extends Plugin
 		}
 	}
 	
+	/** Initializes the stats.
+	 * This function initializes the stats variables for the given server, or the current one if none is given.
+	 * 
+	 * \param $server The server on which initialize the vars.
+	 * 
+	 * \return Nothing.
+	 */
 	private function _initVars($server = NULL)
 	{
 		if($server === NULL)
@@ -208,25 +226,52 @@ class PluginStats extends Plugin
 		//Ratio list
 		$server->set('ratioList', array());
 		
-		//If other plugin want to disable stats reset
+		//If other plugins want to disable stats reset
 		$server->set('disableStatsReset', 0);
 	}
 	
-	public function disableStatsReset()
+	/** Disables stats reinitialization.
+	 * This function disables stats reinitialization between maps.
+	 * If more than one plugin enabled stats reinitialization, then all of them have to disable it or they will not be reset.
+	 * 
+	 * \return Nothing.
+	 */
+	public function disableStatsReset($server = NULL)
 	{
-		$this->_disableStatsReset++;
+		if($server == NULL)
+			$server = Server::getInstance();
+		
+		$server->set('disableStatsReset', ++($server->get('disableStatsReset')));
 	}
 	
-	public function enableStatsReset()
+	/** Enables stats reinitialization.
+	 * This function enables stats reinitialization between maps.
+	 * 
+	 * \return Nothing.
+	 */
+	public function enableStatsReset($server = NULL)
 	{
-		$this->_disableStatsReset--;
+		if($server == NULL)
+			$server = Server::getInstance();
+		
+		$server->set('disableStatsReset', --($server->get('disableStatsReset')));
 	}
 	
+	/** Startup game event.
+	 * This function (re-)initializes the stats at the game startup (usually a new map).
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventStartupGame()
 	{
 		$this->_initVars();
 	}
 	
+	/** Initializes the stats if configured
+	 * This function reinitializes the stats if the cerver has been configured for that.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventInitGame($serverinfo)
 	{
 		//And Finally stats to zero except if the other plugins don't want.
@@ -234,7 +279,12 @@ class PluginStats extends Plugin
 			$this->_statsInit();
 	}
 	
-	
+	/** Performs map end actions.
+	 * This function performs map end actions, like showing stats to each player, showing awards, and reinit stats.
+	 * 
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventExit()
 	{
 		$_stats = Server::get('stats');
@@ -251,11 +301,18 @@ class PluginStats extends Plugin
 			$this->_showAwardsMsg();
 		}
 		//Stats to zero except if the other plugins don't want.
+		//TODO Check if really necessary
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
 	}
 	
-	//Event serveur : Connect (On initialise les stats pour ce joueur)
+	/** Initializes one player's stats.
+	 * This function is called every time a client connects, and initializes its stats.
+	 * 
+	 * \param $id The player's ID.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventClientConnect($id)
 	{
 		$_stats = Server::get('stats');
@@ -280,7 +337,14 @@ class PluginStats extends Plugin
 		Server::set('ratioList', $_ratioList);
 	}
 	
-	//Event serveur : Disconnect (on détruit les stats et les paramètres pour ce joueur) et on recalcul les awards
+	/** Cleans one player's stats.
+	 * This function is called every time a client disconnects, and cleans its stats from memory. It also recomputes the awards,
+	 * without the player.
+	 * 
+	 * \param $id The player's ID.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventClientDisconnect($id)
 	{
 		$_stats = Server::get('stats');
@@ -322,12 +386,22 @@ class PluginStats extends Plugin
 		Server::set('ratioList', $_ratioList);
 	}
 	
+	/** Logs a hit.
+	 * This function logs a single hit in the stats. It also handles headshots, and award for these 2 vars.
+	 * 
+	 * \param $player The player being shot.
+	 * \param $shooter The player shooting.
+	 * \param $partOfBody The part of the body being shot.
+	 * \param $weapon The code of the weapon used.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventHit($player, $shooter, $partOfBody, $weapon)
 	{
 		$player = Server::getPlayer($player);
 		$shooter = Server::getPlayer($shooter);
 		
-		// Si les 2 joueurs sont pas dans la même équipe.
+		//Si les 2 joueurs sont pas dans la même équipe.
 		if($player->team != $shooter->team)
 		{
 			$_stats = Server::get('stats');
@@ -366,9 +440,19 @@ class PluginStats extends Plugin
 		}
 	}
 	
-	//Event serveur : Kill (on gère les kills avec ajout des kills-deaths en fonction du type de kill)
+	/** Logs a kill.
+	 * This function logs a kill in the stats. Also handles awards for that.
+	 * 
+	 * \param $killer The player who's killing.
+	 * \param $killed The dead player.
+	 * \param $type Kill type.
+	 * \param $weapon The code of the weapon used.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventKill($killer, $killed, $type, $weapon = NULL)
 	{
+		//TODO Why $weapon is NULL by default ? Sometimes the server doesn't send weapcode ? Or sometimes it sends that 4th parameter ?
 		$_stats = Server::get('stats');
 		
 		$killer = Server::getPlayer($killer);
@@ -395,7 +479,7 @@ class PluginStats extends Plugin
 			//Le reste, on ajoute un kill au tueur, puis une death au mort
 			default:
 		
-				// Si les 2 joueurs sont pas dans la même équipe.
+				//Si les 2 joueurs sont pas dans la même équipe.
 				if($killer->team != $killed->team)
 				{
 					$_awards = Server::get('awards');
@@ -474,7 +558,14 @@ class PluginStats extends Plugin
 		
 	}
 	
-	//Event serveur : Flag (si il capture, on ajoute 1 au compteur de capture du joueur)
+	/** Logs a flag event.
+	 * This function logs a flag event in the stats. Also handles awards for that.
+	 * 
+	 * \param $player The player ID.
+	 * \param $flagaction The flag action being performed.
+	 * 
+	 * \return Nothing.
+	 */
 	public function SrvEventFlag($player, $flagaction)
 	{
 		$player = Server::getPlayer($player);
@@ -596,7 +687,7 @@ class PluginStats extends Plugin
 			}
 		}
 		
-		if($player === NULL) // End of game
+		if($player === NULL) //End of game
 		{
 			Rcon::say('Awards : $awards', array('awards' => join('^3 - ', $buffer)));
 			$this->_plugins->callEventSimple('stats', 'showawards', $eventAwards);
@@ -645,7 +736,7 @@ class PluginStats extends Plugin
 				else
 					$statAward = '';
 					
-				// TODO : refaire cette condition et inclure $aratio
+				//TODO : refaire cette condition et inclure $aratio
 				if($stat != 'ratio' && ($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7))
 					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
 				elseif($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)
@@ -742,7 +833,7 @@ class PluginStats extends Plugin
 		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." (awards) :\002 ".join(' | ', $buffer));
 	}
 	
-	// TODO Afficher Stats avec foreach sur $this->config['ShowStats']
+	//TODO Afficher Stats avec foreach sur $this->config['ShowStats']
 	public function IrcStats($pseudo, $channel, $cmd, $message)
 	{
 		$server = LeelaBotIrc::nameOfServer($cmd[2], FALSE);
