@@ -1,0 +1,5 @@
+addr=127.0.0.1;
+port=27960;
+admin=;
+password=pass;
+logfile=/home/linkboss/.q3a/q3ut4/games.log;
