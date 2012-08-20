@@ -38,6 +38,7 @@ class LeelabotWebservice
 	private $_methodParameters = array();
 	private $_authfile;
 	private $_auth;
+	private $_authedUser = NULL;
 	
 	public function __construct(&$site, &$main)
 	{
@@ -113,10 +114,15 @@ class LeelabotWebservice
 	
 	public function checkAuth($user, $passwd)
 	{
-		$userFile = parse_ini_file($this->_authfile);
+		$userFile = parse_ini_file($this->_authfile, TRUE);
 		
-		if(!isset($userFile[$user]) || $userFile[$user] != $passwd)
+		if(!isset($userFile[$user]) || $userFile[$user]['Password'] != $passwd)
 			return FALSE;
+		
+		$this->_authedUser = array_merge(array('Username' => $user), $userFile[$user]);
+		
+		if(!empty($this->_authedUser["AllowedMethods"]))
+			$this->_authedUser["AllowedMethods"] = explode(',', $this->_authedUser["AllowedMethods"]);
 		
 		return TRUE;
 	}
@@ -150,6 +156,9 @@ class LeelabotWebservice
 	
 	public function __call($method, $args)
 	{
+		if($this->_auth && !empty($this->_authedUser["AllowedMethods"]) && !in_array($method, $this->_authedUser["AllowedMethods"]))
+				return array('response' => false, 'error' => 'Unauthorized access');
+		
 		if(isset($this->_methods[$method]))
 		{
 			if(count($args) == count($this->_methodParameters[$method]))
