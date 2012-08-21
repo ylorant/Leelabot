@@ -25,6 +25,8 @@
  * Commands in game :
  * !clearwarns => clear warnings of one player
  */
+ 
+// TODO : replace kick by a tempban with ban plugin in dependencies
 
 /**
  * \brief Plugin warns class.
