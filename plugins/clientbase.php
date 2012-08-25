@@ -100,11 +100,11 @@ class PluginClientBase extends Plugin
 	public function SrvEventClientUserinfoChanged($id, $data)
 	{
 		$player = Server::getPlayer($id);
-		
 		$servername =  Server::getName();
+		$gametype = Server::getServer()->serverInfo['g_gametype'];
 		
 		// Only if is a team change userInfoChanged
-		if($this->config[$servername]['AutoTeams'] && $data['t'] != $player->team)
+		if($this->config[$servername]['AutoTeams'] && $data['t'] != $player->team && !in_array($gametype, array(Server::GAME_FFA, Server::GAME_LMS)))
 		{
 			if(!array_key_exists($servername, $this->_ClientUserinfoChangedIgnore))
 				$this->_ClientUserinfoChangedIgnore[$servername] = array();
@@ -278,7 +278,8 @@ class PluginClientBase extends Plugin
 	 */
 	public function CommandTeams($player, $command)
 	{
-		$this->_balance($player);
+		if(!in_array($gametype, array(Server::GAME_FFA, Server::GAME_LMS)))
+			$this->_balance($player);
 	}
 	
 	/** Balances teams.
