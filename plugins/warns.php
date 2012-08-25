@@ -303,7 +303,7 @@ class PluginWarns extends Plugin
 		$killer = Server::getPlayer($killer);
 		$killed = Server::getPlayer($killed);
 		
-		if(($killer->team != $killed->team OR ($killed->team == Server::TEAM_FREE AND $killed->team == Server::TEAM_FREE)) && !in_array($type, array('1', '3', '6', '7', '9', '10', '31', '32', '34')))  // verify isn't a teamkill axcept in FFA and LMS and isn't a suicide
+		if(($killer->team == $killed->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS)))) && !in_array($type, array('1', '3', '6', '7', '9', '10', '31', '32', '34')))
 		{
 			$warns = $this->_addWarn($killer->id, $killed->id);
 			Rcon::say('Warning : $killer has team killed $killed ! (He has $warns warnings)', array('killer' => $killer->name, 'killed' => $killed->name, 'warns' => $warns));
@@ -316,7 +316,7 @@ class PluginWarns extends Plugin
 		$shooter = Server::getPlayer($shooter);
 		$player = Server::getPlayer($player);
 		
-		if($shooter->team == $player->team OR ($shooter->team == Server::TEAM_FREE AND $player->team == Server::TEAM_FREE))
+		if($shooter->team == $player->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS))))
 		{
 			$warns = $this->_addWarn($shooter->id, $player->id);
 			Rcon::say('Warning : $shooter has team hit $player ! (He has $warns warnings)', array('shooter' => $shooter->name, 'player' => $player->name, 'warns' => $warns));
