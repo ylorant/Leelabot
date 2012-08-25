@@ -426,7 +426,7 @@ class PluginStats extends Plugin
 		$shooter = Server::getPlayer($shooter);
 		
 		//Si les 2 joueurs sont pas dans la même équipe.
-		if($player->team != $shooter->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS)) AND $shooter->team == Server::TEAM_FREE AND $player->team == Server::TEAM_FREE))
+		if($player->team != $shooter->team OR ($shooter->team == Server::TEAM_FREE AND $player->team == Server::TEAM_FREE))
 		{
 			$_stats = Server::get('stats');
 			$_awards = Server::get('awards');
@@ -501,9 +501,9 @@ class PluginStats extends Plugin
 				break;
 			//Le reste, on ajoute un kill au tueur, puis une death au mort
 			default:
-		
+				
 				//Si les 2 joueurs sont pas dans la même équipe.
-				if($killer->team != $killed->team OR (in_array(Server::getServer()->serverInfo['g_gametype'], array(Server::GAME_FFA, Server::GAME_LMS)) AND $killer->team == Server::TEAM_FREE AND $killed->team == Server::TEAM_FREE))
+				if($killer->team != $killed->team OR ($killed->team == Server::TEAM_FREE AND $killed->team == Server::TEAM_FREE)) // verify isn't a teamkill axcept in FFA and LMS
 				{
 					$_awards = Server::get('awards');
 					$_ratioList = Server::get('ratioList');
