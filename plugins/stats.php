@@ -302,10 +302,10 @@ class PluginStats extends Plugin
 	public function SrvEventInitRound($serverinfo)
 	{
 		//Round stats on LMS game
-		
 		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
 		{
-			if(!Server::get('ignoreNextInitRound'))
+			$ignore = Server::get('ignoreNextInitRound');
+			if(!$ignore)
 				$this->_setRoundWinner();
 			else
 				Server::set('ignoreNextInitRound', FALSE);
@@ -320,10 +320,6 @@ class PluginStats extends Plugin
 	 */
 	public function SrvEventExit()
 	{
-		// Round stats on LMS game
-		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
-			$this->_setRoundWinner();
-		
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
 		
