@@ -178,6 +178,7 @@ class PluginStats extends Plugin
 			
 			//To retrive who win the round on LMS
 			$server->set('lastKiller', NULL);
+			$server->set('ignoreNextInitRound', FALSE);
 		}
 	}
 	
@@ -203,6 +204,7 @@ class PluginStats extends Plugin
 			$server->set('ratioList', NULL);
 			$server->set('disableStatsReset', NULL);
 			$server->set('lastKiller', NULL);
+			$server->set('ignoreNextInitRound', NULL);
 		}
 	}
 	
@@ -235,6 +237,9 @@ class PluginStats extends Plugin
 		
 		//To retrive who win the round on LMS
 		$server->set('lastKiller', NULL);
+		
+		//To skip InitRound when a new map begin on LMS
+		$server->set('ignoreNextInitRound', FALSE);
 	}
 	
 	/** Disables stats reinitialization.
@@ -288,14 +293,23 @@ class PluginStats extends Plugin
 		//And Finally stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
+			
+		if($serverinfo['g_gametype'] == Server::GAME_LMS)	
+			Server::set('ignoreNextInitRound', TRUE);
 	}
 	
 	
 	public function SrvEventInitRound($serverinfo)
 	{
 		//Round stats on LMS game
+		
 		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
-			$this->_setRoundWinner();
+		{
+			if(!Server::get('ignoreNextInitRound'))
+				$this->_setRoundWinner();
+			else
+				Server::set('ignoreNextInitRound', FALSE);
+		}
 	}
 	
 	/** Performs map end actions.
@@ -575,7 +589,8 @@ class PluginStats extends Plugin
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
 					
-					Server::set('lastKiller', $killer->id); // set id of the last killer
+					if($type != 23) // If isn't a kill with by UT_MOD_BLED
+						Server::set('lastKiller', $killer->id); // set id of the last killer for LMS
 				}
 				
 			break;
