@@ -278,6 +278,8 @@ class PluginClientBase extends Plugin
 	 */
 	public function CommandTeams($player, $command)
 	{
+		$gametype = Server::getServer()->serverInfo['g_gametype'];
+		
 		if(!in_array($gametype, array(Server::GAME_FFA, Server::GAME_LMS)))
 			$this->_balance($player);
 	}

@@ -442,8 +442,10 @@ class PluginStats extends Plugin
 		$player = Server::getPlayer($player);
 		$shooter = Server::getPlayer($shooter);
 		
+		$gametype = Server::getServer()->serverInfo['g_gametype'];
+		
 		//Si les 2 joueurs sont pas dans la même équipe.
-		if($player->team != $shooter->team OR ($shooter->team == Server::TEAM_FREE AND $player->team == Server::TEAM_FREE))
+		if($player->team != $shooter->team OR in_array($gametype, array(Server::GAME_FFA, Server::GAME_LMS)))
 		{
 			$_stats = Server::get('stats');
 			$_awards = Server::get('awards');
@@ -498,6 +500,8 @@ class PluginStats extends Plugin
 		$killer = Server::getPlayer($killer);
 		$killed = Server::getPlayer($killed);
 		
+		$gametype = Server::getServer()->serverInfo['g_gametype'];
+		
 		//Switch d'analyse du type de mort
 		switch($type)
 		{
@@ -520,7 +524,7 @@ class PluginStats extends Plugin
 			default:
 				
 				//Si les 2 joueurs sont pas dans la même équipe.
-				if($killer->team != $killed->team OR ($killed->team == Server::TEAM_FREE AND $killed->team == Server::TEAM_FREE)) // verify isn't a teamkill axcept in FFA and LMS
+				if($killer->team != $killed->team OR in_array($gametype, array(Server::GAME_FFA, Server::GAME_LMS))) // verify isn't a teamkill axcept in FFA and LMS
 				{
 					$_awards = Server::get('awards');
 					$_ratioList = Server::get('ratioList');
@@ -721,7 +725,7 @@ class PluginStats extends Plugin
 		//On affiche l'award uniquement si il est activé dans la config
 		foreach($this->config['ShowAwards'] as $award)
 		{
-			if(in_array($award, $this->config['ShowAwards']) && (($award == 'caps' && $gametype == Server::GAME_CTF) OR ($award == 'round' && $gametype == Server::GAME_LMS))) //On affiche les hits uniquement si la config des stats le permet
+			if(in_array($award, $this->config['ShowAwards']) && (($award == 'caps' && $gametype == Server::GAME_CTF) OR ($award == 'round' && $gametype == Server::GAME_LMS) OR !in_array($award, array('round', 'caps')))) //On affiche les hits uniquement si la config des stats le permet
 			{
 				if($_awards[$award][0] !== NULL)
 					$buffer[] = ucfirst($award).' : ^2'.Server::getPlayer($_awards[$award][0])->name;
@@ -780,18 +784,18 @@ class PluginStats extends Plugin
 			
 				if(in_array($stat, $this->config['ShowAwards']))
 				{
-					if($stat = 'ratio') // cpu/memory saving
+					if($stat == 'ratio') // cpu/memory saving
 						$statAward = '^4/'.round($_awards[$stat][1], 2);
 					else
 						$statAward = '^4/'.$_awards[$stat][1];
 				}
 				else
 					$statAward = '';
-					
-				if($stat != 'ratio' && (($stat == 'caps' && $gametype == Server::GAME_CTF) OR ($stat == 'round' && $gametype == Server::GAME_LMS)))
-					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
-				elseif($stat == 'ratio')
+				
+				if($stat == 'ratio')
 					$buffer[] = $statColor.ucfirst($stat).' : '.$ratioColor.$ratio.$statAward;
+				elseif(($stat == 'caps' && $gametype == Server::GAME_CTF) OR ($stat == 'round' && $gametype == Server::GAME_LMS) OR !in_array($stat, array('ratio', 'caps', 'round')))
+					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
 			}
 		}
 		
