@@ -225,7 +225,7 @@ class PluginStats extends Plugin
 		$server->set('statsConfig', array());
 		
 		//Awards of game
-		$server->set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0), 'round' => array(NULL,0));
+		$server->set('awards', array('hits' => array(NULL,0), 'kills' => array(NULL,0), 'deaths' => array(NULL,0), 'streaks' => array(NULL,0), 'heads' => array(NULL,0), 'caps' => array(NULL,0), 'ratio' => array(NULL,0), 'round' => array(NULL,0)));
 		
 		//Ratio list
 		$server->set('ratioList', array());
