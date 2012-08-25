@@ -320,6 +320,13 @@ class PluginStats extends Plugin
 	 */
 	public function SrvEventExit()
 	{
+		// Round stats on LMS game
+		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
+		{
+			$this->_setRoundWinner();
+			Server::set('ignoreNextInitRound', TRUE);
+		}
+		
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
 		
