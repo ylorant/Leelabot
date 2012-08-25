@@ -705,7 +705,7 @@ class ServerInstance
 						$notoriety = explode('"', $param[3]);
 						$notoriety = $notoriety[1];
 						
-						$this->_leelabot->plugins->callServerEvent('AccountKick', $id, $login, $rconlevel, $notoriety);
+						$this->_leelabot->plugins->callServerEvent('AccountValidated', $id, $login, $rconlevel, $notoriety);
 						break;
 					case 'AccountRejected': // idnum - login - "reason"
 						$param = explode('-', $line[1]);
@@ -716,7 +716,7 @@ class ServerInstance
 						$reason = explode('"', $param[2]);
 						$reason = $reason[1];
 						
-						$this->_leelabot->plugins->callServerEvent('AccountKick', $id, $login, $reason);
+						$this->_leelabot->plugins->callServerEvent('AccountRejected', $id, $login, $reason);
 						break;
 				}
 				
