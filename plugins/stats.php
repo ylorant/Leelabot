@@ -780,7 +780,7 @@ class PluginStats extends Plugin
 					$statAward = '';
 					
 				//TODO : refaire cette condition et inclure $aratio
-				if($stat != 'ratio' && (($stat == 'caps' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award == 'round' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)))
+				if($stat != 'ratio' && (($stat == 'caps' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award == 'round' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS) OR !in_array($awards, array('round', 'caps'))))
 					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
 				elseif($stat == 'ratio')
 					$buffer[] = $statColor.ucfirst($stat).' : '.$ratioColor.$ratio.$statAward;
