@@ -293,9 +293,14 @@ class PluginStats extends Plugin
 		//And Finally stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
-			
+		
+		
 		if($serverinfo['g_gametype'] == Server::GAME_LMS)	
 			Server::set('ignoreNextInitRound', TRUE);
+		
+		//When someone capture a flag before the round beginning 
+		if($serverinfo['g_gametype'] == Server::GAME_CTF)
+			$server->set('resetStatsOnNextInitRound', TRUE);
 	}
 	
 	
@@ -309,6 +314,14 @@ class PluginStats extends Plugin
 				$this->_setRoundWinner();
 			else
 				Server::set('ignoreNextInitRound', FALSE);
+		}
+		
+		//When someone capture a flag before the round beginning 
+		$reset = Server::get('resetStatsOnNextInitRound');
+		if(!$reset && $serverinfo['g_gametype'] == Server::GAME_CTF)
+		{
+			$this->_statsInit();
+			Server::set('resetStatsOnNextInitRound', FALSE);
 		}
 	}
 	
