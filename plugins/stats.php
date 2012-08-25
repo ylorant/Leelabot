@@ -701,7 +701,10 @@ class PluginStats extends Plugin
 				else
 					$buffer[] = ucfirst($award).' : ^7-----';
 				
-				$eventAwards[$award] = $_awards[$award];
+				if($award == 'ratio')
+					$eventAwards[$award] = round($_awards[$award], 2);
+				else
+					$eventAwards[$award] = $_awards[$award];
 			}
 		}
 		
