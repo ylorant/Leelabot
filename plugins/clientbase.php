@@ -462,7 +462,7 @@ class PluginClientBase extends Plugin
 			++$nbplayers;
 		}
 		
-		if($nbplayers >0) LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002  : ".join(', ', $playerlist));
+		if($nbplayers >0) LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002 ".join(', ', $playerlist));
 		else LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])." :\002 No one.");
 	}
 }

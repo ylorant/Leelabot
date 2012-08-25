@@ -175,10 +175,6 @@ class PluginStats extends Plugin
 			$server->set('stats', $_stats);
 			$server->set('statsConfig', $_statsConfig);
 			$server->set('ratioList', $_ratioList);
-			
-			//To retrive who win the round on LMS
-			$server->set('lastKiller', NULL);
-			$server->set('ignoreNextInitRound', FALSE);
 		}
 	}
 	
@@ -203,8 +199,6 @@ class PluginStats extends Plugin
 			$server->set('awards', NULL);
 			$server->set('ratioList', NULL);
 			$server->set('disableStatsReset', NULL);
-			$server->set('lastKiller', NULL);
-			$server->set('ignoreNextInitRound', NULL);
 		}
 	}
 	
@@ -234,12 +228,6 @@ class PluginStats extends Plugin
 		
 		//If other plugins want to disable stats reset
 		$server->set('disableStatsReset', 0);
-		
-		//To retrive who win the round on LMS
-		$server->set('lastKiller', NULL);
-		
-		//To skip InitRound when a new map begin on LMS
-		$server->set('ignoreNextInitRound', FALSE);
 	}
 	
 	/** Disables stats reinitialization.
@@ -274,7 +262,7 @@ class PluginStats extends Plugin
 	}
 	
 	/** Startup game event.
-	 * This function (re-)initializes the stats at the game startup (usually a new map).
+	 * This function (re-)initializes the stats at the game startup (usually a new server).
 	 * 
 	 * \return Nothing.
 	 */
@@ -293,36 +281,14 @@ class PluginStats extends Plugin
 		//And Finally stats to zero except if the other plugins don't want.
 		if(!Server::get('disableStatsReset'))
 			$this->_statsInit();
-		
-		
-		if($serverinfo['g_gametype'] == Server::GAME_LMS)	
-			Server::set('ignoreNextInitRound', TRUE);
-		
-		//When someone capture a flag before the round beginning 
-		if($serverinfo['g_gametype'] == Server::GAME_CTF)
-			$server->set('resetStatsOnNextInitRound', TRUE);
 	}
 	
 	
 	public function SrvEventInitRound($serverinfo)
 	{
-		//Round stats on LMS game
-		if($serverinfo['g_gametype'] == Server::GAME_LMS)
-		{
-			$ignore = Server::get('ignoreNextInitRound');
-			if(!$ignore)
-				$this->_setRoundWinner();
-			else
-				Server::set('ignoreNextInitRound', FALSE);
-		}
-		
 		//When someone capture a flag before the round beginning 
-		$reset = Server::get('resetStatsOnNextInitRound');
-		if($reset && $serverinfo['g_gametype'] == Server::GAME_CTF)
-		{
+		if($serverinfo['g_gametype'] == Server::GAME_CTF)
 			$this->_statsInit();
-			Server::set('resetStatsOnNextInitRound', FALSE);
-		}
 	}
 	
 	/** Performs map end actions.
@@ -333,13 +299,6 @@ class PluginStats extends Plugin
 	 */
 	public function SrvEventExit()
 	{
-		// Round stats on LMS game
-		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
-		{
-			$this->_setRoundWinner();
-			Server::set('ignoreNextInitRound', TRUE);
-		}
-		
 		$_stats = Server::get('stats');
 		$_statsConfig = Server::get('statsConfig');
 		
@@ -608,9 +567,6 @@ class PluginStats extends Plugin
 						
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
-					
-					if($type != 23) // If isn't a kill by UT_MOD_BLED
-						Server::set('lastKiller', $killer->id); // set id of the last killer for LMS
 				}
 				
 			break;
@@ -743,7 +699,7 @@ class PluginStats extends Plugin
 				if($_awards[$award][0] !== NULL)
 					$buffer[] = ucfirst($award).' : ^2'.Server::getPlayer($_awards[$award][0])->name;
 				else
-					$buffer[] = ucfirst($award).' : ^7Personne';
+					$buffer[] = ucfirst($award).' : ^7-----';
 				
 				$eventAwards[$award] = $_awards[$award];
 			}
