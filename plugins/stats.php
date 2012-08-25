@@ -575,7 +575,7 @@ class PluginStats extends Plugin
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
 					
-					$server->set('lastKiller', $killer->id); // set id of the last killer
+					Server::set('lastKiller', $killer->id); // set id of the last killer
 				}
 				
 			break;
