@@ -318,7 +318,7 @@ class PluginStats extends Plugin
 		
 		//When someone capture a flag before the round beginning 
 		$reset = Server::get('resetStatsOnNextInitRound');
-		if(!$reset && $serverinfo['g_gametype'] == Server::GAME_CTF)
+		if($reset && $serverinfo['g_gametype'] == Server::GAME_CTF)
 		{
 			$this->_statsInit();
 			Server::set('resetStatsOnNextInitRound', FALSE);
