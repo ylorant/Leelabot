@@ -302,7 +302,7 @@ class PluginStats extends Plugin
 	public function SrvEventInitRound($serverinfo)
 	{
 		//Round stats on LMS game
-		if(Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)
+		if($serverinfo['g_gametype'] == Server::GAME_LMS)
 		{
 			$ignore = Server::get('ignoreNextInitRound');
 			if(!$ignore)
@@ -780,9 +780,9 @@ class PluginStats extends Plugin
 					$statAward = '';
 					
 				//TODO : refaire cette condition et inclure $aratio
-				if($stat != 'ratio' && (($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award != 'round' || Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)))
+				if($stat != 'ratio' && (($stat == 'caps' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_CTF) OR ($award == 'round' && Server::getServer()->serverInfo['g_gametype'] == Server::GAME_LMS)))
 					$buffer[] = $statColor.ucfirst($stat).' : ^2'.$_stats[$user][$stat].$statAward;
-				elseif($stat != 'caps' || Server::getServer()->serverInfo['g_gametype'] == 7)
+				elseif($stat == 'ratio')
 					$buffer[] = $statColor.ucfirst($stat).' : '.$ratioColor.$ratio.$statAward;
 			}
 		}
