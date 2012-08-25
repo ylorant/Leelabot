@@ -589,7 +589,7 @@ class PluginStats extends Plugin
 					Server::set('awards', $_awards);
 					Server::set('ratioList', $_ratioList);
 					
-					if($type != 23) // If isn't a kill with by UT_MOD_BLED
+					if($type != 23) // If isn't a kill by UT_MOD_BLED
 						Server::set('lastKiller', $killer->id); // set id of the last killer for LMS
 				}
 				
