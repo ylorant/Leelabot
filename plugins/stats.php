@@ -248,7 +248,9 @@ class PluginStats extends Plugin
 		if($server == NULL)
 			$server = Server::getInstance();
 		
-		$server->set('disableStatsReset', ++($server->get('disableStatsReset')));
+		$disableStatsReset = $server->get('disableStatsReset');
+		++$disableStatsReset;
+		$server->set('disableStatsReset', $disableStatsReset);
 	}
 	
 	/** Enables stats reinitialization.
@@ -261,7 +263,9 @@ class PluginStats extends Plugin
 		if($server == NULL)
 			$server = Server::getInstance();
 		
-		$server->set('disableStatsReset', --($server->get('disableStatsReset')));
+		$disableStatsReset = $server->get('disableStatsReset');
+		--$disableStatsReset;
+		$server->set('disableStatsReset', $disableStatsReset);
 	}
 	
 	/** Startup game event.
