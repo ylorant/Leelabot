@@ -374,6 +374,9 @@ class ServerInstance
 		//Getting team repartition for players
 		if(count($this->players) > 0)
 		{
+			// TODO : g_redteamlist and g_blueteamlist doesn't work in LMS and FFA.
+			// TODO : If the team of player is Server::TEAM_FREE, what's happend ?
+			
 			Leelabot::message('Gathering teams...');
 			//Red team
 			if(!($redteam = RCon::redTeamList()))
@@ -652,6 +655,92 @@ class ServerInstance
 							Leelabot::message('Command catched: !$0', array($command), E_DEBUG);
 							$this->_leelabot->plugins->callCommand($command, $id, $args);
 						}
+						break;
+					// Hotpotato
+					case 'Hotpotato':
+						$this->_leelabot->plugins->callServerEvent('Hotpotato');
+						break;
+					// Player call a vote
+					case 'Callvote':
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$votestring = explode('"', $param[1]);
+						$votestring = $vote[1];
+						
+						$this->_leelabot->plugins->callServerEvent('Callvote', $id, $votestring);
+						break;
+					// Player vote (1=yes, 2=no)
+					case 'Vote':
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						array_walk($param, 'intval');
+						
+						$id = $param[0];
+						$vote = $param[1];
+						
+						$this->_leelabot->plugins->callServerEvent('Vote', $id, $vote);
+						break;
+					// Player call a radio alert
+					case 'Radio': // idnum - msg_group - msg_id - "player_location" - "message"
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$groupid = intval($param[1]);
+						$msgid = intval($param[2]);
+						$location = explode('"', $param[3]);
+						$location = $location[1];
+						$message = explode('"', $param[4]);
+						$message = $message[1];
+						
+						$this->_leelabot->plugins->callServerEvent('Radio', $id, $groupid, $msgid, $location, $message);
+						break;
+					case 'AccountKick': 
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$reason = explode('"', $param[1]);
+						$reason = $reason[1];
+						
+						$this->_leelabot->plugins->callServerEvent('AccountKick', $id, $reason);
+						break;
+					case 'AccountBan': // idnum - login - [nb_days]d - [nb_hours]h - [nb_mins]m
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$login = $param[1];
+						$days = intval(str_replace('d', '', $param[2]));
+						$hours = intval(str_replace('h', '', $param[3]));
+						$mins = intval(str_replace('m', '', $param[4]));
+						
+						$this->_leelabot->plugins->callServerEvent('AccountBan', $id, $login, $days, $hours, $mins);
+						break;
+					case 'AccountValidated': // idnum - login - rcon_level - "notoriety"
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$login = $param[1];
+						$rconlevel = intval($param[2]);
+						$notoriety = explode('"', $param[3]);
+						$notoriety = $notoriety[1];
+						
+						$this->_leelabot->plugins->callServerEvent('AccountValidated', $id, $login, $rconlevel, $notoriety);
+						break;
+					case 'AccountRejected': // idnum - login - "reason"
+						$param = explode('-', $line[1]);
+						array_walk($param, 'trim');
+						
+						$id = intval($param[0]);
+						$login = $param[1];
+						$reason = explode('"', $param[2]);
+						$reason = $reason[1];
+						
+						$this->_leelabot->plugins->callServerEvent('AccountRejected', $id, $login, $reason);
 						break;
 				}
 				
