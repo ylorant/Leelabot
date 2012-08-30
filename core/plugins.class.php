@@ -727,7 +727,6 @@ class PluginManager extends Events
 	{
 		$player = Server::getPlayer($player);
 		$ret = $this->callEvent('command', $event, $player->level, Server::getPlugins(), $player->id, $params);
-		var_dump(Server::getPlugins());
 		
 		if($ret !== TRUE)
 		{
