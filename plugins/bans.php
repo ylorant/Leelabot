@@ -78,6 +78,7 @@ class PluginBans extends Plugin
 		$this->_bannedGUID = array();
 		
 		$this->_plugins->addEventListener('bans', 'Ban');
+		$this->addWAPage('?', 'WAPageIndex'); //Using a question mark makes the trailing / optionnal
 		
 		//Setting command rights
 		$this->setCommandLevel('ban', 10);
@@ -108,7 +109,9 @@ class PluginBans extends Plugin
 	 */
 	public function destroy()
 	{
-		$this->saveBanlist();
+		if(!empty($this->_banlistLocation))
+			$this->saveBanlist();
+		
 		$this->_plugins->deleteEventListener('bans');
 	}
 	

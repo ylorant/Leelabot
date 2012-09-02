@@ -79,7 +79,6 @@ class LeelabotAdminPlugins
 				$servers[$p][] = $servername;
 			}
 		}
-		print_r($servers);
 		
 		foreach($servers as &$s)
 		{
