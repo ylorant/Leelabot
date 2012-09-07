@@ -54,6 +54,12 @@ class PluginDummy extends Plugin
 		$this->changeRoutineTimeInterval('RoutineCheckPlayers', 1);
 	}
 	
+	public function CommandHold($player, $command)
+	{
+		if(ServerList::serverEnabled($command[0]))
+			ServerList::getServer($command[0])->hold();
+	}
+	
 	public function CommandHello($id, $command)
 	{
 		$rcon = ServerList::getServerRCon(Server::getName());

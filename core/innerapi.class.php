@@ -92,6 +92,10 @@ class RCon
 	public static function send($rcon)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->RCon($rcon);
 	}
 	
@@ -106,6 +110,10 @@ class RCon
 	public static function directSend($data)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->send($data);
 	}
 	
@@ -117,6 +125,10 @@ class RCon
 	public static function resend()
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->resend();
 	}
 	
@@ -132,6 +144,10 @@ class RCon
 	public static function getReply($timeout = FALSE)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->getReply($timeout);
 	}
 	
@@ -147,6 +163,10 @@ class RCon
 	public static function test($timeout = 5)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->test($timeout);
 	}
 	
@@ -158,6 +178,10 @@ class RCon
 	public static function lastError()
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return $self->_rcon->lastError();
 	}
 	
@@ -171,6 +195,10 @@ class RCon
 	public static function getErrorString($error)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		return Leelabot::$instance->intl->translate($self->_rcon->getErrorString($error));
 	}
 	
@@ -187,6 +215,10 @@ class RCon
 	 */
 	public static function say($message, $args = array(), $translate = TRUE)
 	{
+		$self = self::getInstance();
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		//Parsing message vars
 		foreach($args as $id => $value)
 			$message = str_replace('$'.$id, $value, $message);
@@ -227,6 +259,10 @@ class RCon
 	 */
 	public static function tell($player, $message, $args = array(), $translate = TRUE)
 	{
+		$self = self::getInstance();
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		if(!is_array($args) && !is_object($args))
 			$args = array($args);
 		
@@ -269,6 +305,10 @@ class RCon
 	 */
 	public static function topMessage($message, $args = array(), $translate = TRUE)
 	{
+		$self = self::getInstance();
+		if(!$self->_server->isEnabled())
+			return FALSE;
+		
 		//Parsing message vars
 		foreach($args as $id => $value)
 			$message = str_replace('$'.$id, $value, $message);
@@ -307,6 +347,9 @@ class RCon
 	public static function shuffle($reload = FALSE)
 	{
 		$self = self::getInstance();
+		
+		if(!$self->_server->isEnabled())
+			return FALSE;
 		
 		if($reload)
 			$self->shuffleteams();
@@ -524,7 +567,6 @@ class RCon
 	{
 		if(!self::send('serverinfo'))
 			return FALSE;
-		
 		if(!($ret = self::getReply()))
 			return FALSE;
 		$ret = explode("\n", $ret);
@@ -963,6 +1005,43 @@ class Server
 		$self = self::getInstance();
 		return $self->_server->filePutContents($file, $contents);
 	}
+	
+	/** Enables the server.
+	 * This function fully enables the server, allowing queries on it from players and API, and parsing the log regularly.
+	 * It also de-holds the server.
+	 * 
+	 * \return Nothing.
+	 */
+	public function enable()
+	{
+		
+		$self = self::getInstance();
+		return $self->_server->enable();
+	}
+	
+	/** Disables the server.
+	 * This function disables the server, avoiding log reading on it, and disabling queries from players and API on it.
+	 * 
+	 * \return Nothing.
+	 */
+	public function disable()
+	{
+		
+		$self = self::getInstance();
+		return $self->_server->disable();
+	}
+	
+	/** Puts the server on hold.
+	 * This function puts the server on hold, reducing the log read at one every 1s, and disabling queries on it.
+	 * 
+	 * \return Nothing.
+	 */
+	public function hold()
+	{
+		$self = self::getInstance();
+		return $self->_server->hold();
+	}
+	
 }
 
 /**
@@ -1066,17 +1145,42 @@ class ServerList
 		return array_keys($self->_leelabot->servers);
 	}
 	
+	public static function getEnabledList()
+	{
+		$self = self::getInstance();
+		
+		$list = array();
+		foreach($self->_leelabot->servers as $name => $server)
+		{
+			if($server->isEnabled())
+				$list[] = $name;
+		}
+	}
+	
 	/** Checks if a server is available to manage.
-	 * This function checks if the given server name exists in the server list.
+	 * This function checks if the given server name exists in the server list and is queriable.
 	 * 
 	 * \param $server The server name to check.
 	 * 
 	 * \return TRUE if the server is available, FALSE if not.
 	 */
+	 public static function serverEnabled($server)
+	 {
+		$self = self::getInstance();
+		return (isset($self->_leelabot->servers[$server]) && $self->_leelabot->servers[$server]->isEnabled());
+	 }
+	
+	/** Checks if a server exists in the bot.
+	 * This function checks if the given server name exists in the server list.
+	 * 
+	 * \param $server The server name to check.
+	 * 
+	 * \return TRUE if the server exists, FALSE if not.
+	 */
 	 public static function serverExists($server)
 	 {
 		$self = self::getInstance();
-		return isset($self->_leelabot->servers[$server]);
+		return (isset($self->_leelabot->servers[$server]));
 	 }
 }
 

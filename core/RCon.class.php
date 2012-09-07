@@ -41,6 +41,7 @@ class Quake3RCon
 	private $_lastRConTime; ///< Temps auquel à été envoyé la dernière commande RCon
 	private $_error; ///< Last error encountered by the class.
 	private $_lastCommand; ///< Last RCon command sent.
+	private $_waiting; ///< Toggle on waiting between successive RCon commands.
 	
 	const E_CONNECTION = 1; ///< Can't send data on the server.
 	const E_BADRCON = 2; ///< Bad RCon password.
@@ -111,6 +112,11 @@ class Quake3RCon
 		$this->_password = $password;
 	}
 	
+	public function setWaiting($wait)
+	{
+		$this->_waiting = (bool)$wait;
+	}
+	
 	/** Tests the connectivity between the server and the bot.
 	 * This function tests if there is a responsive server at the other end, and if the RCon password specified is valid.
 	 * 
@@ -152,9 +158,15 @@ class Quake3RCon
 	 */
 	public function RCon($command)
 	{
-		$sleep = floor(($this->_lastRConTime + 0.5 - microtime(true) + 0.01) * 1000000);
+		if($this->_waiting)
+			$interval = 0.5;
+		else
+			$interval = 0.18;
+		
+		$sleep = floor(($this->_lastRConTime + $interval - microtime(true) + 0.01) * 1000000);
 		if($sleep > 0)	
 			usleep($sleep);
+		
 		
 		$this->_lastRConTime = microtime(TRUE);
 		$this->_lastCommand = $command;

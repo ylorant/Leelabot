@@ -36,6 +36,7 @@ class ServerInstance
 	private $_port; ///< Server port.
 	private $_rconpassword; ///< Server RCon password.
 	private $_recoverPassword; ///< Server recover password.
+	private $_rconWaiting; ///< Toggle on waiting 500ms between RCon commands.
 	private $_name; ///< Server name, for easier recognition in commands or log.
 	private $_logfile; ///< Log file info (address, logins for FTP/SSH, and other info).
 	private $_plugins; ///< List of plugins used by the server, may differ from global list.
@@ -43,6 +44,11 @@ class ServerInstance
 	private $_defaultLevel; ///< Default level for joining players.
 	private $_rcon; ///< RCon class for this server.
 	private $_rconLastRead; ///< RCon last read microtime
+	private $_disabled; ///< Enable toggle for the server.
+	private $_hold; ///< Hold toggle for the server.
+	private $_lastRead; ///< Last log read timestamp.
+	private $_autoHold; ///< Auto server holding toggle.
+	private $_shutdownTime; ///< Timestamp of last time we caught a ShutdownGame event.
 	
 	public $serverInfo; ///< Holds server info.
 	public $players; ///< Holds players data.
@@ -60,8 +66,72 @@ class ServerInstance
 		$this->_plugins = array();
 		$this->_defaultLevel = 0;
 		$this->_rcon = new Quake3RCon();
+		$this->_rconWaiting = TRUE;
+		$this->_enabled = TRUE;
+		$this->_autoHold = FALSE;
+		$this->_shutdownTime = FALSE;
 		
 		return TRUE;
+	}
+	
+	/** Enables the server.
+	 * This function fully enables the server, allowing queries on it from players and API, and parsing the log regularly.
+	 * It also de-holds the server.
+	 * 
+	 * \return Nothing.
+	 */
+	public function enable()
+	{
+		$this->_disabled = FALSE;
+		$this->_hold = FALSE;
+		Leelabot::message('Server $0 enabled.', array($this->_name), E_DEBUG);
+	}
+	
+	/** Disables the server.
+	 * This function disables the server, avoiding log reading on it, and disabling queries from players and API on it.
+	 * 
+	 * \return Nothing.
+	 */
+	public function disable()
+	{
+		$this->_disabled = TRUE;
+		$this->disconnect();
+		Leelabot::message('Server $0 disabled.', array($this->_name), E_DEBUG);
+	}
+	
+	/** Puts the server on hold.
+	 * This function puts the server on hold, reducing the log read at one every 1s, and disabling queries on it.
+	 * If an "InitGame" log status is catched, then the server is reactivated.
+	 * This is primarily used when the server is shut down for an unknown reason, to disable it while it have not been reloaded.
+	 * 
+	 * \return Nothing.
+	 */
+	public function hold()
+	{
+		$this->_hold = TRUE;
+		Leelabot::message('Server $0 put on hold.', array($this->_name), E_DEBUG);
+		
+		$this->_leelabot->plugins->callServerEvent('HoldServer', $this->_name);
+	}
+	
+	/** Returns if the server is enabled or not.
+	 * This function returns if the server is enabled or not. It will return TRUE only if the server is enabled and not on hold.
+	 * 
+	 * \return TRUE if the server is enabled, FALSE if not.
+	 */
+	public function isEnabled()
+	{
+		return (!$this->_disabled && !$this->_hold);
+	}
+	
+	/** Returns if the server is completely disabled.
+	 * This function returns if the server is completely disabled or not. It will return FALSE if the server is not disabled but on hold.
+	 * 
+	 * \return TRUE if the server is completely disabled, FALSE if not.
+	 */
+	public function isDisabled()
+	{
+		return $this->_disabled;
 	}
 	
 	/** Sets the address/port for the current server.
@@ -248,6 +318,9 @@ class ServerInstance
 				case 'RecoverPassword':
 					$this->_recoverPassword = $value;
 					break;
+				case 'RConSendInterval':
+					$this->_rconWaiting = Leelabot::parseBool($value);
+					break;
 				case 'Logfile':
 					if(!$this->setLogFile($value))
 						return FALSE;
@@ -259,6 +332,10 @@ class ServerInstance
 					break;
 				case 'DefaultLevel':
 					$this->_defaultLevel = $value;
+					break;
+				case 'AutoHold':
+					if(Leelabot::parseBool($value) == TRUE)
+						$this->_autoHold = TRUE;
 					break;
 			}
 		}
@@ -284,6 +361,7 @@ class ServerInstance
 		Leelabot::message('Connecting to server...');
 		$this->_rcon->setServer($this->_addr, $this->_port);
 		$this->_rcon->setRConPassword($this->_rconpassword);
+		$this->_rcon->setWaiting($this->_rconWaiting);
 		
 		if(!RCon::test())
 		{
@@ -461,6 +539,7 @@ class ServerInstance
 		
 		//Calling the ShutdownGame event
 		$this->_leelabot->plugins->callServerEvent('ShutdownGame');
+		$this->_leelabot->plugins->callServerEvent('EndGame');
 		
 		//Finally, we close the links to the server and we ask to the main class to delete the instance
 		if(isset($this->_logfile['ftp']))
@@ -476,6 +555,22 @@ class ServerInstance
 	 */
 	public function step()
 	{
+		$time = time();
+		
+		if(!$this->_enabled || ($this->_hold && $time == $this->_lastRead))
+			return TRUE;
+		
+		if($this->_shutdownTime !== FALSE && ($time - 10) > $this->_shutdownTime && !empty($this->players))
+		{
+			//Properly sending the events, allowing plugins to perform their actions.
+			foreach($this->players as $id => $player)
+				$this->_leelabot->plugins->callServerEvent('ClientDisconnect', $id);
+			
+			$this->players = array();
+			Leelabot::message('Deleted player data for server $0', array($this->_name), E_DEBUG);
+		}
+		
+		$this->_lastRead = time();
 		$data = $this->readLog();
 		if($data)
 		{
@@ -577,6 +672,8 @@ class ServerInstance
 					case 'InitGame':
 						if($line[0] == 'InitGame')
 						{
+							$this->enable();
+							$this->_shutdownTime = FALSE;
 							$serverinfo = Server::parseInfo($line[1]);
 							Leelabot::message('New map started: $0', array($serverinfo['mapname']), E_DEBUG);
 							
@@ -606,6 +703,12 @@ class ServerInstance
 					case 'ShutdownGame':
 						Leelabot::message('The server is going down', array(), E_DEBUG);
 						$this->_leelabot->plugins->callServerEvent('ShutdownGame');
+						
+						//Starting the countdown before resetting user data.
+						$this->_shutdownTime = time();
+						
+						if($this->_autoHold)
+							$this->hold();
 						break;
 					//One player kills another, probably the most common action that will occur ?
 					case 'Kill':
@@ -648,7 +751,7 @@ class ServerInstance
 						$this->_leelabot->plugins->callServerEvent('Say',array($id, $contents));
 						
 						//We check if it's a command
-						if($contents[0] == '!')
+						if($contents[0] == '!' && !$this->_hold)
 						{
 							$contents = substr($contents, 1);
 							$args = explode(' ', $contents);

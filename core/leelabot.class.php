@@ -34,6 +34,9 @@ class Leelabot
 {
 	private $_configDirectory; ///< Config directory. Defaults to ./conf directory.
 	private $_run; ///< Running toggle. Setting it to FALSE stops the bot.
+	private $_iterations; ///< Itertion counter, to mesure bot performance.
+	private $_showIPS; ///< Show iterations per second toggle.
+	private $_IPSHistory; ///< Last 3 seconds IPS.
 	private static $_logFile; ///< Log file, accessed by Leelabot::message() method.
 	private static $_lastError = NULL; ///< Last error put in the log, according to Leelabot::message().
 	public static $verbose; ///< Verbose mode (boolean, defaults to FALSE).
@@ -67,6 +70,8 @@ class Leelabot
 		Leelabot::$verbose = FALSE;
 		$this->servers = array();
 		$this->system = php_uname('a');
+		$this->_showIPS = FALSE;
+		$this->_iterations = 0;
 		
 		//Parsing CLI arguments
 		$logContent = NULL;
@@ -161,6 +166,9 @@ class Leelabot
 						break;
 					case 'BotName':
 						$this->botName = $value;
+						break;
+					case 'ShowIPS':
+						$this->_showIPS = Leelabot::parseBool($value);
 						break;
 					case 'LogFile':
 						Leelabot::message('Changing log file to $0 (by Config)', array($value));
@@ -309,6 +317,7 @@ class Leelabot
 	{
 		$this->_run = TRUE;
 		
+		$lastTime = time();
 		while($this->_run)
 		{
 			foreach($this->servers as $name => $server)
@@ -322,6 +331,21 @@ class Leelabot
 			}
 			if($this->outerAPI !== NULL)
 				$this->outerAPI->process();
+			
+			if($this->_showIPS)
+			{
+				$this->_iterations++;
+				//Showing IPS
+				if($lastTime != time())
+				{
+					Leelabot::message('IPS: $0', array($this->_iterations), E_DEBUG);
+					array_pop($this->_IPSHistory);
+					array_unshift($this->_IPSHistory, $this->_iterations);
+					$this->_iterations = 0;
+					$lastTime = time();
+				}
+			}
+		
 		}
 		
 		foreach($this->servers as $name => $server)
@@ -341,6 +365,21 @@ class Leelabot
 	public function stop()
 	{
 		$this->_run = FALSE;
+	}
+	
+	public static function fork($callback, $params)
+	{
+		$pid = pcntl_fork();
+		if ($pid == -1)
+			return false;
+		else if ($pid)
+			return true;
+		else
+		{
+			self::$verbose = true;
+			call_user_func_array($callback, $params);
+			die();
+		}
 	}
 	
 	/** Loads all the server instances and defining their parameters

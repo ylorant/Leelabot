@@ -671,7 +671,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodKick($server, $id)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
@@ -682,7 +682,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodCfg($server, $cfg)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->exec($cfg)));
@@ -690,7 +690,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodCyclemap($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->cyclemap()));
@@ -707,7 +707,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodForce($server, $player, $team)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		$target = ServerList::getServer($server)->getPlayer($player);
@@ -727,7 +727,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodKickAll($server, $mask)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		$server = ServerList::getServer($server);
@@ -749,7 +749,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodPlayerList($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		$list = array();
@@ -764,7 +764,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodMap($server, $map)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->map($map)));
@@ -772,7 +772,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodMode($server, $mode)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if($mode > 8 || $mode < 0)
@@ -783,7 +783,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodMute($server, $id)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
@@ -794,7 +794,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodNextmap($server)
 	{
-		if(!($server = ServerList::serverExists($server)))
+		if(!($server = ServerList::serverEnabled($server)))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if($server->getPlayer($id) == NULL)
@@ -805,7 +805,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodNuke($server, $id)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
@@ -816,7 +816,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodPause($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->pause()));
@@ -824,7 +824,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodReload($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->reload()));
@@ -832,7 +832,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodRestart($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->restart()));
@@ -840,7 +840,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodSay($server, $message)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->say($message)));
@@ -848,7 +848,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodSet($server, $var, $value)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->set($var, $value)));
@@ -856,7 +856,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodShuffleTeams($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle(TRUE)));
@@ -864,7 +864,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodShuffle($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle()));
@@ -873,7 +873,7 @@ class PluginAdminBase extends Plugin
 	public function WSMethodSlap($server, $id)
 	{
 		
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
@@ -884,7 +884,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodSwap($server)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->swapteams()));
@@ -893,7 +893,7 @@ class PluginAdminBase extends Plugin
 	public function WSMethodVeto($server)
 	{
 		
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->veto()));
@@ -901,7 +901,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodWhois($server, $id)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		if(($player = ServerList::getServer($server)->getPlayer($id)) == NULL)
@@ -918,7 +918,7 @@ class PluginAdminBase extends Plugin
 	
 	public function WSMethodRcon($server, $command)
 	{
-		if(!ServerList::serverExists($server))
+		if(!ServerList::serverEnabled($server))
 			return array('success' => false, 'error' => 'Server not found');
 		
 		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->send($command)));
