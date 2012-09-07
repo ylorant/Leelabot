@@ -2,7 +2,7 @@
 /**
  * \file plugins/warns.php
  * \author Eser Deniz <srwiez@gmail.com>
- * \version 1.0
+ * \version 1.1
  * \brief Warns plugin for Leelabot. It warns automatically bad players (for teamkilling, insulting), and kicks them if they got too much warnings.
  *
  * \section LICENSE
@@ -149,7 +149,7 @@ class PluginWarns extends Plugin
 		$servers = ServerList::getList();
 		foreach($servers as $server)
 		{
-			$server = ServerList::getServer($serv);
+			$server = ServerList::getServer($server);
 			$server->set('warns', NULL);
 			$server->set('forgive', NULL);
 		}

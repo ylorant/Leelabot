@@ -44,21 +44,6 @@ class PluginClientBase extends Plugin
 	 */
 	public function init()
 	{
-		if($this->config)
-		{
-			$serverlist = ServerList::getList();
-			
-			// 1 config per server
-			foreach($serverlist as $server)
-			{
-				if(isset($this->config[$server]['AutoTeams']))
-					$this->config[$server]['AutoTeams'] = Leelabot::parseBool($this->config[$server]['AutoTeams']);
-			
-				if(!empty($this->config[$server]['CycleMapFile']))
-					$this->config[$server]['CycleMapFile'] = NULL;
-			}
-		}
-			
 		//IRC commands level (0:all , 1:voice, 2:operator)
 		if($this->_plugins->listenerExists('irc'))
 		{
@@ -66,6 +51,15 @@ class PluginClientBase extends Plugin
 			$this->_plugins->setEventLevel('irc', 'players', 0);
 			$this->_plugins->setEventLevel('irc', 'about', 0);
 		}
+	}
+	
+	public function SrvEventStartupGame($server)
+	{
+		if(isset($this->config[$server]['AutoTeams']))
+			$this->config[$server]['AutoTeams'] = Leelabot::parseBool($this->config[$server]['AutoTeams']);
+	
+		if(!empty($this->config[$server]['CycleMapFile']))
+			$this->config[$server]['CycleMapFile'] = NULL;
 	}
 	
 	public function RoutineBalance()
@@ -401,14 +395,14 @@ class PluginClientBase extends Plugin
 			foreach($serverlist as $server)
 			{
 				Server::setServer($this->_main->servers[$server]);
-				$this->_printServerInfo($server);
+				$this->_printServerInfo();
 			}
 		}
 	
 		Server::setServer($this->_main->servers[$actual]);
 	}
 	
-	private function _printServerInfo($server)
+	private function _printServerInfo()
 	{
 		$serverinfo = Server::getServer()->serverInfo;
 		LeelaBotIrc::sendMessage("\002".LeelaBotIrc::rmColor($serverinfo['sv_hostname'])."\002 : ".$serverinfo['mapname']." | ".Server::getGametype($serverinfo['g_gametype'])." | ".count(Server::getPlayerList())." players");
@@ -430,14 +424,14 @@ class PluginClientBase extends Plugin
 			foreach($serverlist as $server)
 			{
 				Server::setServer($this->_main->servers[$server]);
-				$this->_printPlayers($server);
+				$this->_printPlayers();
 			}
 		}
 	
 		Server::setServer($this->_main->servers[$actual]);
 	}
 	
-	private function _printPlayers($server)
+	private function _printPlayers()
 	{
 		$playerlist = array();
 		$nbplayers = 0;
