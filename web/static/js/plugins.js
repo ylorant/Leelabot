@@ -42,7 +42,7 @@ function loadPlugin(plugin)
 					$('#loadbox_'+curPlug).attr('onclick', 'unloadPlugin("'+curPlug+'");')
 					$('#loadbox_'+curPlug).append(image);
 					var name = $('#pluginMenu-'+ curPlug).html();
-					$('#pluginMenu-'+ curPlug).html('<a href="/admin/plugin/'+curPlug+'">'+name+'</a>');
+					$('#pluginMenu-'+ curPlug).html('<a href="/admin/plugin/'+curPlug+'/index">'+name+'</a>');
 				}
 			}
 			else

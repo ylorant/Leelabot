@@ -662,6 +662,18 @@ class PluginAdminBase extends Plugin
 		}
 	}
 	
+	/** Sends directly an RCon command to the server.
+	 * This function is bound to the !rcon command. It sends directly an RCon command to the server, without altering it.
+	 * 
+	 * \param $id The game ID of the player who executed the command.
+	 * \param $command The command parameters.
+	 * 
+	 * \return Nothing.
+	 */
+	public function CommandRCon($id, $command)
+	{
+		RCon::send(join(' ', $command));
+	}
 	
 	// Webservice methods //
 	
@@ -910,6 +922,14 @@ class PluginAdminBase extends Plugin
 					);
 		
 		return array('success' => true, 'data' => $data);
+	}
+	
+	public function WSMethodRcon($server, $command)
+	{
+		if(!ServerList::serverExists($server))
+			return array('success' => false, 'error' => 'Server not found');
+		
+		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->send($command)));
 	}
 	
 	// IRC STUFF //

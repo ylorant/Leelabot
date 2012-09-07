@@ -42,6 +42,7 @@ class ServerInstance
 	private $_leelabot; ///< Reference to main Leelabot class.
 	private $_defaultLevel; ///< Default level for joining players.
 	private $_rcon; ///< RCon class for this server.
+	private $_rconLastRead; ///< RCon last read microtime
 	
 	public $serverInfo; ///< Holds server info.
 	public $players; ///< Holds players data.
@@ -244,7 +245,7 @@ class ServerInstance
 				case 'RConPassword':
 					$this->_rconpassword = $value;
 					break;
-				case 'RConRecoverPassword':
+				case 'RecoverPassword':
 					$this->_recoverPassword = $value;
 					break;
 				case 'Logfile':
@@ -283,12 +284,32 @@ class ServerInstance
 		Leelabot::message('Connecting to server...');
 		$this->_rcon->setServer($this->_addr, $this->_port);
 		$this->_rcon->setRConPassword($this->_rconpassword);
-		$this->_rcon->setRecoverPassword($this->_recoverPassword);
 		
 		if(!RCon::test())
 		{
-			Leelabot::message('Can\'t connect : $0', array(RCon::getErrorString(RCon::lastError())), E_WARNING);
-			return FALSE;
+			$reply = FALSE;
+			if($this->_rcon->lastError() == Quake3RCon::E_BADRCON && !empty($this->_recoverPassword))
+			{
+				Leelabot::message('Bad RCon password, trying to recover', array(), E_WARNING);
+				$this->_rcon->send('rconRecovery '.$this->_recoverPassword, FALSE);
+				$data = $this->_rcon->getReply(2);
+				if(strpos($data,'rconPassword') === 0)
+				{
+					$split = explode(' ', $data, 2);
+					$this->_rconpassword = $split[1];
+					$this->_rcon->setRConPassword($this->_rconpassword);
+					Leelabot::message('Updated RCon password.', array(), E_NOTICE);
+				
+					if(RCon::test())
+						$reply = TRUE;
+				}
+			}
+			
+			if($reply == FALSE)
+			{
+				Leelabot::message('Can\'t connect : $0', array(RCon::getErrorString(RCon::lastError())), E_WARNING);
+				return FALSE;
+			}
 		}
 		
 		//Sending startup Event for plugins
@@ -367,7 +388,7 @@ class ServerInstance
 					$this->players[$id]->team = Server::TEAM_RED;
 					$this->players[$id]->begin = TRUE;
 					$playerData = array('team' => 'red', 't' => Server::TEAM_RED, 'n' => $this->players[$id]->name);
-					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', $playerData);
+					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', array($id, $playerData));
 					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
 				}
 			}
@@ -379,9 +400,13 @@ class ServerInstance
 			{
 				foreach($blueteam as $id)
 				{
+					if(empty($this->players[$id]))
+						$this->players[$id] = new Storage();
+					
 					$this->players[$id]->team = Server::TEAM_BLUE;
 					$this->players[$id]->begin = TRUE;
-					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', array('team' => 'red', 't' => Server::TEAM_BLUE));
+					$playerData = array('team' => 'blue', 't' => Server::TEAM_BLUE, 'n' => $this->players[$id]->name);
+					$this->_leelabot->plugins->callServerEvent('ClientUserInfoChanged', array($id, $playerData));
 					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
 				}
 			}
@@ -722,6 +747,34 @@ class ServerInstance
 				
 			}
 		}
+		
+		//Then, we read incoming data on the RCon socket if any, only every 100ms
+		if(microtime(TRUE) - $this->_rconLastRead >= 0.1 )
+		{
+			$data = RCon::getReply();
+			
+			//If there is incoming data which is not an error
+			if(!empty($data))
+			{
+				Leelabot::message('RCon data received: $0', array($data), E_DEBUG);
+				if(strpos($data,'rconPassword') === 0)
+				{
+					$split = explode(' ', $data, 2);
+					$this->_rconpassword = $split[1];
+					$this->_rcon->setRConPassword($this->_rconpassword);
+					Leelabot::message('Updated RCon password.', array(), E_NOTICE);
+					$this->_rcon->resend();
+					//FIXME: See if we have to re-send the command or not (re-sending can cause random behavior)
+				}
+			}
+			elseif($data === FALSE && $this->_rcon->lastError() != Quake3RCon::E_NOREPLY)
+			{
+				Leelabot::message('RCon error: $0', array($this->_rcon->getErrorString($this->_rcon->lastError())), E_WARNING);
+				if($this->_rcon->lastError() == Quake3RCon::E_BADRCON && !empty($this->_recoverPassword))
+					$this->_rcon->send('rconRecovery '.$this->_recoverPassword);
+			}
+		}
+		
 		
 		//Before returning, we execute all routines
 		$this->_leelabot->plugins->callAllRoutines();

@@ -95,6 +95,31 @@ class RCon
 		return $self->_rcon->RCon($rcon);
 	}
 	
+	/** Sends a direct query to the game server.
+	 * This function sends directly a query to the gameserver, without using the "rcon" prefix, using the object previously
+	 * bound to the class.
+	 * 
+	 * \param $rcon The query to send.
+	 * 
+	 * \return The result givent by the Quake3RCon class.
+	 */
+	public static function directSend($data)
+	{
+		$self = self::getInstance();
+		return $self->_rcon->send($data);
+	}
+	
+	/** Re-sends the last RCon command.
+	 * This function re-sends the last sent RCon command to the set gameserver. Normal RCon function call applies then.
+	 * 
+	 * \return The RCon function return, for the last command.
+	 */
+	public static function resend()
+	{
+		$self = self::getInstance();
+		return $self->_rcon->resend();
+	}
+	
 	/** Waits and get a reply from the game server.
 	 * This function waits to get a reply to the server. If a timeout is given, it will wait the time wanted, but if the timeout is not specified, it will return
 	 * almost immediately (for network purposes, a 50ms wait is imposed, to "fight" the latence, but sometimes it is not sufficient, likely if you're using a 

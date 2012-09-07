@@ -36,11 +36,11 @@ class Quake3RCon
 	private $_port; ///< Current server port.
 	private $_compactBuffer; ///< Compacting method activity.
 	private $_password; ///< RCon password.
-	private $_recoverPassword; ///< RCon recover password.
 	private $_valid; ///< Indicates the servers where the connection has already been verified.
 	private $_socket; ///< UDP socket for handling connection to the server.
 	private $_lastRConTime; ///< Temps auquel à été envoyé la dernière commande RCon
 	private $_error; ///< Last error encountered by the class.
+	private $_lastCommand; ///< Last RCon command sent.
 	
 	const E_CONNECTION = 1; ///< Can't send data on the server.
 	const E_BADRCON = 2; ///< Bad RCon password.
@@ -111,18 +111,6 @@ class Quake3RCon
 		$this->_password = $password;
 	}
 	
-	/** Sets the RCon recover password.
-	 * This function sets the RCon recover password which will be used to recover the real RCon password if it has been lost.
-	 * 
-	 * \param $password The password.
-	 * 
-	 * \return Nothing.
-	 */
-	public function setRecoverPassword($password)
-	{
-		$this->_recoverPassword = $password;
-	}
-	
 	/** Tests the connectivity between the server and the bot.
 	 * This function tests if there is a responsive server at the other end, and if the RCon password specified is valid.
 	 * 
@@ -148,28 +136,15 @@ class Quake3RCon
 		$this->_lastRConTime = microtime(TRUE);
 		
 		if(!$data = $this->getReply($timeout))
-		{
-			$this->_error = self::E_NOREPLY;
 			return FALSE;
-		}
-		
-		if($data == "Bad rconpassword.")
-		{
-			$this->_error = self::E_BADRCON;
-			return FALSE;
-		}
-		elseif($data == "No rconpassword set on the server.")
-		{
-			$this->_error = self::E_NORCON;
-			return FALSE;
-		}
 		
 		$this->_valid[$this->_addr.':'.$this->_port] = TRUE;
 		return TRUE;
 	}
 	
 	/** Sends a RCon command.
-	 * This function sends a RCon command to the set gameserver. If the server has not been tested yet, it will be tested before sending the command.
+	 * This function sends a RCon command to the set gameserver. If the server has not been tested yet, it will be tested
+	 * before sending the command.
 	 * 
 	 * \param $command The command to send.
 	 * 
@@ -177,19 +152,45 @@ class Quake3RCon
 	 */
 	public function RCon($command)
 	{
-		if(!$this->_valid[$this->_addr.':'.$this->_port])
-		{
-			if(!$this->test())
-				return FALSE;
-		}
-		
 		$sleep = floor(($this->_lastRConTime + 0.5 - microtime(true) + 0.01) * 1000000);
 		if($sleep > 0)	
 			usleep($sleep);
 		
 		$this->_lastRConTime = microtime(TRUE);
-		$rcon = str_repeat(chr(255), 4).'rcon '.$this->_password.' '.$command."\n";
-		return (socket_sendto($this->_socket, $rcon, strlen($rcon), 0, $this->_addr, $this->_port) !== FALSE);
+		$this->_lastCommand = $command;
+		$rcon = 'rcon '.$this->_password.' '.$command;
+		return $this->send($rcon);
+	}
+	
+	/** Re-sends the last RCon command.
+	 * This function re-sends the last sent RCon command to the set gameserver. Normal RCon function call applies then.
+	 * 
+	 * \return The RCon function return, for the last command.
+	 */
+	public function resend()
+	{
+		return $this->RCon($this->_lastCommand);
+	}
+	
+	/** Sends a direct command.
+	 * This function sends a direct command to the server, without the "rcon" prefix. If the server has not been tested yet,
+	 * it will be tested before sending the command (if not overridden by parameter).
+	 * 
+	 * \param $command The command to send.
+	 * \param $test Wether test the connection before or not. Defaults to TRUE.
+	 * 
+	 * \return TRUE if the command sent correctly, FALSE otherwise.
+	 */
+	public function send($command, $test = TRUE)
+	{
+		if(!$this->_valid[$this->_addr.':'.$this->_port] && $test)
+		{
+			if(!$this->test())
+				return FALSE;
+		}
+		
+		$data = str_repeat(chr(255), 4).$command."\n";
+		return (socket_sendto($this->_socket, $data, strlen($data), 0, $this->_addr, $this->_port) !== FALSE);
 	}
 	
 	/** Waits a RCon reply from the server.
@@ -212,15 +213,32 @@ class Quake3RCon
 			elseif($data)
 				break;
 			if($timeout === FALSE && !$data && $microtime < microtime(TRUE))
+			{
+				$this->_error = self::E_NOREPLY;
 				return FALSE;
+			}
 			usleep(2000);
 		}
 		
 		if($time + $timeout < time())
+		{
+			$this->_error = self::E_NOREPLY;
 			return FALSE;
+		}
 		
 		//Remove the header (\xFF\xFF\xFF\xFFprint\n) from reply
 		$data = trim(str_replace(str_repeat(chr(255), 4)."print\n", '',$data));
+		
+		if($data == "Bad rconpassword.")
+		{
+			$this->_error = self::E_BADRCON;
+			return FALSE;
+		}
+		elseif($data == "No rconpassword set on the server.")
+		{
+			$this->_error = self::E_NORCON;
+			return FALSE;
+		}
 		
 		return $data;
 	}

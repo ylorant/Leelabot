@@ -210,7 +210,7 @@ class PluginManager extends Events
 		if(!isset($this->_pluginCache[$plugin]))
 			include('plugins/'.$plugin.'.php'); //If the plugin has not already been loaded, we include the class
 		elseif(extension_loaded('runkit'))
-			runkit_import('plugins/'.$plugin.'.php');
+			runkit_import('plugins/'.$plugin.'.php', RUNKIT_IMPORT_OVERRIDE | RUNKIT_IMPORT_CLASS_METHODS);
 		
 		return $this->initPlugin($this->_pluginCache[$plugin], $manual); //Else we reload the plugin with the cached data from the first loading
 	}
@@ -512,7 +512,8 @@ class PluginManager extends Events
 	}
 	
 	/** Adds a method to the Webservice.
-	 * This function adds a method to the Outer API Webservice, which will be callable over a HTTP POST request (see MOAPServer and MOAPClient classes for more info).
+	 * This function adds a method to the Outer API Webservice, which will be callable over a HTTP POST request
+	 * (see MLPFIMServer and MLPFIMClient classes for more info).
 	 * 
 	 * \param $method The method name to bind (i.e. the method name tha will be called other HTTP)
 	 * \param $object The object of the plugin to call.
@@ -530,8 +531,8 @@ class PluginManager extends Events
 	}
 	
 	/** Adds a page to the webadmin.
-	 * This function adds a page to the OuterAPI webadmin, pointing to the given method. The callback needs to return the HTML of the page, without the design 
-	 * (it will be added manually).
+	 * This function adds a page to the OuterAPI webadmin, pointing to the given method.
+	 * The callback needs to return the HTML of the page, without the design (it will be added manually).
 	 * 
 	 * \param $page The page name. It will be a sub-page of the plugin's section (to avoid pages collisions).
 	 * \param $object Reference to the plugin object that will handle the call. Plugin name will be guessed from this object.
@@ -727,7 +728,6 @@ class PluginManager extends Events
 	{
 		$player = Server::getPlayer($player);
 		$ret = $this->callEvent('command', $event, $player->level, Server::getPlugins(), $player->id, $params);
-		var_dump(Server::getPlugins());
 		
 		if($ret !== TRUE)
 		{
