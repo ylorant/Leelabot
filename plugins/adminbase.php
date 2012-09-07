@@ -94,9 +94,17 @@ class PluginAdminBase extends Plugin
 	 */
 	public function CommandSysinfo($id, $command)
 	{
-		RCon::tell($id, "Memory consumption: $0/$1 KB", array(memory_get_usage()/1000, memory_get_usage(TRUE)/1000));
+		
+		RCon::tell($id, "Memory consumption: $0 used / $1 allowed to php.", array($this->convert(memory_get_usage()), $this->convert(memory_get_usage(TRUE))));
+		RCon::tell($id, "Cpu usage: $0", array(Leelabot::getCpuUsage()));
 		RCon::tell($id, "PHP version : $0", array(phpversion()));
 		
+	}
+	
+	private function convert($size)
+	{
+		$unit=array('b','kb','mb','gb','tb','pb');
+		return round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
 	}
 	
 	/** Bigtext command. Sends a message for all players.

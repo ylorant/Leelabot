@@ -61,6 +61,8 @@ class Leelabot
 	 */
 	public function init($CLIArguments)
 	{
+		//Start Cpu Monitoring
+		$this->cpuRequestStart();
 		//Setting default values for class attributes
 		Leelabot::$instance = &$this;
 		$this->_configDirectory = 'conf';
@@ -971,6 +973,41 @@ class Leelabot
 	public static function boolString($bool)
 	{
 		return $bool == true ? 'true' : 'false';
+	}
+	
+	
+	/** Start function of monitor cpu 
+	 * This function define constant needed by getCpuUsage() function
+	 * 
+	 * \returns nothing
+	 */
+	private function cpuRequestStart()
+	{
+		$dat = getrusage();
+		define('PHP_TUSAGE', microtime(true));
+		define('PHP_RUSAGE', $dat["ru_utime.tv_sec"]*1e6+$dat["ru_utime.tv_usec"]);
+	}
+ 
+	
+	/** Gives the current cpu usage
+	 * This function returns the cpu usage of bot in %
+	 * 
+	 * \returns The cpu usage of bot.
+	 */
+	public static function getCpuUsage()
+	{
+	    $dat = getrusage();
+	    $dat["ru_utime.tv_usec"] = ($dat["ru_utime.tv_sec"]*1e6 + $dat["ru_utime.tv_usec"]) - PHP_RUSAGE;
+	    $time = (microtime(true) - PHP_TUSAGE) * 1000000;
+	 
+	    // cpu per request
+	    if($time > 0) {
+	        $cpu = sprintf("%01.2f", ($dat["ru_utime.tv_usec"] / $time) * 100);
+	    } else {
+	        $cpu = '0.00';
+	    }
+	 
+	    return $cpu;
 	}
 }
 

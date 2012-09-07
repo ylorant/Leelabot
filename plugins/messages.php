@@ -2,7 +2,7 @@
 /**
  * \file plugins/messages.php
  * \author Eser Deniz <srwiez@gmail.com>
- * \version 0.1
+ * \version 1.0
  * \brief Sends messages every X secondes in chat
  *
  * \section LICENSE
@@ -28,12 +28,11 @@
  */
 
 /**
- * \brief Plugin teamspeak class.
- * This class contains the methods and properties needed by the teamspeak plugin. 
+ * \brief Plugin messages class.
+ * This class contains the methods and properties needed by the messages plugin. 
  */
-class PluginTeamspeak extends Plugin
+class PluginMessages extends Plugin
 {
-	private $_channelId = NULL;
 	
 	/** Init function. Loads configuration.
 	 * This function is called at the plugin's creation, and loads the config from main config data (in Leelabot::$config).
@@ -42,21 +41,47 @@ class PluginTeamspeak extends Plugin
 	 */
 	public function init()
 	{
-		if($this->config)
+		if(empty($this->config))
 		{
-			$serverlist = ServerList::getList();
-			
-			// 1 config per server
-			foreach($serverlist as $server)
-			{
-				if(isset($this->config[$server]['Active'])) // If messages was active on this server
-					$this->config[$server]['Active'] = Leelabot::parseBool($this->config[$server]['AutoTeams']);
-				else
-					$this->config[$server]['Active'] = FALSE;
+			Leelabot::message("Messages config was not found.", array(), E_WARNING);
+		}
+	}
+	
+	public function SrvEventStartupGame($server)
+	{
+		if(is_array($this->config[$server]) && count($this->config[$server]))
+		{
+			 // If messages was active on this server
+			if(isset($this->config[$server]['Active']))
+				$this->config[$server]['Active'] = Leelabot::parseBool($this->config[$server]['Active']);
+			else
+				$this->config[$server]['Active'] = FALSE;
 				
-				if(!empty($this->config[$server]['MessagesFile'])) // File where are stored the messages to send.
-					$this->config[$server]['MessagesFile'] = NULL;
+			// Time in secondes 
+			if(!(isset($this->config[$server]['EverySeconds']) && is_numeric($this->config[$server]['EverySeconds']) && $this->config[$server]['EverySeconds'] >= 0))
+				$this->config[$server]['EverySeconds'] = 60;
+				
+			 // File where are stored the messages to send.
+			if(empty($this->config[$server]['MessagesFile']) || (!is_file($this->_main->getConfigLocation().'/'.$this->config[$server]['MessagesFile']) && !touch($this->_main->getConfigLocation().'/'.$this->config[$server]['MessagesFile'])))
+			{
+				Leelabot::message("Can't load messages files. Messages will not be send.", array(), E_WARNING);
+				$this->config[$server]['MessagesFile'] = NULL;
+				$this->config[$server]['Active'] = FALSE;
 			}
+			else
+			{
+				$this->config[$server]['MessagesFile'] = $this->_main->getConfigLocation().'/'.$this->config[$server]['MessagesFile'];
+			}
+			
+			// If everythings is ok, we can load the file.
+			$this->_loadFileMessages($server);
+			$server = ServerList::getServer($server);
+			$server->set('lastmsg', end($server->get('msgs')));
+			$server->set('lasttime', 0);
+		}
+		else
+		{
+			Leelabot::message("Messages config was not found for \"".$server."\" server.", array(), E_WARNING);
 		}
 	}
 	
@@ -67,7 +92,104 @@ class PluginTeamspeak extends Plugin
 	 */
 	public function destroy()
 	{
-		// Nothing at this time
+		foreach($serverlist as $server)
+		{
+			$server = ServerList::getServer($server);
+			$server->set('msgs', NULL);
+			$server->set('lastmsg', NULL);
+			$server->set('lasttime', NULL);
+		}
+	}
+	
+	public function RoutineMessages()
+	{
+		// We browse all servers
+		$servers = ServerList::getList();
+		foreach($servers as $serv)
+		{
+			$server = ServerList::getServer($serv);
+			$rcon = ServerList::getServerRCon($serv);
+			$_messages = $server->get('msgs');
+			$count = count($_messages);
+			
+			if($this->config[$serv]['Active'] AND $count)
+			{
+				$_lasttime = $server->get('lasttime');
+				$_lastmsg = $server->get('lastmsg');
+				$time = time();
+				
+				if($time >= ($_lasttime+$this->config[$serv]['EverySeconds']))
+				{
+					$last = end($_messages);
+					$first = reset($_messages);
+					$msg = $first;
+					
+					// If $_lastmsg is at the end of $_messages, we take the first value of $_messages
+					if($last !== $_lastmsg)
+					{
+						$while = TRUE;
+						while($while)
+						{
+							if($msg == $_lastmsg)
+								$while = FALSE;
+							
+							$msg = next($_messages);
+						}
+					}
+					
+					$rcon->say($msg, array(), FALSE);
+					
+					$server->set('lastmsg', $msg);
+					$server->set('lasttime', $time);
+				}
+			}
+		}
+	}
+	
+	private function _loadFileMessages($serv= NULL)
+	{
+		if($serv === NULL)
+			$server = Server::getInstance();
+		else
+			$server = ServerList::getServer($serv);
+		
+		$content = file_get_contents($this->config[$serv]['MessagesFile']);
+		$server->set('msgs', explode("\n", $content));
+	}
+	
+	private function _writeFileMessage($serv = NULL)
+	{
+		if($serv === NULL)
+			$server = Server::getInstance();
+		else
+			$server = ServerList::getServer($serv);
+		
+		$_messages = $server->get('msgs');
+		$content = file_put_contents($this->config[$serv]['MessagesFile'], implode("\n", $_messages));
+	}
+	
+	private function _addMessage($msg, $serv = NULL)
+	{
+		if($serv === NULL)
+			$server = Server::getInstance();
+		else
+			$server = ServerList::getServer($serv);
+		
+		$_messages = $server->get('msgs');
+		$_messages[] = $msg;
+		$server->set('msgs', $_messages);
+	}
+	
+	private function _removeMessage($id, $serv = NULL)
+	{
+		if($serv === NULL)
+			$server = Server::getInstance();
+		else
+			$server = ServerList::getServer($serv);
+		
+		$_messages = $server->get('msgs');
+		unset($_messages[$id]);
+		$server->set('msgs', $_messages);
 	}
 }
 
