@@ -102,7 +102,7 @@ class ServerInstance
 	/** Puts the server on hold.
 	 * This function puts the server on hold, reducing the log read at one every 1s, and disabling queries on it.
 	 * If an "InitGame" log status is catched, then the server is reactivated.
-	 * This is primarily used when the server is shut down for an unknown reason, to disable it while it have not been reloaded.
+	 * This is primarily used when the server is shut down for an unknown reason, to disable it while it has not been reloaded.
 	 * 
 	 * \return Nothing.
 	 */
@@ -397,7 +397,7 @@ class ServerInstance
 		$this->serverInfo = RCon::serverInfo();
 		if(!$this->serverInfo)
 		{
-			Leelabot::message('Can\'t gather server info.', array(), E_WARNING);
+			Leelabot::message('Can\'t gather server info: ', array($this->_rcon->getErrorString($this->_rcon->lastError())), E_WARNING);
 			return FALSE;
 		}
 		
@@ -495,11 +495,11 @@ class ServerInstance
 				if($player->team == Server::TEAM_SPEC)
 					$this->_leelabot->plugins->callServerEvent('ClientBegin', $id);
 			}
-			
-			//Finally, we init scoreboard and virtually start a game (for the plugins).
-			$this->scores = array(1 => 0, 2 => 0);
-			$this->_leelabot->plugins->callServerEvent('InitGame', $this->serverInfo);
 		}
+		
+		//We init scoreboard and virtually start a game (for the plugins).
+		$this->scores = array(1 => 0, 2 => 0);
+		$this->_leelabot->plugins->callServerEvent('InitGame', $this->serverInfo);
 		
 		//Finally, we open the game log file
 		if(!$this->openLogFile())
