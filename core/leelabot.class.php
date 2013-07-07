@@ -52,7 +52,7 @@ class Leelabot
 	public $root; ///< Root directory for the bot
 	public $botName; ///< Bot name.
 	
-	const VERSION = '0.5-svn "Sandy"'; ///< Current bot version
+	const VERSION = '0.5-git "Sandy"'; ///< Current bot version
 	const REVISION = '$Rev$'; ///< Current bot revision
 	const DEFAULT_LOCALE = "en"; ///< Default locale
 	
@@ -74,6 +74,7 @@ class Leelabot
 		$this->system = php_uname('a');
 		$this->_showIPS = FALSE;
 		$this->_iterations = 0;
+		$this->_IPSHistory = array_fill(0, 10, 0);
 		
 		//Parsing CLI arguments
 		$logContent = NULL;
@@ -329,7 +330,7 @@ class Leelabot
 				Server::setServer($this->servers[$name]);
 				
 				$this->servers[$name]->step();
-				usleep(7500);
+				usleep(5000);
 			}
 			if($this->outerAPI !== NULL)
 				$this->outerAPI->process();
@@ -347,7 +348,6 @@ class Leelabot
 					$lastTime = time();
 				}
 			}
-		
 		}
 		
 		foreach($this->servers as $name => $server)

@@ -152,23 +152,53 @@ class LeelabotWebservice
 		
 		foreach($reflectionParameters as $param)
 			$this->_methodParameters[$method][$param->getPosition()] = $param->getName();
+		
+		return TRUE;
+	}
+	
+	public function deleteMethod($method)
+	{
+		if(!isset($this->_methods[$method]))
+			return FALSE;
+		
+		unset($this->_methods[$method]);
+		
+		return TRUE;
 	}
 	
 	public function __call($method, $args)
 	{
 		if($this->_auth && !empty($this->_authedUser["AllowedMethods"]) && !in_array($method, $this->_authedUser["AllowedMethods"]))
-				return array('response' => false, 'error' => 'Unauthorized access');
+				return array('response' => false, 'errno' => 1002, 'error' => 'Unauthorized access');
 		
 		if(isset($this->_methods[$method]))
 		{
 			if(count($args) == count($this->_methodParameters[$method]))
-				return call_user_func_array($this->_methods[$method], $args);
+			{
+				try
+				{
+					$return = call_user_func_array($this->_methods[$method], $args);
+					if(!is_bool($return))
+						return array('success' => true, 'data' => $return);
+					else
+						return array('success' => $return);
+				}
+				catch(WebserviceException $e)
+				{
+					return array('success' => false, 'errno' => $e->getCode(), 'error' => $e->getMessage());
+				}
+			}
 			else
-				return array('response' => false, 'error' => 'Parameter count does not match');
+				return array('success' => false, 'errno' => 1001, 'error' => 'Parameter count does not match');
 		}
 		else
-			return array('response' => false, 'error' => 'Method not found');
+			return array('success' => false, 'errno' => 1000, 'error' => 'Method not found');
 	}
+}
+
+class WebserviceException extends Exception
+{
+	
 }
 
 $this->addClasses(array('LeelabotWebservice'));

@@ -153,10 +153,9 @@ class LeelabotAdmin
 	
 	public function addDesign($page, $content)
 	{
-		$this->_corePages['plugins']->checkPluginsUpdate();
 		$page = explode('/', $page, 3);
 		
-		$this->parser->assign('plugins', $this->_corePages['plugins']->pluginsInfo);
+		$this->parser->assign('plugins', Leelabot::$instance->plugins->getInfoFromFiles());
 		$this->parser->assign('loaded', Leelabot::$instance->plugins->getLoadedPlugins());
 		$this->parser->assign('category', $page[0]);
 		if(isset($page[1]))

@@ -47,6 +47,8 @@ class PluginManager extends Events
 	private $_defaultLevel; ///< Default level for new commands.
 	private $_quietReply; ///< Trigger for the automatic reply for invalid commands/Insufficient access
 	private $_pluginCache = array(); ///< Cache for already loaded plugins (to avoid class redefinition when reloading plugins)
+	private $_pluginsInfo; ///< Plugin information, got from head comments.
+	private $_pluginFiles; ///< Plugins file name cache.
 	
 	/** Constructor for PluginManager
 	 * Initializes the class.
@@ -155,6 +157,8 @@ class PluginManager extends Events
 	 * Basically, it justs do a burst call of loadPlugin for all specified plugins, plus a load verification.
 	 * 
 	 * \param $list Plugin list to be loaded.
+	 * \param $manual Manual loading indicator. It permits the bot to know if a plugin has been loaded manually or automatically, by dependence.
+	 * 
 	 * \return TRUE if all plugins loaded successfully, FALSE otherwise.
 	 */
 	public function loadPlugins($list, $manual = FALSE)
@@ -186,8 +190,8 @@ class PluginManager extends Events
 	 * \param $plugin Plugin to be loaded.
 	 * \param $manual Manual loading indicator. It permits the bot to know if a plugin has been loaded manually or automatically, by dependence.
 	 * 
-	 * \return TRUE if plugin loaded successfully, FALSE otherwise. In fact, this value, beyond the "plugin not found" error, depends of the return value of 
-	 * PluginManager::initPlugin.
+	 * \return TRUE if plugin loaded successfully, FALSE otherwise.
+	 * In fact, this value, beyond the "plugin not found" error, depends of the return value of PluginManager::initPlugin.
 	 */
 	public function loadPlugin($plugin, $manual = FALSE)
 	{
@@ -286,6 +290,12 @@ class PluginManager extends Events
 				}
 			}
 		}
+		
+		//TODO: Deleting Webservice events if Webservice is enabled
+		//~ if(is_object($this->_main->outerAPI) && $this->_main->outerAPI->getWSState())
+		//~ {
+			//~ $this->_main->outerAPI->getWSObject()->deleteMethod();
+		//~ }
 		
 		$dependencies = $this->_plugins[$plugin]['dependencies'];
 		
@@ -423,6 +433,46 @@ class PluginManager extends Events
 		array_push($list, 'core');
 		
 		return $list;
+	}
+	
+	/** Gets info from plugins head comments.
+	 * This functions reads the information available on plugins from their head comments. Could be resource-hungry, use with caution.
+	 * 
+	 * \return An array containing info for each plugin.
+	 */
+	public function getInfoFromFiles()
+	{
+		$files = scandir('plugins');
+		if($files != $this->_pluginFiles)
+		{
+			$this->_pluginsInfo = array();
+			//Reading the plugins' directory
+			foreach($files as $f)
+			{
+				if(pathinfo($f, PATHINFO_EXTENSION) != 'php')
+					continue;
+					
+				$name = pathinfo($f, PATHINFO_FILENAME);
+				
+				$this->_pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Locales::translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name), 'dependencies' => Locales::translate('None'));
+				$content = file_get_contents('plugins/'.$f);
+				
+				if(preg_match('#\\\\version (.+)\r?\n#isU', $content, $version))
+					$this->_pluginsInfo[$f]['version'] = $version[1];
+				if(preg_match('#\\\\file (.+)\r?\n#isU', $content, $file))
+					$this->_pluginsInfo[$f]['file'] = $file[1];
+				if(preg_match('#\\\\author (.+)\r?\n#isU', $content, $author))
+					$this->_pluginsInfo[$f]['author'] = $author[1];
+				if(preg_match('#\\\\brief (.+)\r?\n#isU', $content, $description))
+					$this->_pluginsInfo[$f]['description'] = $description[1];
+				if(preg_match('#\\\\depends (.+)\r?\n#isU', $content, $dependencies))
+					$this->_pluginsInfo[$f]['dependencies'] = $dependencies[1];
+			}
+			
+			$this->_pluginFiles = $files;
+		}
+		
+		return $this->_pluginsInfo;
 	}
 	
 	/** Returns the object of a plugin.

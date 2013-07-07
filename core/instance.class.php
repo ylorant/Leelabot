@@ -773,7 +773,7 @@ class ServerInstance
 						$votestring = explode('"', $param[1]);
 						$votestring = $vote[1];
 						
-						$this->_leelabot->plugins->callServerEvent('Callvote', $id, $votestring);
+						$this->_leelabot->plugins->callServerEvent('Callvote', array($id, $votestring));
 						break;
 					// Player vote (1=yes, 2=no)
 					case 'Vote':
@@ -784,7 +784,7 @@ class ServerInstance
 						$id = $param[0];
 						$vote = $param[1];
 						
-						$this->_leelabot->plugins->callServerEvent('Vote', $id, $vote);
+						$this->_leelabot->plugins->callServerEvent('Vote', array($id, $vote));
 						break;
 					// Player call a radio alert
 					case 'Radio': // idnum - msg_group - msg_id - "player_location" - "message"
@@ -799,15 +799,15 @@ class ServerInstance
 						$message = explode('"', $param[4]);
 						$message = $message[1];
 						
-						$this->_leelabot->plugins->callServerEvent('Radio', $id, $groupid, $msgid, $location, $message);
+						$this->_leelabot->plugins->callServerEvent('Radio', array($id, $groupid, $msgid, $location, $message));
 						break;
 					case 'AccountKick': 
 						$param = explode('-', $line[1]);
 						array_walk($param, 'trim');
 						
 						$id = intval($param[0]);
-						$reason = explode('"', $param[1]);
-						$reason = $reason[1];
+						$reason = explode(':', $param[1]);
+						$reason = trim($reason[1]);
 						
 						$this->_leelabot->plugins->callServerEvent('AccountKick', $id, $reason);
 						break;
@@ -821,10 +821,10 @@ class ServerInstance
 						$hours = intval(str_replace('h', '', $param[3]));
 						$mins = intval(str_replace('m', '', $param[4]));
 						
-						$this->_leelabot->plugins->callServerEvent('AccountBan', $id, $login, $days, $hours, $mins);
+						$this->_leelabot->plugins->callServerEvent('AccountBan', array($id, $login, $days, $hours, $mins));
 						break;
 					case 'AccountValidated': // idnum - login - rcon_level - "notoriety"
-						$param = explode('-', $line[1]);
+						$param = explode(' - ', $line[1]);
 						array_walk($param, 'trim');
 						
 						$id = intval($param[0]);
@@ -833,7 +833,12 @@ class ServerInstance
 						$notoriety = explode('"', $param[3]);
 						$notoriety = $notoriety[1];
 						
-						$this->_leelabot->plugins->callServerEvent('AccountValidated', $id, $login, $rconlevel, $notoriety);
+						//Setting player properties
+						$this->players[$id]->authLogin = $login;
+						$this->players[$id]->authRConLevel = $rconlevel;
+						$this->players[$id]->authNotoriety = $notoriety;
+						
+						$this->_leelabot->plugins->callServerEvent('AccountValidated', array($id, $login, $rconlevel, $notoriety));
 						break;
 					case 'AccountRejected': // idnum - login - "reason"
 						$param = explode('-', $line[1]);
@@ -844,7 +849,7 @@ class ServerInstance
 						$reason = explode('"', $param[2]);
 						$reason = $reason[1];
 						
-						$this->_leelabot->plugins->callServerEvent('AccountRejected', $id, $login, $reason);
+						$this->_leelabot->plugins->callServerEvent('AccountRejected', array($id, $login, $reason));
 						break;
 				}
 				

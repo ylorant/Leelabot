@@ -1134,9 +1134,9 @@ class ServerList
 	
 	
 	/** Returns the list of the connected servers.
-	 * This function returns the list of the servers which are currently managed by leelabot, and currently accessible.
+	 * This function returns the list of the servers which are currently managed by leelabot (disabled or not).
 	 * 
-	 * \return An array containing the names of all the currently connected servers.
+	 * \return An array containing the names of all the servers the bot has memory of.
 	 */
 	public static function getList()
 	{
@@ -1145,6 +1145,12 @@ class ServerList
 		return array_keys($self->_leelabot->servers);
 	}
 	
+	/** Returns the list of enabled servers.
+	 * This function returns the list of the servers which are currently managed by leelabot, and accessible 
+	 * (implying that you can send RCon commands on it).
+	 * 
+	 * \return An array containing the names of all the currently enabled servers.
+	 */
 	public static function getEnabledList()
 	{
 		$self = self::getInstance();
@@ -1155,6 +1161,49 @@ class ServerList
 			if($server->isEnabled())
 				$list[] = $name;
 		}
+		
+		return $list;
+	}
+	
+	/** Returns the list of servers on hold.
+	 * This function returns the list of the servers which are currently on hold for leelabot, meaning that 
+	 * the bot will get status from the log slower than an active server, because it may be rebooting or it
+	 * has crashed. It is not advised to send RCon commands on these servers.
+	 * 
+	 * \return An array containing the names of the servers currently on hold.
+	 */
+	public static function getHoldList()
+	{
+		$self = self::getInstance();
+		
+		$list = array();
+		foreach($self->_leelabot->servers as $name => $server)
+		{
+			if(!$server->isEnabled() && !$server->isDisabled())
+				$list[] = $name;
+		}
+		
+		return $list;
+	}
+	
+	/** Returns the list of disabled servers.
+	 * This function returns the list of the servers which are currently disabled for leelabot, meaning that
+	 * logs are not read anymore on them, status is certainly outdated, etc.
+	 * 
+	 * \return An array containing the names of the servers currently disabled.
+	 */
+	public static function getDisabledList()
+	{
+		$self = self::getInstance();
+		
+		$list = array();
+		foreach($self->_leelabot->servers as $name => $server)
+		{
+			if($server->isDisabled())
+				$list[] = $name;
+		}
+		
+		return $list;
 	}
 	
 	/** Checks if a server is available to manage.
@@ -1423,6 +1472,11 @@ class Plugins
 	public static function getCommandList($plugin = FALSE)
 	{
 		return self::$_plugins->getCommandList($plugin);
+	}
+
+	public static function getInfo()
+	{
+		return self::$_plugins->getInfoFromFiles();
 	}
 }
 

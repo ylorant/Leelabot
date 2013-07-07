@@ -1,4 +1,4 @@
-<?php
+	<?php
 
 /**
  * \file core/RCon.class.php
@@ -202,7 +202,13 @@ class Quake3RCon
 		}
 		
 		$data = str_repeat(chr(255), 4).$command."\n";
-		return (socket_sendto($this->_socket, $data, strlen($data), 0, $this->_addr, $this->_port) !== FALSE);
+		if(!(socket_sendto($this->_socket, $data, strlen($data), 0, $this->_addr, $this->_port) !== FALSE))
+		{
+			$this->_error = self::E_CONNECTION;
+			return FALSE;
+		}
+		else
+			return TRUE;
 	}
 	
 	/** Waits a RCon reply from the server.

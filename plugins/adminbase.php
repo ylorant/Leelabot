@@ -101,9 +101,16 @@ class PluginAdminBase extends Plugin
 		
 	}
 	
+	/** Converts between unit powers.
+	 * This function converts a number of bytes into a greater scale number, allowing them to be human readable.
+	 * 
+	 * \param $size The number to convert.
+	 * 
+	 * \return A string representing the number in its appropriate scale, with the extension at the end.
+	 */
 	private function convert($size)
 	{
-		$unit=array('b','kb','mb','gb','tb','pb');
+		$unit=array('B','kB','MB','GB','TB','PB');
 		return round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
 	}
 	
@@ -680,28 +687,28 @@ class PluginAdminBase extends Plugin
 	public function WSMethodKick($server, $id)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->kick($id)));
+		return ServerList::getServerRCon($server)->kick($id);
 	}
 	
 	public function WSMethodCfg($server, $cfg)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->exec($cfg)));
+		return ServerList::getServerRCon($server)->exec($cfg);
 	}
 	
 	public function WSMethodCyclemap($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->cyclemap()));
+		return ServerList::getServerRCon($server)->cyclemap();
 	}
 	
 	public function WSMethodDie()
@@ -710,38 +717,38 @@ class PluginAdminBase extends Plugin
 			ServerList::getServerRCon($server)->bigtext('Shutting Down...');
 		$this->_main->stop();
 		
-		return array('success' => 'true');
+		return TRUE;
 	}
 	
 	public function WSMethodForce($server, $player, $team)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		$target = ServerList::getServer($server)->getPlayer($player);
 		if($target == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		else
 		{
 			if(in_array($team, array('spec', 'spect')))
 				$team = 'spectator';
 			
 			if(in_array($team, array('red', 'blue', 'spectator'))) 
-				return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->forceteam($target->id.' '.$team)));
+				return ServerList::getServerRCon($server)->forceteam($target->id.' '.$team);
 			else
-				return array('success' => false, 'error' => 'Invalid parameter. Available teams : red, blue, spectator.');
+				throw new WebserviceException('Invalid parameter. Available teams : red, blue, spectator.');
 		}
 	}
 	
 	public function WSMethodKickAll($server, $mask)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		$server = ServerList::getServer($server);
 		$target = $server->searchPlayer($mask);
 		if($target === FALSE)
-			return array('success' => false, 'error' => 'No player found.');
+			throw new WebserviceException('No player found.');
 		elseif(is_array($target))
 		{
 			$players = array();
@@ -749,16 +756,16 @@ class PluginAdminBase extends Plugin
 			foreach($target as $p)
 				$kick = $kick && RCon::kick($p);
 			
-			return array('success' => Leelabot::boolString($kick), 'data' => $target);
+			return $target;
 		}
 		else
-			return array('success' => Leelabot::boolString(RCon::kick($target)));
+			return Leelabot::boolString(RCon::kick($target));
 	}
 	
 	public function WSMethodPlayerList($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		$list = array();
 		$server = ServerList::getServer($server);
@@ -767,153 +774,153 @@ class PluginAdminBase extends Plugin
 		foreach($players as $p)
 			$list[] = array('id' => $p->id, 'name' => $p->name, 'team' => $p->team);
 		
-		return array('success' => true, 'data' => $list);
+		return $list;
 	}
 	
 	public function WSMethodMap($server, $map)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->map($map)));
+		return ServerList::getServerRCon($server)->map($map);
 	}
 	
 	public function WSMethodMode($server, $mode)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if($mode > 8 || $mode < 0)
-			return array('success' => false, 'error' => 'Invalid gametype');
+			throw new WebserviceException('Invalid gametype');
 		
-		ServerList::getServerRCon($server)->set('g_gametype', intval($mode));
+		return ServerList::getServerRCon($server)->set('g_gametype', intval($mode));
 	}
 	
 	public function WSMethodMute($server, $id)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->mute($id)));
+		return ServerList::getServerRCon($server)->mute($id);
 	}
 	
 	public function WSMethodNextmap($server)
 	{
 		if(!($server = ServerList::serverEnabled($server)))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if($server->getPlayer($id) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->nextmap()));
+		return ServerList::getServerRCon($server)->nextmap();
 	}
 	
 	public function WSMethodNuke($server, $id)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->nuke($id)));
+		return ServerList::getServerRCon($server)->nuke($id);
 	}
 	
 	public function WSMethodPause($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->pause()));
+		return ServerList::getServerRCon($server)->pause();
 	}
 	
 	public function WSMethodReload($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->reload()));
+		return ServerList::getServerRCon($server)->reload();
 	}
 	
 	public function WSMethodRestart($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->restart()));
+		return ServerList::getServerRCon($server)->restart();
 	}
 	
 	public function WSMethodSay($server, $message)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->say($message)));
+		return ServerList::getServerRCon($server)->say($message);
 	}
 	
 	public function WSMethodSet($server, $var, $value)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->set($var, $value)));
+		return ServerList::getServerRCon($server)->set($var, $value);
 	}
 	
 	public function WSMethodShuffleTeams($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle(TRUE)));
+		return ServerList::getServerRCon($server)->shuffle(TRUE);
 	}
 	
 	public function WSMethodShuffle($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->shuffle()));
+		return ServerList::getServerRCon($server)->shuffle();
 	}
 	
 	public function WSMethodSlap($server, $id)
 	{
 		
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if(ServerList::getServer($server)->getPlayer($id) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->slap($id)));
+		return ServerList::getServerRCon($server)->slap($id);
 	}
 	
 	public function WSMethodSwap($server)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->swapteams()));
+		return ServerList::getServerRCon($server)->swapteams();
 	}
 	
 	public function WSMethodVeto($server)
 	{
 		
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->veto()));
+		return ServerList::getServerRCon($server)->veto();
 	}
 	
 	public function WSMethodWhois($server, $id)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
 		if(($player = ServerList::getServer($server)->getPlayer($id)) == NULL)
-			return array('success' => false, 'error' => 'No player found');
+			throw new WebserviceException('No player found');
 		
 		$data = array(	'name' => $player->name,
 						'addr' => $player->addr,
@@ -921,15 +928,15 @@ class PluginAdminBase extends Plugin
 						'host' => gethostbyaddr($player->addr)
 					);
 		
-		return array('success' => true, 'data' => $data);
+		return $data;
 	}
 	
 	public function WSMethodRcon($server, $command)
 	{
 		if(!ServerList::serverEnabled($server))
-			return array('success' => false, 'error' => 'Server not found');
+			throw new WebserviceException('Server not found');
 		
-		return array('success' => Leelabot::boolString(ServerList::getServerRCon($server)->send($command)));
+		return ServerList::getServerRCon($server)->send($command);
 	}
 	
 	// IRC STUFF //

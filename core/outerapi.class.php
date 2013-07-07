@@ -96,14 +96,14 @@ class OuterAPI
 			$this->_manager->loadConfig('webservice', array(
 				'SiteRoot' => $config['BindAddress'].'/api',
 				'Alias' => $WSConfig['Aliases'],
-				'DocumentRoot' => 'core',
-				'ProcessFiles' => 'webservice.class.php'));
+				'DocumentRoot' => '.',
+				'ProcessFiles' => 'core/webservice.class.php'));
 			
 			if(isset($WSConfig['Authentication']) && Leelabot::parseBool($WSConfig['Authentication']) == TRUE && isset($WSConfig['AuthFile']) && is_file(Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile']))
 			{
 				$this->_WSAuth = TRUE;
 				$WSConfig['AuthFile'] = Leelabot::$instance->getConfigLocation().'/'.$WSConfig['AuthFile'];
-				$this->_WSAuthFile = '../'.$WSConfig['AuthFile'];
+				$this->_WSAuthFile = $WSConfig['AuthFile'];
 			}
 			else
 				Leelabot::message('Using Webservice without authentication is not secure !', array(), E_WARNING, TRUE);
@@ -151,10 +151,14 @@ class OuterAPI
 		$this->_server->connect();
 		
 		//Setting InnerAPI classes
-		Webadmin::setWAObject($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']);
+		if(!empty($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']))
+			Webadmin::setWAObject($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']);
 		
-		$this->_manager->getSite('webadmin')->classes['LeelabotAdmin']->setAuthentication($this->_WAAuth, $this->_WAAuthFile);
-		$this->_manager->getSite('webservice')->classes['LeelabotWebservice']->setAuthentication($this->_WSAuth, $this->_WSAuthFile);
+		if(!empty($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']))
+			$this->_manager->getSite('webadmin')->classes['LeelabotAdmin']->setAuthentication($this->_WAAuth, $this->_WAAuthFile);
+		
+		if(!empty($this->_manager->getSite('webadmin')->classes['LeelabotAdmin']))
+			$this->_manager->getSite('webservice')->classes['LeelabotWebservice']->setAuthentication($this->_WSAuth, $this->_WSAuthFile);
 	}
 	
 	/** Returns if the webservice is active.

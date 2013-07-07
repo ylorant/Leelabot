@@ -5,7 +5,6 @@ class LeelabotAdminPlugins
 	private $_dispatcher;
 	private $_files;
 	private $_loadedPlugins;
-	public $pluginsInfo;
 	
 	public function __construct(&$dispatcher)
 	{
@@ -61,11 +60,9 @@ class LeelabotAdminPlugins
 	
 	public function pluginList($data)
 	{
-		$this->checkPluginsUpdate();
-		
 		//Computing server list for each plugin
 		$servers = array();
-		foreach($this->pluginsInfo as $plugin)
+		foreach(Leelabot::$instance->plugins->getInfoFromFiles() as $plugin)
 			$servers[$plugin['name']] = array();
 		
 		foreach(ServerList::getList() as $servername)
@@ -88,18 +85,11 @@ class LeelabotAdminPlugins
 				$s = join(', ', $s);
 		}
 		
-		$this->_dispatcher->parser->assign('plugins', $this->pluginsInfo);
+		$this->_dispatcher->parser->assign('plugins', Leelabot::$instance->plugins->getInfoFromFiles());
 		$this->_dispatcher->parser->assign('loaded', Leelabot::$instance->plugins->getLoadedPlugins());
 		$this->_dispatcher->parser->assign('servers', $servers);
 		
 		return $this->_dispatcher->parser->draw('plugins');
-	}
-	
-	public function checkPluginsUpdate()
-	{
-		$files = scandir('plugins');
-		if($files != $this->_files)
-			$this->updatePluginsList($files);
 	}
 	
 	private function updatePluginsList($files)
@@ -107,29 +97,7 @@ class LeelabotAdminPlugins
 		$this->_files = array();
 		$this->_pluginsInfo = array();
 		
-		//Reading the plugins' directory
-		foreach($files as $f)
-		{
-			if(pathinfo($f, PATHINFO_EXTENSION) != 'php')
-				continue;
-				
-			$name = pathinfo($f, PATHINFO_FILENAME);
-			
-			$this->pluginsInfo[$f] = array('version' => '', 'file' => $f, 'author' => Locales::translate('Anonymous'), 'description' => '', 'name' => $name, 'dname' => ucfirst($name), 'dependencies' => Locales::translate('None'));
-			$content = file_get_contents('plugins/'.$f);
-			
-			if(preg_match('#\\\\version (.+)\r?\n#isU', $content, $version))
-				$this->pluginsInfo[$f]['version'] = $version[1];
-			if(preg_match('#\\\\file (.+)\r?\n#isU', $content, $file))
-				$this->pluginsInfo[$f]['file'] = $file[1];
-			if(preg_match('#\\\\author (.+)\r?\n#isU', $content, $author))
-				$this->pluginsInfo[$f]['author'] = $author[1];
-			if(preg_match('#\\\\brief (.+)\r?\n#isU', $content, $description))
-				$this->pluginsInfo[$f]['description'] = $description[1];
-			if(preg_match('#\\\\depends (.+)\r?\n#isU', $content, $dependencies))
-				$this->pluginsInfo[$f]['dependencies'] = $dependencies[1];
-			
-		}
+		$this->_pluginsInfo = Leelabot::$instance->plugins->getInfoFromFiles($files);
 		
 		$this->_files = $files;
 	}
